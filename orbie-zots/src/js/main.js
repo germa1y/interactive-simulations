@@ -683,6 +683,30 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
+        // Setup wall SVG dropdown
+        const wallSVGSelector = document.getElementById('wallSVG');
+        if (wallSVGSelector) {
+            wallSVGSelector.addEventListener('change', function() {
+                if (this.value) {
+                    // Load the selected SVG file
+                    fetch(this.value)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.text();
+                        })
+                        .then(svgText => {
+                            const wallCount = WallSystem.loadFromSVG(svgText);
+                            console.log(`Loaded ${wallCount} wall segments from SVG`);
+                        })
+                        .catch(error => {
+                            console.error('Error loading SVG file:', error);
+                        });
+                }
+            });
+        }
+        
         const loadWallsButton = document.getElementById('loadWallsButton');
         if (loadWallsButton) {
             loadWallsButton.addEventListener('click', function() {

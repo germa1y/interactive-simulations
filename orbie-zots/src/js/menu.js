@@ -13,7 +13,8 @@ const MenuSystem = (function() {
         resetOrbie: null,
         resetAll: null,
         changeColorTheme: null,
-        updateWallSettings: null
+        updateWallSettings: null,
+        loadWallSVG: null  // Add new callback for loading SVG files
     };
     
     // Initialize menu with necessary DOM elements and callbacks
@@ -158,6 +159,9 @@ const MenuSystem = (function() {
         if (resetAllButton && callbacks.resetAll) {
             resetAllButton.addEventListener('click', callbacks.resetAll);
         }
+
+        // Setup Wall SVG selector
+        setupWallSVGSelector();
     }
     
     // Setup color theme selector
@@ -251,6 +255,50 @@ const MenuSystem = (function() {
                 }
             });
         }
+    }
+    
+    // Setup Wall SVG selector
+    function setupWallSVGSelector() {
+        const wallSVGSelector = document.getElementById('wallSVG');
+        if (wallSVGSelector && callbacks.loadWallSVG) {
+            // Populate the dropdown with SVG files from the repository
+            fetchSVGFiles(wallSVGSelector);
+            
+            // Add event listener for selection change
+            wallSVGSelector.addEventListener('change', function() {
+                if (this.value && callbacks.loadWallSVG) {
+                    callbacks.loadWallSVG(this.value);
+                }
+            });
+        }
+    }
+    
+    // Fetch SVG files from the repository
+    function fetchSVGFiles(selectElement) {
+        // Clear existing options
+        selectElement.innerHTML = '';
+        
+        // Add a placeholder option
+        const placeholderOption = document.createElement('option');
+        placeholderOption.value = '';
+        placeholderOption.textContent = 'Select a wall design...';
+        placeholderOption.selected = true;
+        selectElement.appendChild(placeholderOption);
+        
+        // Known SVG files in the public directory
+        const svgFiles = [
+            { name: 'Sample Walls', path: './sample-walls.svg' },
+            { name: 'Sample Walls with Curves', path: './sample-walls-curves.svg' },
+            { name: 'Curves Sample', path: './curves-sample.svg' }
+        ];
+        
+        // Add options for each SVG file
+        svgFiles.forEach(file => {
+            const option = document.createElement('option');
+            option.value = file.path;
+            option.textContent = file.name;
+            selectElement.appendChild(option);
+        });
     }
     
     // Public API
