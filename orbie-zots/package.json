@@ -1,0 +1,26 @@
+{
+  "name": "orbie-zots",
+  "version": "1.0.0",
+  "description": "Particle swarm simulation with touch interaction",
+  "main": "public/index.html",
+  "scripts": {
+    "build": "node build/build.js",
+    "build:simple": "build/build-simple.bat",
+    "start": "npx http-server public -p 8080",
+    "dev": "npm run build && npm run start"
+  },
+  "keywords": [
+    "particles",
+    "simulation",
+    "canvas",
+    "touch",
+    "mobile"
+  ],
+  "author": "",
+  "license": "UNLICENSED",
+  "private": true,
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "terser": "^5.17.1"
+  }
+}

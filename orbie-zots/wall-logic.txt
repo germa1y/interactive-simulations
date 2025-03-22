@@ -1,0 +1,96 @@
+### 🧱 **Wall Data Structure**
+```javascript
+let walls = [];
+let currentPath = []; // For storing points in free draw mode
+```
+Each wall is stored as a line segment with properties: `x1`, `y1`, `x2`, `y2`.
+
+---
+
+### ✏️ **Drawing Walls**
+Walls can be drawn in two modes:
+- **Draw Mode** (`drawWalls`): click and drag to create line segments.
+- **Free Draw Mode** (`freeDraw`): continuous points forming paths.
+
+```javascript
+if (currentMode === 'drawWalls' && mouse.drawing) {
+    renderCtx.moveTo(mouse.startX, mouse.startY);
+    renderCtx.lineTo(mouse.x, mouse.y);
+} else if (currentMode === 'freeDraw' && mouse.drawing && currentPath.length > 1) {
+    renderCtx.moveTo(currentPath[0].x, currentPath[0].y);
+    for (let i = 1; i < currentPath.length; i++) {
+        renderCtx.lineTo(currentPath[i].x, currentPath[i].y);
+    }
+}
+```
+
+---
+
+### 🧲 **Wall Avoidance by Particles**
+Particles detect nearby walls and are repelled by them based on a `wallForce` parameter:
+```javascript
+if (walls.length > 0 && settings.wallForce > 0) {
+    for (let w = 0; w < walls.length; w += wallStep) {
+        const wall = walls[w];
+        const dist = distToSegment(particle.x, particle.y, wall.x1, wall.y1, wall.x2, wall.y2);
+        
+        if (dist < wallPerception) {
+            const normal = normalToSegment(particle.x, particle.y, wall.x1, wall.y1, wall.x2, wall.y2);
+            const force = (wallPerception - dist) / wallPerception * settings.wallForce;
+            particle.vx += normal.x * force;
+            particle.vy += normal.y * force;
+        }
+    }
+}
+```
+
+---
+
+### 🧮 **Wall Physics Utilities**
+#### Distance to a Wall Segment
+```javascript
+function distToSegment(px, py, x1, y1, x2, y2)
+```
+Used to determine how close a particle is to a wall.
+
+#### Normal Vector from Wall to Particle
+```javascript
+function normalToSegment(px, py, x1, y1, x2, y2)
+```
+Calculates the direction to push a particle away from the wall.
+
+---
+
+### 🔁 **Wall Collision & Reflection**
+Particles that move through a wall segment reflect off of it:
+```javascript
+if (lineSegmentsIntersect(prevX, prevY, particle.x, particle.y, wall.x1, wall.y1, wall.x2, wall.y2)) {
+    const normal = normalToSegment(particle.x, particle.y, wall.x1, wall.y1, wall.x2, wall.y2);
+    const dot = particle.vx * normal.x + particle.vy * normal.y;
+    particle.vx -= 2 * dot * normal.x;
+    particle.vy -= 2 * dot * normal.y;
+    particle.x = prevX + particle.vx * 0.5;
+    particle.y = prevY + particle.vy * 0.5;
+    particle.vx *= 0.8;
+    particle.vy *= 0.8;
+}
+```
+
+---
+
+### ❌ **Wall Eraser Mode**
+If in `eraser` mode, walls close to the mouse/touch are visually highlighted and can be removed.
+
+```javascript
+const closestWall = findClosestWall(mouse.x, mouse.y);
+...
+renderCtx.strokeStyle = '#ff5555'; // red highlight
+```
+
+---
+
+### 🔍 **Wall Intersection Helper**
+Used to detect if a particle crossed through a wall:
+```javascript
+function lineSegmentsIntersect(x1, y1, x2, y2, x3, y3, x4, y4)
+```

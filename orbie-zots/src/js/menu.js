@@ -1,0 +1,270 @@
+// menu.js - Menu UI handlers and settings management
+const MenuSystem = (function() {
+    // Private variables
+    let controlsPanel;
+    let menuToggle;
+    let isMenuInitialized = false;
+    
+    // Callbacks for different settings
+    let callbacks = {
+        updateOrbieSettings: null,
+        updateSwarmSettings: null,
+        updateSettings: null,
+        resetOrbie: null,
+        resetAll: null,
+        changeColorTheme: null,
+        updateWallSettings: null
+    };
+    
+    // Initialize menu with necessary DOM elements and callbacks
+    function init(elements, callbackFunctions) {
+        // Skip if already initialized
+        if (isMenuInitialized) return;
+        
+        // Store elements
+        controlsPanel = elements.controlsPanel || document.getElementById('controls');
+        menuToggle = elements.menuToggle || document.getElementById('menuToggle');
+        
+        // Store callbacks
+        if (callbackFunctions) {
+            callbacks = {...callbacks, ...callbackFunctions};
+        }
+        
+        // Setup menu toggle
+        setupMenuToggle();
+        
+        // Setup parameter groups
+        setupParameterGroups();
+        
+        // Setup all input controls
+        setupInputControls();
+        
+        // Setup color theme selector if available
+        setupColorThemes();
+        
+        isMenuInitialized = true;
+    }
+    
+    // Setup menu toggle button
+    function setupMenuToggle() {
+        if (menuToggle && controlsPanel) {
+            // Handle click for desktop
+            menuToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                controlsPanel.classList.toggle('collapsed');
+            });
+            
+            // Handle touch for mobile - fixed to use touchstart instead of touchend
+            menuToggle.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                controlsPanel.classList.toggle('collapsed');
+                e.stopPropagation();
+            }, { passive: false });
+            
+            // Close menu when clicking/touching outside
+            document.addEventListener('touchend', function(e) {
+                if (!controlsPanel.classList.contains('collapsed') && 
+                    !controlsPanel.contains(e.target) && 
+                    e.target !== menuToggle) {
+                    controlsPanel.classList.add('collapsed');
+                }
+            });
+            
+            document.addEventListener('click', function(e) {
+                if (!controlsPanel.classList.contains('collapsed') && 
+                    !controlsPanel.contains(e.target) && 
+                    e.target !== menuToggle) {
+                    controlsPanel.classList.add('collapsed');
+                }
+            });
+        }
+    }
+    
+    // Setup parameter groups
+    function setupParameterGroups() {
+        const paramGroup = document.getElementById('paramGroup');
+        if (!paramGroup) return;
+        
+        const paramGroups = {
+            orbie: document.getElementById('orbieParams'),
+            orbieSwarm: document.getElementById('orbieSwarmParams'),
+            zotSwarms: document.getElementById('zotSwarmsParams'),
+            forces: document.getElementById('forcesParams'),
+            walls: document.getElementById('wallsParams')
+        };
+        
+        paramGroup.addEventListener('change', function() {
+            // Hide all parameter groups
+            document.querySelectorAll('.param-group').forEach(group => {
+                group.classList.remove('active');
+            });
+            
+            // Show the selected group
+            const selectedGroup = paramGroups[this.value];
+            if (selectedGroup) {
+                selectedGroup.classList.add('active');
+            }
+        });
+    }
+    
+    // Setup all input controls and their event handlers
+    function setupInputControls() {
+        // Orbie controls
+        setupRangeInput('orbieSize', value => updateSetting('orbie', 'size', value));
+        setupRangeInput('orbieGlowSize', value => updateSetting('orbie', 'glowSize', value));
+        setupRangeInput('orbiePulseSpeed', value => updateSetting('orbie', 'pulseSpeed', value));
+        setupRangeInput('orbiePulseIntensity', value => updateSetting('orbie', 'pulseIntensity', value));
+        setupRangeInput('orbieInfluenceRadius', value => updateSetting('orbie', 'influenceRadius', value));
+        setupRangeInput('orbieTouchMultiplier', value => updateSetting('orbie', 'touchMultiplier', value));
+        
+        // Swarm controls
+        setupRangeInput('swarmSpeed', value => updateSetting('orbieSwarm', 'speed', value));
+        setupRangeInput('swarmSeparation', value => updateSetting('orbieSwarm', 'separation', value));
+        setupRangeInput('swarmAlignment', value => updateSetting('orbieSwarm', 'alignment', value));
+        setupRangeInput('swarmCohesion', value => updateSetting('orbieSwarm', 'cohesion', value));
+        setupRangeInput('swarmPerception', value => updateSetting('orbieSwarm', 'perception', value));
+        setupRangeInput('swarmSparkleRate', value => updateSetting('orbieSwarm', 'sparkleRate', value));
+        
+        // Zots controls
+        setupRangeInput('zotsCount', value => updateSetting('zotSwarms', 'particleCount', value));
+        setupRangeInput('zotsSpeed', value => updateSetting('zotSwarms', 'speed', value));
+        setupRangeInput('zotsSeparation', value => updateSetting('zotSwarms', 'separation', value));
+        setupRangeInput('zotsAlignment', value => updateSetting('zotSwarms', 'alignment', value));
+        setupRangeInput('zotsCohesion', value => updateSetting('zotSwarms', 'cohesion', value));
+        setupRangeInput('zotsPerception', value => updateSetting('zotSwarms', 'perception', value));
+        setupRangeInput('zotsTouchForce', value => updateSetting('zotSwarms', 'touchForce', value));
+        
+        // Force controls
+        setupRangeInput('touchForce', value => updateSetting('forces', 'touchForce', value));
+        setupRangeInput('wallForce', value => updateSetting('forces', 'wallForce', value));
+        
+        // Setup Zot Touch Interaction toggle
+        const zotTouchEnabled = document.getElementById('zotTouchEnabled');
+        if (zotTouchEnabled) {
+            zotTouchEnabled.addEventListener('change', function() {
+                if (callbacks.updateSettings) {
+                    callbacks.updateSettings('forces', 'zotTouchEnabled', this.checked);
+                }
+            });
+        }
+        
+        // Reset buttons
+        const resetOrbieButton = document.getElementById('resetButton');
+        if (resetOrbieButton && callbacks.resetOrbie) {
+            resetOrbieButton.addEventListener('click', callbacks.resetOrbie);
+        }
+        
+        const resetAllButton = document.getElementById('resetAllButton');
+        if (resetAllButton && callbacks.resetAll) {
+            resetAllButton.addEventListener('click', callbacks.resetAll);
+        }
+    }
+    
+    // Setup color theme selector
+    function setupColorThemes() {
+        const colorThemeSelect = document.getElementById('colorTheme');
+        if (colorThemeSelect && callbacks.changeColorTheme) {
+            // Populate theme options if we have the theme list
+            if (ColorThemes && typeof ColorThemes.getThemeList === 'function') {
+                const themes = ColorThemes.getThemeList();
+                const currentTheme = ColorThemes.getCurrentTheme();
+                
+                themes.forEach(theme => {
+                    const option = document.createElement('option');
+                    option.value = theme;
+                    option.textContent = theme.charAt(0).toUpperCase() + theme.slice(1); // Capitalize first letter
+                    option.selected = (theme === currentTheme);
+                    colorThemeSelect.appendChild(option);
+                });
+            }
+            
+            // Add event listener for theme change
+            colorThemeSelect.addEventListener('change', function() {
+                callbacks.changeColorTheme(this.value);
+            });
+        }
+        
+        // Sparkle theme settings if they exist
+        setupRangeInput('sparkleGrayscale', value => updateSparkleSettings('grayscaleChance', value));
+        setupRangeInput('sparkleColor', value => updateSparkleSettings('colorSaturation', value));
+        setupRangeInput('sparkleBrightness', value => updateSparkleSettings('brightnessFactor', value));
+    }
+    
+    // Helper function to update sparkle settings
+    function updateSparkleSettings(setting, value) {
+        if (ColorThemes && typeof ColorThemes.updateSparkleSettings === 'function') {
+            const settings = {};
+            settings[setting] = value;
+            ColorThemes.updateSparkleSettings(settings);
+        }
+    }
+    
+    // Update a setting in any group
+    function updateSetting(group, property, value) {
+        // Handle Orbie settings
+        if (group === 'orbie') {
+            if (callbacks.updateOrbieSettings) {
+                callbacks.updateOrbieSettings(property, value);
+            }
+        }
+        // Handle Orbie swarm settings
+        else if (group === 'orbieSwarm') {
+            if (callbacks.updateSwarmSettings) {
+                callbacks.updateSwarmSettings('orbieSwarm', property, value);
+            }
+        }
+        // Handle Zot swarm settings (handled differently, through UI)
+        else if (group === 'zotSwarms') {
+            // These are handled through the UI directly
+        }
+        // Handle Forces settings
+        else if (group === 'forces') {
+            if (callbacks.updateSettings) {
+                callbacks.updateSettings('forces', property, value);
+            }
+        }
+        // Handle Wall settings
+        else if (group === 'walls') {
+            if (callbacks.updateWallSettings) {
+                callbacks.updateWallSettings(property, value);
+            }
+        }
+    }
+    
+    // Helper function to set up a range input
+    function setupRangeInput(id, changeCallback) {
+        const input = document.getElementById(id);
+        const valueDisplay = document.getElementById(id + 'Value');
+        
+        if (input && valueDisplay) {
+            // Set initial value display
+            valueDisplay.textContent = parseFloat(input.value).toFixed(input.step.includes('.') ? 2 : 0);
+            
+            // Add event listeners for input changes
+            input.addEventListener('input', function() {
+                const value = parseFloat(this.value);
+                valueDisplay.textContent = value.toFixed(this.step.includes('.') ? 2 : 0);
+                
+                // Call the callback with the new value
+                if (changeCallback) {
+                    changeCallback(value);
+                }
+            });
+        }
+    }
+    
+    // Public API
+    return {
+        init: init,
+        toggleMenu: function() {
+            if (controlsPanel) {
+                controlsPanel.classList.toggle('collapsed');
+            }
+        }
+    };
+})();
+
+// Export for module system
+if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+    module.exports = MenuSystem;
+}

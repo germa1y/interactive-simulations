@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ant Colony Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        .container {
+            position: relative;
+            margin-top: 20px;
+        }
+        canvas {
+            background-color: #222;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            cursor: crosshair;
+            border-radius: 5px;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            width: 100%;
+            max-width: 800px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            background-color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+        h3 {
+            margin: 5px 0;
+            color: #444;
+        }
+        button {
+            padding: 8px 12px;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 5px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button.active {
+            background-color: #2E7D32;
+        }
+        label {
+            margin-top: 5px;
+            font-size: 14px;
+        }
+        input[type="range"] {
+            width: 100%;
+        }
+        .slider-value {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+        .stats {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ant Colony Simulation</h1>
+    <div class="container">
+        <canvas id="antCanvas"></canvas>
+        <div class="stats">Food Collected: <span id="foodCount">0</span></div>
+    </div>
+    
+    <div class="controls">
+        <div class="control-group">
+            <h3>Drawing Tools</h3>
+            <div>
+                <button id="btnDraw" class="active">Draw Walls</button>
+                <button id="btnPheromone">Draw Pheromone</button>
+                <button id="btnErase">Erase</button>
+                <button id="btnFood">Place Food</button>
+                <button id="btnClear">Clear All</button>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h3>Simulation Controls</h3>
+            <div>
+                <button id="btnPause">Pause</button>
+                <button id="btnReset">Reset</button>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h3>Parameters</h3>
+            <label for="antCount">Ant Count: <span id="antCountValue">300</span></label>
+            <input type="range" id="antCount" min="50" max="1000" value="300">
+            
+            <label for="speed">Speed: <span id="speedValue">2.0</span></label>
+            <input type="range" id="speed" min="0.5" max="5" step="0.1" value="2.0">
+            
+            <label for="pheromoneDecay">Pheromone Decay: <span id="pheromoneDecayValue">0.01</span></label>
+            <input type="range" id="pheromoneDecay" min="0.001" max="0.05" step="0.001" value="0.01">
+            
+            <label for="pheromoneIntensity">Pheromone Intensity: <span id="pheromoneIntensityValue">0.05</span></label>
+            <input type="range" id="pheromoneIntensity" min="0.01" max="0.2" step="0.01" value="0.05">
+            
+            <label for="foodPriority">Food Follow Priority: <span id="foodPriorityValue">2.0</span></label>
+            <input type="range" id="foodPriority" min="0.5" max="5" step="0.1" value="2.0">
+            
+            <label for="homePriority">Home Return Priority: <span id="homePriorityValue">3.0</span></label>
+            <input type="range" id="homePriority" min="0.5" max="5" step="0.1" value="3.0">
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('antCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        
+        // Set canvas size
+        canvas.width = Math.min(window.innerWidth - 40, 800);
+        canvas.height = Math.min(window.innerHeight - 200, 600);
+        
+        // Simulation settings
+        const settings = {
+            particleCount: 300,
+            speed: 2.0,
+            separation: 0.1,
+            alignment: 0.2,
+            cohesion: 0.1,
+            perception: 30,
+            pheromoneStrength: 1.0,
+            pheromoneDecay: 0.01,
+            pheromoneIntensity: 0.05,
+            foodPriority: 2.0,
+            homePriority: 3.0,
+            antSize: 3,
+            running: true
+        };
+        
+        // Grid for pheromones and walls
+        const cellSize = 4;
+        const gridWidth = Math.ceil(canvas.width / cellSize);
+        const gridHeight = Math.ceil(canvas.height / cellSize);
+        
+        // Create pheromone and wall grids
+        let foodPheromones = new Float32Array(gridWidth * gridHeight);
+        let homePheromones = new Float32Array(gridWidth * gridHeight);
+        let walls = new Uint8Array(gridWidth * gridHeight);
+        
+        // Food sources and nest
+        let foodSources = [];
+        let nestPosition = { x: Math.floor(canvas.width / 5), y: Math.floor(canvas.height / 2) };
+        let foodCollected = 0;
+        
+        // Drawing tools
+        const tools = {
+            WALL: 'wall',
+            PHEROMONE: 'pheromone',
+            ERASE: 'erase',
+            FOOD: 'food'
+        };
+        let currentTool = tools.WALL;
+        let isDrawing = false;
+        let lastDrawPos = { x: 0, y: 0 };
+        
+        // Initialize particles (ants)
+        let particles = [];
+        
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < settings.particleCount; i++) {
+                particles.push({
+                    x: nestPosition.x + (Math.random() * 20 - 10),
+                    y: nestPosition.y + (Math.random() * 20 - 10),
+                    vx: Math.random() * 2 - 1,
+                    vy: Math.random() * 2 - 1,
+                    hasFood: false,
+                    angle: Math.random() * Math.PI * 2
+                });
+            }
+        }
+        
+        // Add initial food source
+        function addInitialFood() {
+            foodSources.push({
+                x: Math.floor(canvas.width * 3 / 4),
+                y: Math.floor(canvas.height / 2),
+                amount: 1000
+            });
+        }
+        
+        // Grid utilities
+        function getGridIndex(x, y) {
+            const gridX = Math.floor(x / cellSize);
+            const gridY = Math.floor(y / cellSize);
+            if (gridX < 0 || gridX >= gridWidth || gridY < 0 || gridY >= gridHeight) {
+                return -1;
+            }
+            return gridY * gridWidth + gridX;
+        }
+        
+        function isWall(x, y) {
+            const index = getGridIndex(x, y);
+            return index !== -1 && walls[index] === 1;
+        }
+        
+        // Pheromone functions
+        function addPheromone(x, y, isFood, amount) {
+            const index = getGridIndex(x, y);
+            if (index !== -1) {
+                if (isFood) {
+                    // Intensify pheromone trail for food when close to food source
+                    let intensity = amount;
+                    
+                    // Check proximity to food
+                    for (const food of foodSources) {
+                        const dx = x - food.x;
+                        const dy = y - food.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < 50) {
+                            // Intensify pheromone based on proximity to food
+                            const boost = 1 + (1 - distance / 50);
+                            intensity *= boost;
+                        }
+                    }
+                    
+                    foodPheromones[index] = Math.min(1.0, foodPheromones[index] + intensity);
+                } else {
+                    homePheromones[index] = Math.min(1.0, homePheromones[index] + amount);
+                }
+            }
+        }
+        
+        function getPheromone(x, y, isFood) {
+            const index = getGridIndex(x, y);
+            if (index !== -1) {
+                return isFood ? foodPheromones[index] : homePheromones[index];
+            }
+            return 0;
+        }
+        
+        // Sense pheromones around an ant
+        function sensePheromones(x, y, isFood, angle, senseDistance) {
+            let bestStrength = 0;
+            let bestAngle = null;
+            
+            // Sample at different angles
+            const samples = 7;
+            for (let i = 0; i < samples; i++) {
+                const sampleAngle = angle - Math.PI/4 + (Math.PI/2 * i/(samples-1));
+                const senseX = x + Math.cos(sampleAngle) * senseDistance;
+                const senseY = y + Math.sin(sampleAngle) * senseDistance;
+                
+                if (senseX < 0 || senseX >= canvas.width || senseY < 0 || senseY >= canvas.height || isWall(senseX, senseY)) {
+                    continue;
+                }
+                
+                const strength = getPheromone(senseX, senseY, isFood);
+                if (strength > bestStrength) {
+                    bestStrength = strength;
+                    bestAngle = sampleAngle;
+                }
+            }
+            
+            // Apply priority factor based on whether ant is carrying food
+            let priorityFactor = 1.0;
+            if (isFood) {
+                // Prioritize following home pheromones when carrying food
+                priorityFactor = settings.homePriority;
+            } else {
+                // Prioritize following food pheromones when not carrying food
+                priorityFactor = settings.foodPriority;
+            }
+            
+            return { 
+                strength: bestStrength * settings.pheromoneStrength * priorityFactor, 
+                angle: bestAngle 
+            };
+        }
+        
+        // Check if ant found food
+        function checkForFood(ant) {
+            for (let i = 0; i < foodSources.length; i++) {
+                const food = foodSources[i];
+                const dx = ant.x - food.x;
+                const dy = ant.y - food.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < 10 && food.amount > 0 && !ant.hasFood) {
+                    // Take food and turn around
+                    ant.hasFood = true;
+                    food.amount--;
+                    ant.angle += Math.PI;
+                    
+                    if (food.amount <= 0) {
+                        foodSources.splice(i, 1);
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        // Check if ant is back at nest
+        function checkForNest(ant) {
+            const dx = ant.x - nestPosition.x;
+            const dy = ant.y - nestPosition.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < 15 && ant.hasFood) {
+                // Drop food and turn around
+                ant.hasFood = false;
+                foodCollected++;
+                document.getElementById('foodCount').textContent = foodCollected;
+                ant.angle += Math.PI;
+                return true;
+            }
+            return false;
+        }
+        
+        // Update particles (ants)
+        function updateParticles() {
+            for (let i = 0; i < particles.length; i++) {
+                const particle = particles[i];
+                
+                // Check for food or nest
+                if (!particle.hasFood) {
+                    if (checkForFood(particle)) continue;
+                } else {
+                    if (checkForNest(particle)) continue;
+                }
+                
+                // Deposit pheromones - intensity based on settings
+                addPheromone(particle.x, particle.y, !particle.hasFood, settings.pheromoneIntensity);
+                
+                // Sense pheromones and adjust direction
+                const senseResult = sensePheromones(
+                    particle.x, particle.y, 
+                    particle.hasFood, 
+                    particle.angle, 
+                    15
+                );
+                
+                if (particle.hasFood) {
+                    // Direct attraction to nest for ants with food
+                    const dx = nestPosition.x - particle.x;
+                    const dy = nestPosition.y - particle.y;
+                    const distToNest = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // Calculate angle to nest
+                    const angleToNest = Math.atan2(dy, dx);
+                    
+                    // Blend between pheromone following and direct nest attraction
+                    // The closer to the nest, the stronger the direct attraction
+                    const nestAttractionStrength = Math.max(0.3, 1 - distToNest / (canvas.width / 2));
+                    
+                    if (senseResult.strength > 0 && senseResult.angle !== null) {
+                        // Follow pheromone trail with very little randomness
+                        const randomFactor = 0.05; // Minimal randomness for ants with food
+                        particle.angle = senseResult.angle * (1 - nestAttractionStrength) + 
+                                        angleToNest * nestAttractionStrength +
+                                        (Math.random() * randomFactor - randomFactor/2);
+                    } else {
+                        // Direct to nest with slight randomness
+                        particle.angle = angleToNest + (Math.random() * 0.2 - 0.1);
+                    }
+                } else {
+                    // Normal behavior for ants without food
+                    if (senseResult.strength > 0 && senseResult.angle !== null) {
+                        // Follow pheromone trail with reduced randomness when strong pheromone is detected
+                        const randomFactor = Math.max(0.05, 0.4 - senseResult.strength * 0.3);
+                        particle.angle = senseResult.angle + (Math.random() * randomFactor - randomFactor/2);
+                    } else {
+                        // Random walk with slight bias
+                        particle.angle += Math.random() * 0.4 - 0.2;
+                    }
+                }
+                
+                // Avoid walls - check ahead
+                const aheadX = particle.x + Math.cos(particle.angle) * 5;
+                const aheadY = particle.y + Math.sin(particle.angle) * 5;
+                if (isWall(aheadX, aheadY)) {
+                    // Turn away from wall
+                    particle.angle += Math.PI * (0.5 + Math.random() * 0.5);
+                }
+                
+                // Convert angle to velocity
+                // Ants with food move faster to prioritize returning to nest
+                const speedMultiplier = particle.hasFood ? 1.3 : 1.0;
+                particle.vx = Math.cos(particle.angle) * settings.speed * speedMultiplier;
+                particle.vy = Math.sin(particle.angle) * settings.speed * speedMultiplier;
+                
+                // Core flocking algorithm (as provided by user)
+                let separationX = 0;
+                let separationY = 0;
+                let alignmentX = 0;
+                let alignmentY = 0;
+                let cohesionX = 0;
+                let cohesionY = 0;
+                let neighborCount = 0;
+                
+                // Calculate flocking forces
+                for (let j = 0; j < particles.length; j++) {
+                    if (i !== j) {
+                        const other = particles[j];
+                        const dx = particle.x - other.x;
+                        const dy = particle.y - other.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < settings.perception) {
+                            // Separation
+                            const force = (settings.perception - distance) / settings.perception;
+                            separationX += dx * force / distance;
+                            separationY += dy * force / distance;
+                            
+                            // Alignment
+                            alignmentX += other.vx;
+                            alignmentY += other.vy;
+                            
+                            // Cohesion
+                            cohesionX += other.x;
+                            cohesionY += other.y;
+                            
+                            neighborCount++;
+                        }
+                    }
+                }
+                
+                // Apply flocking forces
+                if (neighborCount > 0) {
+                    // Normalize and apply separation
+                    separationX *= settings.separation;
+                    separationY *= settings.separation;
+                    
+                    // Normalize and apply alignment
+                    alignmentX = (alignmentX / neighborCount - particle.vx) * settings.alignment;
+                    alignmentY = (alignmentY / neighborCount - particle.vy) * settings.alignment;
+                    
+                    // Normalize and apply cohesion
+                    cohesionX = (cohesionX / neighborCount - particle.x) * settings.cohesion * 0.01;
+                    cohesionY = (cohesionY / neighborCount - particle.y) * settings.cohesion * 0.01;
+                    
+                    // Apply forces
+                    particle.vx += separationX + alignmentX + cohesionX;
+                    particle.vy += separationY + alignmentY + cohesionY;
+                }
+                
+                // Limit velocity
+                const speed = Math.sqrt(particle.vx * particle.vx + particle.vy * particle.vy);
+                const maxSpeed = 2 * settings.speed;
+                if (speed > maxSpeed) {
+                    particle.vx = (particle.vx / speed) * maxSpeed;
+                    particle.vy = (particle.vy / speed) * maxSpeed;
+                }
+                
+                // Update position
+                particle.x += particle.vx;
+                particle.y += particle.vy;
+                
+                // Update angle based on velocity
+                particle.angle = Math.atan2(particle.vy, particle.vx);
+                
+                // Wrap around edges
+                if (particle.x < 0) particle.x = canvas.width;
+                if (particle.x > canvas.width) particle.x = 0;
+                if (particle.y < 0) particle.y = canvas.height;
+                if (particle.y > canvas.height) particle.y = 0;
+            }
+        }
+        
+        // Update pheromones (decay)
+        function updatePheromones() {
+            for (let i = 0; i < foodPheromones.length; i++) {
+                if (foodPheromones[i] > 0) {
+                    foodPheromones[i] = Math.max(0, foodPheromones[i] - settings.pheromoneDecay);
+                }
+                if (homePheromones[i] > 0) {
+                    homePheromones[i] = Math.max(0, homePheromones[i] - settings.pheromoneDecay);
+                }
+            }
+        }
+        
+        // Render simulation
+        function render() {
+            // Clear canvas
+            ctx.fillStyle = '#222';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw pheromones
+            for (let y = 0; y < gridHeight; y++) {
+                for (let x = 0; x < gridWidth; x++) {
+                    const index = y * gridWidth + x;
+                    const px = x * cellSize;
+                    const py = y * cellSize;
+                    
+                    // Food pheromones (green)
+                    if (foodPheromones[index] > 0) {
+                        ctx.fillStyle = `rgba(0, 255, 0, ${foodPheromones[index] * 0.5})`;
+                        ctx.fillRect(px, py, cellSize, cellSize);
+                    }
+                    
+                    // Home pheromones (blue)
+                    if (homePheromones[index] > 0) {
+                        ctx.fillStyle = `rgba(0, 100, 255, ${homePheromones[index] * 0.5})`;
+                        ctx.fillRect(px, py, cellSize, cellSize);
+                    }
+                    
+                    // Walls
+                    if (walls[index] === 1) {
+                        ctx.fillStyle = '#555';
+                        ctx.fillRect(px, py, cellSize, cellSize);
+                    }
+                }
+            }
+            
+            // Draw food sources
+            for (const food of foodSources) {
+                ctx.fillStyle = '#7CFC00';
+                ctx.beginPath();
+                ctx.arc(food.x, food.y, 8, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Show amount left
+                ctx.fillStyle = '#FFF';
+                ctx.font = '10px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(food.amount, food.x, food.y + 3);
+            }
+            
+            // Draw nest
+            ctx.fillStyle = '#8B4513';
+            ctx.beginPath();
+            ctx.arc(nestPosition.x, nestPosition.y, 12, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw ants
+            for (const particle of particles) {
+                ctx.save();
+                ctx.translate(particle.x, particle.y);
+                ctx.rotate(particle.angle);
+                
+                // Different color when carrying food
+                ctx.fillStyle = particle.hasFood ? '#2ECC40' : '#FF851B'; // Green for ants with food, orange for regular ants
+                
+                // Draw ant shape
+                ctx.beginPath();
+                ctx.moveTo(settings.antSize * 1.5, 0);
+                ctx.lineTo(-settings.antSize, -settings.antSize);
+                ctx.lineTo(-settings.antSize, settings.antSize);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.restore();
+            }
+        }
+        
+        // Main animation loop
+        function animate() {
+            if (settings.running) {
+                updateParticles();
+                updatePheromones();
+            }
+            render();
+            requestAnimationFrame(animate);
+        }
+        
+        // Handle mouse drawing
+        function handleDrawing(e) {
+            if (!isDrawing) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const radius = currentTool === tools.ERASE ? 15 : 5;
+            
+            // Draw line from last position to current position
+            if (lastDrawPos.x !== 0 && lastDrawPos.y !== 0) {
+                const dx = x - lastDrawPos.x;
+                const dy = y - lastDrawPos.y;
+                const steps = Math.max(Math.abs(dx), Math.abs(dy));
+                
+                for (let i = 0; i <= steps; i++) {
+                    const px = lastDrawPos.x + dx * (i / steps);
+                    const py = lastDrawPos.y + dy * (i / steps);
+                    
+                    // Draw in a radius
+                    for (let oy = -radius; oy <= radius; oy++) {
+                        for (let ox = -radius; ox <= radius; ox++) {
+                            if (ox*ox + oy*oy <= radius*radius) {
+                                const index = getGridIndex(px + ox, py + oy);
+                                if (index !== -1) {
+                                    switch (currentTool) {
+                                        case tools.WALL:
+                                            walls[index] = 1;
+                                            break;
+                                        case tools.PHEROMONE:
+                                            // Create attractive pheromone
+                                            foodPheromones[index] = 1.0;
+                                            break;
+                                        case tools.ERASE:
+                                            walls[index] = 0;
+                                            foodPheromones[index] = 0;
+                                            homePheromones[index] = 0;
+                                            // Remove nearby food sources
+                                            foodSources = foodSources.filter(food => {
+                                                const fdx = food.x - px;
+                                                const fdy = food.y - py;
+                                                return Math.sqrt(fdx*fdx + fdy*fdy) > radius;
+                                            });
+                                            break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            lastDrawPos = { x, y };
+        }
+        
+        // Mouse event handlers
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            lastDrawPos = { x: 0, y: 0 };
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            if (currentTool === tools.FOOD) {
+                foodSources.push({
+                    x: x,
+                    y: y,
+                    amount: 500
+                });
+            } else {
+                handleDrawing(e);
+            }
+        });
+        
+        canvas.addEventListener('mousemove', handleDrawing);
+        
+        canvas.addEventListener('mouseup', () => {
+            isDrawing = false;
+            lastDrawPos = { x: 0, y: 0 };
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            isDrawing = false;
+            lastDrawPos = { x: 0, y: 0 };
+        });
+        
+        // Tool buttons
+        document.getElementById('btnDraw').addEventListener('click', () => {
+            currentTool = tools.WALL;
+            updateActiveButton();
+        });
+        
+        document.getElementById('btnPheromone').addEventListener('click', () => {
+            currentTool = tools.PHEROMONE;
+            updateActiveButton();
+        });
+        
+        document.getElementById('btnErase').addEventListener('click', () => {
+            currentTool = tools.ERASE;
+            updateActiveButton();
+        });
+        
+        document.getElementById('btnFood').addEventListener('click', () => {
+            currentTool = tools.FOOD;
+            updateActiveButton();
+        });
+        
+        document.getElementById('btnClear').addEventListener('click', () => {
+            // Clear everything
+            foodPheromones = new Float32Array(gridWidth * gridHeight);
+            homePheromones = new Float32Array(gridWidth * gridHeight);
+            walls = new Uint8Array(gridWidth * gridHeight);
+            foodSources = [];
+            addInitialFood();
+            
+            // Reset food count
+            foodCollected = 0;
+            document.getElementById('foodCount').textContent = '0';
+        });
+        
+        function updateActiveButton() {
+            document.querySelectorAll('.controls button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            let activeButton;
+            switch (currentTool) {
+                case tools.WALL:
+                    activeButton = 'btnDraw';
+                    break;
+                case tools.PHEROMONE:
+                    activeButton = 'btnPheromone';
+                    break;
+                case tools.ERASE:
+                    activeButton = 'btnErase';
+                    break;
+                case tools.FOOD:
+                    activeButton = 'btnFood';
+                    break;
+            }
+            
+            if (activeButton) {
+                document.getElementById(activeButton).classList.add('active');
+            }
+        }
+        
+        // Control buttons
+        let isPaused = false;
+        document.getElementById('btnPause').addEventListener('click', () => {
+            settings.running = !settings.running;
+            const btn = document.getElementById('btnPause');
+            btn.textContent = settings.running ? 'Pause' : 'Resume';
+        });
+        
+        document.getElementById('btnReset').addEventListener('click', () => {
+            // Reset ants and food
+            initParticles();
+            foodSources = [];
+            addInitialFood();
+            
+            // Reset counters
+            foodCollected = 0;
+            document.getElementById('foodCount').textContent = '0';
+        });
+        
+        // Settings sliders
+        document.getElementById('antCount').addEventListener('input', (e) => {
+            const count = parseInt(e.target.value);
+            settings.particleCount = count;
+            document.getElementById('antCountValue').textContent = count;
+            initParticles();
+        });
+        
+        document.getElementById('speed').addEventListener('input', (e) => {
+            const speed = parseFloat(e.target.value);
+            settings.speed = speed;
+            document.getElementById('speedValue').textContent = speed.toFixed(1);
+        });
+        
+        document.getElementById('pheromoneDecay').addEventListener('input', (e) => {
+            const decay = parseFloat(e.target.value);
+            settings.pheromoneDecay = decay;
+            document.getElementById('pheromoneDecayValue').textContent = decay.toFixed(3);
+        });
+        
+        document.getElementById('pheromoneIntensity').addEventListener('input', (e) => {
+            const intensity = parseFloat(e.target.value);
+            settings.pheromoneIntensity = intensity;
+            document.getElementById('pheromoneIntensityValue').textContent = intensity.toFixed(2);
+        });
+        
+        document.getElementById('foodPriority').addEventListener('input', (e) => {
+            const priority = parseFloat(e.target.value);
+            settings.foodPriority = priority;
+            document.getElementById('foodPriorityValue').textContent = priority.toFixed(1);
+        });
+        
+        document.getElementById('homePriority').addEventListener('input', (e) => {
+            const priority = parseFloat(e.target.value);
+            settings.homePriority = priority;
+            document.getElementById('homePriorityValue').textContent = priority.toFixed(1);
+        });
+        
+        // Initialize simulation parameters with better defaults
+        function initSettings() {
+            // Set better default for home priority
+            settings.homePriority = 4.0;
+            document.getElementById('homePriority').value = 4.0;
+            document.getElementById('homePriorityValue').textContent = "4.0";
+        }
+        
+        // Initialize and start simulation
+        function init() {
+            initSettings();
+            initParticles();
+            addInitialFood();
+            animate();
+        }
+        
+        // Start the simulation
+        init();
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            canvas.width = Math.min(window.innerWidth - 40, 800);
+            canvas.height = Math.min(window.innerHeight - 200, 600);
+        });
+    </script>
+</body>
+</html>

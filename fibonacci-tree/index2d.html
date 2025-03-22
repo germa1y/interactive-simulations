@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Fibonacci Tree</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #e6e6e6;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        h1 {
+            color: #ff9a3c;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .description {
+            max-width: 800px;
+            margin-bottom: 20px;
+            text-align: center;
+            line-height: 1.6;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+        }
+        
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 600px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        canvas {
+            background-color: #0f0f1a;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 800px;
+            background-color: rgba(26, 26, 46, 0.8);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 150px;
+        }
+        
+        label {
+            margin-bottom: 8px;
+            color: #ff9a3c;
+            font-weight: 500;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+        
+        .value-display {
+            margin-top: 5px;
+            text-align: center;
+            font-size: 14px;
+        }
+        
+        button {
+            background-color: #ff9a3c;
+            color: #1a1a2e;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 0 10px;
+        }
+        
+        button:hover {
+            background-color: #ffc107;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .color-square {
+            width: 15px;
+            height: 15px;
+            border-radius: 3px;
+        }
+        
+        .footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #999;
+            text-align: center;
+        }
+        
+        .fibonacci-sequence {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+            padding: 10px;
+            background-color: rgba(255, 154, 60, 0.1);
+            border-radius: 5px;
+        }
+        
+        .fibonacci-number {
+            padding: 5px 10px;
+            background-color: rgba(255, 154, 60, 0.2);
+            border-radius: 4px;
+            min-width: 30px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Interactive Fibonacci Tree</h1>
+        
+        <div class="description">
+            <p>This visualization shows a recursive tree where branch lengths follow the Fibonacci sequence. Each branch splits into two, with lengths determined by consecutive Fibonacci numbers.</p>
+            <div class="fibonacci-sequence" id="fibSequence">
+                <!-- Fibonacci sequence will be displayed here -->
+            </div>
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="treeCanvas"></canvas>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="depth">Recursion Depth</label>
+                <input type="range" id="depth" min="1" max="10" value="7" step="1">
+                <div class="value-display" id="depthValue">7</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="angle">Branch Angle (°)</label>
+                <input type="range" id="angle" min="10" max="60" value="25" step="1">
+                <div class="value-display" id="angleValue">25°</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="initialLength">Initial Length</label>
+                <input type="range" id="initialLength" min="50" max="150" value="100" step="5">
+                <div class="value-display" id="initialLengthValue">100</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="animationSpeed">Animation Speed</label>
+                <input type="range" id="animationSpeed" min="1" max="10" value="5" step="1">
+                <div class="value-display" id="animationSpeedValue">5</div>
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button id="growBtn">Grow Tree</button>
+            <button id="resetBtn">Reset</button>
+            <button id="randomizeBtn">Randomize</button>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="color-square" style="background-color: #ff9a3c;"></div>
+                <span>Trunk</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-square" style="background-color: #4ecca3;"></div>
+                <span>First Level</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-square" style="background-color: #7d83ff;"></div>
+                <span>Second Level</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-square" style="background-color: #e84545;"></div>
+                <span>Third Level+</span>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Interact with the controls to customize the tree's appearance and growth pattern.</p>
+        </div>
+    </div>
+    
+    <script>
+        // Get canvas and context
+        const canvas = document.getElementById('treeCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Get control elements
+        const depthSlider = document.getElementById('depth');
+        const angleSlider = document.getElementById('angle');
+        const initialLengthSlider = document.getElementById('initialLength');
+        const animationSpeedSlider = document.getElementById('animationSpeed');
+        
+        const depthValue = document.getElementById('depthValue');
+        const angleValue = document.getElementById('angleValue');
+        const initialLengthValue = document.getElementById('initialLengthValue');
+        const animationSpeedValue = document.getElementById('animationSpeedValue');
+        
+        const growBtn = document.getElementById('growBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const randomizeBtn = document.getElementById('randomizeBtn');
+        const fibSequenceElement = document.getElementById('fibSequence');
+        
+        // Tree parameters
+        let maxDepth = parseInt(depthSlider.value);
+        let branchAngle = parseInt(angleSlider.value) * Math.PI / 180;
+        let initialLength = parseInt(initialLengthSlider.value);
+        let animationSpeed = parseInt(animationSpeedSlider.value);
+        
+        // Animation variables
+        let animationId = null;
+        let currentDepth = 0;
+        let isAnimating = false;
+        
+        // Fibonacci sequence cache
+        const fibCache = [0, 1, 1];
+        
+        // Calculate Fibonacci number with memoization
+        function fibonacci(n) {
+            if (fibCache[n] !== undefined) {
+                return fibCache[n];
+            }
+            
+            fibCache[n] = fibonacci(n - 1) + fibonacci(n - 2);
+            return fibCache[n];
+        }
+        
+        // Pre-calculate and display Fibonacci numbers
+        function updateFibonacciSequence() {
+            // Calculate Fibonacci sequence up to maxDepth + 10 to ensure we have enough values
+            for (let i = 0; i <= maxDepth + 10; i++) {
+                fibonacci(i);
+            }
+            
+            // Display first 12 numbers
+            fibSequenceElement.innerHTML = '';
+            for (let i = 1; i <= 12; i++) {
+                const fibDiv = document.createElement('div');
+                fibDiv.className = 'fibonacci-number';
+                fibDiv.textContent = fibonacci(i);
+                fibSequenceElement.appendChild(fibDiv);
+            }
+        }
+        
+        // Resize canvas to fit container
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            
+            if (!isAnimating) {
+                drawTree();
+            }
+        }
+        
+        // Draw a branch of the tree
+        function drawBranch(x1, y1, length, angle, depth, maxReached) {
+            if (depth > currentDepth || depth > maxDepth) return;
+            
+            // Calculate end point
+            const x2 = x1 + length * Math.cos(angle);
+            const y2 = y1 - length * Math.sin(angle);
+            
+            // Set line style based on depth
+            ctx.lineWidth = Math.max(5 - depth * 0.5, 1);
+            
+            // Choose color based on depth
+            if (depth === 0) {
+                ctx.strokeStyle = '#ff9a3c'; // Trunk
+            } else if (depth === 1) {
+                ctx.strokeStyle = '#4ecca3'; // First level
+            } else if (depth === 2) {
+                ctx.strokeStyle = '#7d83ff'; // Second level
+            } else {
+                ctx.strokeStyle = '#e84545'; // Third level+
+            }
+            
+            // Draw the branch
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            
+            // If at max depth, don't recurse further
+            if (depth === maxDepth) return;
+            
+            // Get Fibonacci numbers for branch lengths
+            // We use depth+2 and depth+3 to start with reasonable lengths
+            const leftLength = length * fibonacci(depth + 2) / fibonacci(depth + 3);
+            const rightLength = length * fibonacci(depth + 3) / fibonacci(depth + 4);
+            
+            // Recursively draw branches
+            // Left branch
+            drawBranch(
+                x2, y2,
+                leftLength,
+                angle + branchAngle,
+                depth + 1,
+                maxReached
+            );
+            
+            // Right branch
+            drawBranch(
+                x2, y2,
+                rightLength,
+                angle - branchAngle,
+                depth + 1,
+                maxReached
+            );
+        }
+        
+        // Draw the entire tree
+        function drawTree() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Start position (bottom center)
+            const startX = canvas.width / 2;
+            const startY = canvas.height * 0.9;
+            
+            // Draw tree trunk and branches
+            drawBranch(startX, startY, initialLength, Math.PI / 2, 0, false);
+        }
+        
+        // Animate tree growth
+        function animateTree() {
+            if (currentDepth > maxDepth) {
+                isAnimating = false;
+                return;
+            }
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw tree with current depth
+            const startX = canvas.width / 2;
+            const startY = canvas.height * 0.9;
+            drawBranch(startX, startY, initialLength, Math.PI / 2, 0, true);
+            
+            // Increment depth after a delay based on animation speed
+            setTimeout(() => {
+                currentDepth++;
+                if (currentDepth <= maxDepth) {
+                    animationId = requestAnimationFrame(animateTree);
+                } else {
+                    isAnimating = false;
+                }
+            }, 1000 / animationSpeed);
+        }
+        
+        // Start tree growth animation
+        function growTree() {
+            if (isAnimating) return;
+            
+            isAnimating = true;
+            currentDepth = 0;
+            animateTree();
+        }
+        
+        // Reset tree
+        function resetTree() {
+            if (isAnimating) {
+                cancelAnimationFrame(animationId);
+                isAnimating = false;
+            }
+            
+            currentDepth = maxDepth;
+            drawTree();
+        }
+        
+        // Randomize parameters
+        function randomizeTree() {
+            depthSlider.value = Math.floor(Math.random() * 6) + 5; // 5-10
+            angleSlider.value = Math.floor(Math.random() * 30) + 15; // 15-45
+            initialLengthSlider.value = Math.floor(Math.random() * 100) + 50; // 50-150
+            
+            // Update values
+            maxDepth = parseInt(depthSlider.value);
+            branchAngle = parseInt(angleSlider.value) * Math.PI / 180;
+            initialLength = parseInt(initialLengthSlider.value);
+            
+            // Update displays
+            depthValue.textContent = maxDepth;
+            angleValue.textContent = angleSlider.value + '°';
+            initialLengthValue.textContent = initialLength;
+            
+            updateFibonacciSequence();
+            resetTree();
+        }
+        
+        // Event listeners for controls
+        depthSlider.addEventListener('input', () => {
+            maxDepth = parseInt(depthSlider.value);
+            depthValue.textContent = maxDepth;
+            updateFibonacciSequence();
+            if (!isAnimating) {
+                resetTree();
+            }
+        });
+        
+        angleSlider.addEventListener('input', () => {
+            branchAngle = parseInt(angleSlider.value) * Math.PI / 180;
+            angleValue.textContent = angleSlider.value + '°';
+            if (!isAnimating) {
+                resetTree();
+            }
+        });
+        
+        initialLengthSlider.addEventListener('input', () => {
+            initialLength = parseInt(initialLengthSlider.value);
+            initialLengthValue.textContent = initialLength;
+            if (!isAnimating) {
+                resetTree();
+            }
+        });
+        
+        animationSpeedSlider.addEventListener('input', () => {
+            animationSpeed = parseInt(animationSpeedSlider.value);
+            animationSpeedValue.textContent = animationSpeed;
+        });
+        
+        // Button event listeners
+        growBtn.addEventListener('click', growTree);
+        resetBtn.addEventListener('click', resetTree);
+        randomizeBtn.addEventListener('click', randomizeTree);
+        
+        // Window resize event
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Initialize
+        updateFibonacciSequence();
+        resizeCanvas();
+        resetTree();
+    </script>
+</body>
+</html>

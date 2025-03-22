@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Oak-like Fibonacci Tree with Growth Animation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #e6e6e6;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        canvas {
+            display: block;
+        }
+        
+        .info-panel {
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            background-color: rgba(26, 26, 46, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            max-width: 300px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            pointer-events: none;
+        }
+        
+        h1 {
+            color: #ff9a3c;
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.5em;
+        }
+        
+        p {
+            margin: 5px 0;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+        
+        .controls-hint {
+            position: absolute;
+            right: 20px;
+            bottom: 20px;
+            background-color: rgba(26, 26, 46, 0.8);
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            pointer-events: none;
+        }
+        
+        .fibonacci-sequence {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .fibonacci-number {
+            padding: 3px 8px;
+            background-color: rgba(255, 154, 60, 0.2);
+            border-radius: 4px;
+            min-width: 20px;
+            text-align: center;
+            font-size: 0.8em;
+        }
+
+        .grow-button {
+            position: absolute;
+            left: 20px;
+            bottom: 20px;
+            background-color: #ff9a3c;
+            color: #1a1a2e;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            z-index: 100;
+        }
+        
+        .grow-button:hover {
+            background-color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="info-panel">
+        <h1>3D Oak-like Fibonacci Tree</h1>
+        <p>This visualization shows a 3D tree resembling an oak with Fibonacci sequence branch proportions.</p>
+        <div class="fibonacci-sequence" id="fibSequence">
+            <!-- Fibonacci sequence will be displayed here -->
+        </div>
+    </div>
+    
+    <div class="controls-hint">
+        <p><strong>Mouse Controls:</strong> Drag to rotate | Scroll to zoom</p>
+    </div>
+    
+    <button class="grow-button" id="growButton">Grow Tree</button>
+    
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x0f0f1a);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+        
+        // Camera position
+        camera.position.set(0, 150, 400);
+        camera.lookAt(0, 100, 0);
+        
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(200, 300, 200);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        directionalLight.shadow.camera.near = 0.5;
+        directionalLight.shadow.camera.far = 1000;
+        directionalLight.shadow.camera.left = -500;
+        directionalLight.shadow.camera.right = 500;
+        directionalLight.shadow.camera.top = 500;
+        directionalLight.shadow.camera.bottom = -500;
+        scene.add(directionalLight);
+        
+        // Add evening sunlight effect
+        const sunLight = new THREE.PointLight(0xffdd99, 0.7, 800);
+        sunLight.position.set(300, 200, 100);
+        scene.add(sunLight);
+        
+        // Materials with more realistic bark texture for oak tree
+        const barkTexture = createBarkTexture();
+        
+        // Custom materials for oak tree
+        const trunkMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0x8B4513, // SaddleBrown
+            map: barkTexture,
+            bumpMap: barkTexture,
+            bumpScale: 0.5,
+            shininess: 5
+        });
+        
+        const branchMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0x8B5A2B, // lighter brown
+            map: barkTexture,
+            bumpMap: barkTexture,
+            bumpScale: 0.3,
+            shininess: 5
+        });
+        
+        const twigMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0x9a6633, // even lighter brown
+            map: barkTexture,
+            bumpScale: 0.1,
+            shininess: 10
+        });
+        
+        // Create a procedural bark texture
+        function createBarkTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const context = canvas.getContext('2d');
+            
+            // Fill with base color
+            context.fillStyle = '#5D4037';
+            context.fillRect(0, 0, 256, 256);
+            
+            // Add random bark lines and cracks
+            for (let i = 0; i < 50; i++) {
+                const x = Math.random() * 256;
+                const y = Math.random() * 256;
+                const length = 20 + Math.random() * 80;
+                const width = 1 + Math.random() * 3;
+                const curve = Math.random() * 0.5 - 0.25;
+                
+                context.beginPath();
+                context.moveTo(x, y);
+                context.quadraticCurveTo(x + length / 2, y + curve * length, x + length, y);
+                context.lineWidth = width;
+                context.strokeStyle = `rgba(${30 + Math.random() * 30}, ${20 + Math.random() * 20}, ${10 + Math.random() * 10}, 0.8)`;
+                context.stroke();
+            }
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            return texture;
+        }
+        
+        // Ground plane with grass-like texture
+        const groundSize = 1000;
+        const groundGeometry = new THREE.PlaneGeometry(groundSize, groundSize, 32, 32);
+        
+        // Create grass texture
+        const grassCanvas = document.createElement('canvas');
+        grassCanvas.width = 256;
+        grassCanvas.height = 256;
+        const grassContext = grassCanvas.getContext('2d');
+        
+        // Base dark grass color
+        grassContext.fillStyle = '#1a472a';
+        grassContext.fillRect(0, 0, 256, 256);
+        
+        // Add grass texture details
+        for (let i = 0; i < 5000; i++) {
+            const x = Math.random() * 256;
+            const y = Math.random() * 256;
+            const size = 0.5 + Math.random() * 1.5;
+            
+            grassContext.fillStyle = `rgba(${20 + Math.random() * 40}, ${80 + Math.random() * 60}, ${20 + Math.random() * 30}, 0.7)`;
+            grassContext.fillRect(x, y, size, 1 + Math.random() * 3);
+        }
+        
+        const grassTexture = new THREE.CanvasTexture(grassCanvas);
+        grassTexture.wrapS = THREE.RepeatWrapping;
+        grassTexture.wrapT = THREE.RepeatWrapping;
+        grassTexture.repeat.set(20, 20);
+        
+        const groundMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0x2d4c1e,
+            map: grassTexture,
+            side: THREE.DoubleSide
+        });
+        
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -10;
+        ground.receiveShadow = true;
+        scene.add(ground);
+        
+        // Tree parameters
+        let params = {
+            maxDepth: 6,
+            branchAngle: 0.7, // Wider angle for oak-like spreading
+            initialLength: 120,
+            trunkThickness: 15, // Thicker trunk for oak tree
+            growthSpeed: 5,
+            leafDensity: 0.7,
+            irregularity: 0.7, // How irregular the branching is (oak trees are quite irregular)
+            horizontalness: 0.4, // Oak branches tend to be more horizontal
+            autoRotate: true,
+            rotationSpeed: 0.3
+        };
+        
+        // Group to hold the entire tree
+        const treeGroup = new THREE.Group();
+        scene.add(treeGroup);
+        
+        // Queue to store branches that need to be grown
+        let branchQueue = [];
+        let isGrowing = false;
+        let growthProgress = 0;
+        let currentGrowingBranch = null;
+        
+        // Fibonacci sequence cache
+        const fibCache = [0, 1, 1];
+        
+        // Calculate Fibonacci number with memoization
+        function fibonacci(n) {
+            if (fibCache[n] !== undefined) {
+                return fibCache[n];
+            }
+            
+            fibCache[n] = fibonacci(n - 1) + fibonacci(n - 2);
+            return fibCache[n];
+        }
+        
+        // Pre-calculate and display Fibonacci numbers
+        function updateFibonacciSequence() {
+            // Calculate Fibonacci sequence up to maxDepth + 10
+            for (let i = 0; i <= params.maxDepth + 10; i++) {
+                fibonacci(i);
+            }
+            
+            // Display first 10 numbers
+            const fibSequenceElement = document.getElementById('fibSequence');
+            fibSequenceElement.innerHTML = '';
+            for (let i = 1; i <= 10; i++) {
+                const fibDiv = document.createElement('div');
+                fibDiv.className = 'fibonacci-number';
+                fibDiv.textContent = fibonacci(i);
+                fibSequenceElement.appendChild(fibDiv);
+            }
+        }
+        
+        // Create a leaf cluster
+        function createLeaves(position, size, depth, branch) {
+            if (Math.random() > params.leafDensity) return null;
+            
+            // Create leaf cluster
+            const leavesGroup = new THREE.Group();
+            
+            // Connect branch and leaves with small twigs
+            const connectingTwigs = Math.floor(2 + Math.random() * 3);
+            
+            for (let t = 0; t < connectingTwigs; t++) {
+                // Create small connecting twig
+                const twigLength = size * (2 + Math.random() * 3);
+                const twigThickness = size * 0.2;
+                
+                // Twig direction - spread out from branch end
+                const twigAngleH = Math.PI/4 + Math.random() * Math.PI/4; // Mostly upward
+                const twigAngleV = (Math.random() * 2 - 1) * Math.PI; // Any direction around
+                
+                // Calculate twig end position
+                const twigEnd = new THREE.Vector3(
+                    position.x + twigLength * Math.sin(twigAngleH) * Math.cos(twigAngleV),
+                    position.y + twigLength * Math.cos(twigAngleH),
+                    position.z + twigLength * Math.sin(twigAngleH) * Math.sin(twigAngleV)
+                );
+                
+                // Create the twig
+                const direction = new THREE.Vector3().subVectors(twigEnd, position);
+                const twigHeight = direction.length();
+                
+                const twigGeometry = new THREE.CylinderGeometry(
+                    twigThickness * 0.5, // Top radius (taper)
+                    twigThickness,        // Bottom radius
+                    twigHeight,
+                    5
+                );
+                
+                const twigMaterial = new THREE.MeshPhongMaterial({ 
+                    color: 0x9a6633 // Light brown
+                });
+                
+                const twig = new THREE.Mesh(twigGeometry, twigMaterial);
+                
+                // Position and rotate twig
+                twig.position.copy(position);
+                twig.position.add(direction.multiplyScalar(0.5));
+                
+                // Orient the twig
+                twig.quaternion.setFromUnitVectors(
+                    new THREE.Vector3(0, 1, 0),
+                    direction.clone().normalize()
+                );
+                
+                twig.castShadow = true;
+                leavesGroup.add(twig);
+                
+                // Create leaf clusters at twig ends
+                const leafCount = 3 + Math.floor(Math.random() * 4);
+                
+                // Create a "burst" of leaves at the twig end
+                for (let i = 0; i < leafCount; i++) {
+                    // Create oak leaf shape
+                    const leafSize = size * (0.7 + Math.random() * 0.5);
+                    
+                    // Use more detailed geometry for oak leaf shape
+                    let leafGeometry;
+                    
+                    // Randomly select between different leaf shapes
+                    const leafType = Math.floor(Math.random() * 3);
+                    if (leafType === 0) {
+                        // Flat disc-like leaf
+                        leafGeometry = new THREE.CircleGeometry(leafSize, 5);
+                        // Add some waviness to the leaf edges
+                        const vertices = leafGeometry.vertices || leafGeometry.attributes.position.array;
+                        if (vertices.length) {
+                            for (let v = 0; v < vertices.length; v++) {
+                                if (v % 3 === 0) { // Only affect some vertices
+                                    vertices[v].x += (Math.random() - 0.5) * leafSize * 0.2;
+                                    vertices[v].y += (Math.random() - 0.5) * leafSize * 0.2;
+                                }
+                            }
+                        }
+                    } else if (leafType === 1) {
+                        // Elongated leaf
+                        leafGeometry = new THREE.PlaneGeometry(leafSize * 1.5, leafSize * 0.8);
+                    } else {
+                        // Small round leaf
+                        leafGeometry = new THREE.SphereGeometry(leafSize * 0.6, 4, 4);
+                    }
+                    
+                    // Oak leaf color variations (different greens)
+                    const leafColor = new THREE.Color(
+                        0.1 + Math.random() * 0.2,
+                        0.4 + Math.random() * 0.3,
+                        0.05 + Math.random() * 0.15
+                    );
+                    
+                    const leafMaterial = new THREE.MeshPhongMaterial({
+                        color: leafColor,
+                        flatShading: true,
+                        side: THREE.DoubleSide
+                    });
+                    
+                    const leaf = new THREE.Mesh(leafGeometry, leafMaterial);
+                    
+                    // Position leaves around the twig endpoint in a cluster
+                    // This creates a more natural "spray" of leaves at twig ends
+                    const angle = Math.random() * Math.PI * 2;
+                    const upBias = Math.random() * 0.8; // Leaves tend to grow upward
+                    const radius = leafSize * Math.random();
+                    
+                    leaf.position.set(
+                        twigEnd.x + Math.cos(angle) * radius,
+                        twigEnd.y + upBias * leafSize + (Math.random() - 0.3) * leafSize,
+                        twigEnd.z + Math.sin(angle) * radius
+                    );
+                    
+                    // Scale to flatten the leaves
+                    if (leafType !== 2) { // Don't flatten the spherical leaves
+                        leaf.scale.set(1, 1, 0.2);
+                    }
+                    
+                    // Rotate leaves to face random directions, but generally upward
+                    leaf.rotation.x = Math.random() * Math.PI / 2;
+                    leaf.rotation.y = Math.random() * Math.PI * 2;
+                    leaf.rotation.z = Math.random() * Math.PI / 2;
+                    
+                    leaf.castShadow = true;
+                    leavesGroup.add(leaf);
+                }
+            }
+            
+            // Create some leaves directly at branch end for smaller branches
+            if (depth > params.maxDepth - 2) {
+                const directLeafCount = 2 + Math.floor(Math.random() * 3);
+                
+                for (let i = 0; i < directLeafCount; i++) {
+                    const leafSize = size * (0.5 + Math.random() * 0.5);
+                    const leafGeometry = new THREE.SphereGeometry(leafSize, 4, 4);
+                    
+                    const leafColor = new THREE.Color(
+                        0.1 + Math.random() * 0.2,
+                        0.4 + Math.random() * 0.3,
+                        0.05 + Math.random() * 0.15
+                    );
+                    
+                    const leafMaterial = new THREE.MeshPhongMaterial({
+                        color: leafColor,
+                        flatShading: true
+                    });
+                    
+                    const leaf = new THREE.Mesh(leafGeometry, leafMaterial);
+                    
+                    // Position leaves right at the branch end
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = size * 0.5 * Math.random();
+                    leaf.position.set(
+                        position.x + Math.cos(angle) * radius,
+                        position.y + Math.random() * size,
+                        position.z + Math.sin(angle) * radius
+                    );
+                    
+                    leaf.scale.set(1, 0.3, 1);
+                    leaf.rotation.x = Math.random() * Math.PI;
+                    leaf.rotation.y = Math.random() * Math.PI;
+                    leaf.rotation.z = Math.random() * Math.PI;
+                    
+                    leaf.castShadow = true;
+                    leavesGroup.add(leaf);
+                }
+            }
+            
+            return leavesGroup;
+        }
+        
+        // Create a branch object with start, end, and other properties
+        function createBranchObject(startPoint, endPoint, length, thickness, angleH, angleV, depth) {
+            return {
+                start: startPoint.clone(),
+                end: endPoint.clone(),
+                length: length,
+                thickness: thickness,
+                angleH: angleH,
+                angleV: angleV,
+                depth: depth,
+                progress: 0,
+                children: []
+            };
+        }
+        
+        // Create the actual 3D cylinder for a branch
+        function createBranchCylinder(branch, progress = 1) {
+            // Calculate the actual current endpoint based on progress
+            const currentEnd = new THREE.Vector3().lerpVectors(branch.start, branch.end, progress);
+            const currentLength = branch.length * progress;
+            
+            // Choose material based on depth
+            let material;
+            if (branch.depth === 0) {
+                material = trunkMaterial;
+            } else if (branch.depth < 2) {
+                material = branchMaterial;
+            } else {
+                material = twigMaterial;
+            }
+            
+            // Create direction vector for the branch
+            const direction = new THREE.Vector3().subVectors(currentEnd, branch.start);
+            const height = direction.length();
+            
+            // Create tapered cylinder for the branch
+            // Oak branches taper more dramatically
+            const topRadius = branch.thickness * (branch.depth === 0 ? 0.7 : 0.6);
+            const segmentCount = branch.depth === 0 ? 8 : 6; // More segments for trunk
+            
+            const cylinderGeometry = new THREE.CylinderGeometry(
+                topRadius * progress, // Top radius reduces with depth and tapers
+                branch.thickness, // Bottom radius
+                height,
+                segmentCount
+            );
+            
+            const cylinder = new THREE.Mesh(cylinderGeometry, material);
+            
+            // Position and rotate cylinder to connect the points
+            cylinder.position.copy(branch.start);
+            cylinder.position.add(direction.multiplyScalar(0.5));
+            
+            // Orient the cylinder
+            cylinder.quaternion.setFromUnitVectors(
+                new THREE.Vector3(0, 1, 0),
+                direction.clone().normalize()
+            );
+            
+            cylinder.castShadow = true;
+            cylinder.receiveShadow = true;
+            
+            return cylinder;
+        }
+        
+        // Plan the entire tree structure first (without creating 3D objects)
+        function planTree() {
+            // Clear previous queue
+            branchQueue = [];
+            
+            // Start position (at the bottom)
+            const startPoint = new THREE.Vector3(0, -5, 0);
+            const endPoint = new THREE.Vector3(0, params.initialLength - 5, 0);
+            
+            // Create trunk
+            const trunk = createBranchObject(
+                startPoint, 
+                endPoint, 
+                params.initialLength, 
+                params.trunkThickness, 
+                Math.PI / 2, // Vertical
+                0, 
+                0
+            );
+            
+            // Add trunk to queue
+            branchQueue.push(trunk);
+            
+            // Recursively plan branches
+            planBranches(trunk, endPoint, params.initialLength, 0);
+            
+            return trunk;
+        }
+        
+        // Recursively plan branch structure
+        function planBranches(parentBranch, startPoint, length, depth) {
+            if (depth >= params.maxDepth) return;
+            
+            // Oak trees have more branches, especially at mid-levels
+            const branchCount = depth < 2 ? 3 : (Math.random() > 0.7 ? 3 : 2);
+            
+            for (let i = 0; i < branchCount; i++) {
+                // Calculate Fibonacci numbers for branch lengths
+                // Oak trees have more variation in length
+                const lengthFactor = fibonacci(depth + 2) / fibonacci(depth + 3);
+                const randomizedLength = length * lengthFactor * (0.8 + Math.random() * 0.4);
+                
+                // Calculate branch thickness - oak branches are thicker
+                const thickness = parentBranch.thickness * (0.5 + Math.random() * 0.3);
+                
+                // Calculate horizontal and vertical angles for branches
+                // Oak trees have more horizontal branches
+                let angleH, angleV;
+                
+                if (depth === 0) {
+                    // First level branches come out at wide angles from trunk
+                    const angleFactor = 0.2 + Math.random() * 0.3;
+                    angleH = Math.PI / 2 - params.branchAngle * angleFactor;
+                    
+                    // Distribute branches around trunk
+                    angleV = (i / branchCount) * Math.PI * 2;
+                    
+                    // Add some randomness
+                    angleV += (Math.random() - 0.5) * 0.5;
+                } else {
+                    // Higher branches are more horizontal in oaks
+                    const horizontalFactor = params.horizontalness * (depth / params.maxDepth);
+                    angleH = parentBranch.angleH * (0.8 - horizontalFactor + Math.random() * 0.4);
+                    
+                    // Add variety to vertical angles
+                    angleV = parentBranch.angleV + 
+                            (Math.random() * 2 - 1) * params.branchAngle * (1 + params.irregularity);
+                }
+                
+                // Add more irregularity for oak-like appearance
+                angleH += (Math.random() - 0.5) * params.irregularity;
+                angleV += (Math.random() - 0.5) * params.irregularity;
+                
+                // Calculate end point based on angles
+                const endPoint = new THREE.Vector3(
+                    startPoint.x + randomizedLength * Math.sin(angleH) * Math.cos(angleV),
+                    startPoint.y + randomizedLength * Math.cos(angleH),
+                    startPoint.z + randomizedLength * Math.sin(angleH) * Math.sin(angleV)
+                );
+                
+                const branch = createBranchObject(
+                    startPoint.clone(),
+                    endPoint,
+                    randomizedLength,
+                    thickness,
+                    angleH,
+                    angleV,
+                    depth + 1
+                );
+                
+                // Add to parent's children
+                parentBranch.children.push(branch);
+                
+                // Add to growth queue
+                branchQueue.push(branch);
+                
+                // Plan next level of branches
+                planBranches(branch, endPoint, randomizedLength, depth + 1);
+            }
+        }
+        
+        // Grow the next branch in the queue
+        function growNextBranch() {
+            if (branchQueue.length === 0 || !isGrowing) {
+                isGrowing = false;
+                return;
+            }
+            
+            if (!currentGrowingBranch) {
+                currentGrowingBranch = branchQueue.shift();
+                growthProgress = 0;
+            }
+            
+            // Increment growth progress
+            growthProgress += 0.05 * params.growthSpeed;
+            
+            // If branch is complete
+            if (growthProgress >= 1) {
+                const branch = currentGrowingBranch;
+                
+                // Create the fully grown branch
+                const branchMesh = createBranchCylinder(branch, 1);
+                treeGroup.add(branchMesh);
+                
+                // Add leaves if at max depth
+                if (branch.depth === params.maxDepth) {
+                    const leaves = createLeaves(branch.end, branch.thickness * 3, branch.depth);
+                    if (leaves) treeGroup.add(leaves);
+                }
+                
+                // Move to next branch
+                currentGrowingBranch = null;
+                
+                // Slight pause between branches
+                setTimeout(growNextBranch, 10);
+            } else {
+                // Create a partially grown branch (or update existing one)
+                const branch = currentGrowingBranch;
+                
+                // Remove previous partial branch if it exists
+                const existingIndex = treeGroup.children.findIndex(
+                    child => child.userData.tempBranchId === branch
+                );
+                
+                if (existingIndex !== -1) {
+                    const existing = treeGroup.children[existingIndex];
+                    treeGroup.remove(existing);
+                    if (existing.geometry) existing.geometry.dispose();
+                }
+                
+                // Create new partial branch
+                const partialBranch = createBranchCylinder(branch, growthProgress);
+                partialBranch.userData.tempBranchId = branch;
+                treeGroup.add(partialBranch);
+                
+                // Continue growing in next frame
+                requestAnimationFrame(growNextBranch);
+            }
+        }
+        
+        // Start the growth animation
+        function startGrowth() {
+            // Don't start if already growing
+            if (isGrowing) return;
+            
+            // Clear previous tree
+            while(treeGroup.children.length > 0) {
+                const object = treeGroup.children[0];
+                if (object.geometry) object.geometry.dispose();
+                if (object.material) object.material.dispose();
+                treeGroup.remove(object);
+            }
+            
+            // Plan the tree
+            planTree();
+            
+            // Start growing
+            isGrowing = true;
+            currentGrowingBranch = null;
+            growNextBranch();
+        }
+        
+        // Build entire tree instantly
+        function buildTreeInstantly() {
+            // Clear previous tree
+            while(treeGroup.children.length > 0) {
+                const object = treeGroup.children[0];
+                if (object.geometry) object.geometry.dispose();
+                if (object.material) object.material.dispose();
+                treeGroup.remove(object);
+            }
+            
+            // Plan the tree
+            const trunk = planTree();
+            
+            // Create all branches at once
+            for (const branch of branchQueue) {
+                const branchMesh = createBranchCylinder(branch);
+                treeGroup.add(branchMesh);
+                
+                // Add leaves at terminal branches
+                if (branch.depth === params.maxDepth) {
+                    const leaves = createLeaves(branch.end, branch.thickness * 3, branch.depth);
+                    if (leaves) treeGroup.add(leaves);
+                }
+            }
+            
+            // Clear queue
+            branchQueue = [];
+        }
+        
+        // GUI Controls
+        const gui = new dat.GUI();
+        gui.add(params, 'maxDepth', 3, 8).step(1).name('Tree Depth').onChange(function() {
+            updateFibonacciSequence();
+        });
+        gui.add(params, 'initialLength', 50, 150).step(5).name('Initial Length');
+        gui.add(params, 'trunkThickness', 5, 25).step(1).name('Trunk Thickness');
+        gui.add(params, 'branchAngle', 0.3, 1.2).step(0.05).name('Branch Angle');
+        gui.add(params, 'horizontalness', 0, 1).step(0.05).name('Horizontalness');
+        gui.add(params, 'irregularity', 0, 1).step(0.05).name('Irregularity');
+        gui.add(params, 'leafDensity', 0, 1).step(0.05).name('Leaf Density');
+        gui.add(params, 'growthSpeed', 1, 10).step(0.5).name('Growth Speed');
+        gui.add(params, 'autoRotate').name('Auto Rotate');
+        gui.add(params, 'rotationSpeed', 0.1, 2.0).step(0.1).name('Rotation Speed');
+        
+        const actionsFolder = gui.addFolder('Actions');
+        actionsFolder.add({ grow: startGrowth }, 'grow').name('Grow Tree');
+        actionsFolder.add({ instant: buildTreeInstantly }, 'instant').name('Build Instantly');
+        actionsFolder.add({ randomize: function() {
+            params.maxDepth = Math.floor(Math.random() * 3) + 5; // 5-7
+            params.branchAngle = 0.4 + Math.random() * 0.8; // 0.4-1.2
+            params.initialLength = Math.floor(Math.random() * 70) + 80; // 80-150
+            params.trunkThickness = Math.floor(Math.random() * 15) + 10; // 10-25
+            params.horizontalness = 0.3 + Math.random() * 0.6; // 0.3-0.9
+            params.irregularity = 0.5 + Math.random() * 0.5; // 0.5-1.0
+            params.leafDensity = 0.5 + Math.random() * 0.5; // 0.5-1.0
+            
+            // Update GUI controllers
+            for (let i = 0; i < gui.__controllers.length; i++) {
+                gui.__controllers[i].updateDisplay();
+            }
+            
+            updateFibonacciSequence();
+        }}, 'randomize').name('Random Tree');
+        
+        // Grow button
+        const growButton = document.getElementById('growButton');
+        growButton.addEventListener('click', startGrowth);
+        
+        // Mouse controls
+        let isDragging = false;
+        let previousMousePosition = {
+            x: 0,
+            y: 0
+        };
+        
+        renderer.domElement.addEventListener('mousedown', function(e) {
+            isDragging = true;
+        });
+        
+        renderer.domElement.addEventListener('mousemove', function(e) {
+            if (isDragging) {
+                const deltaMove = {
+                    x: e.offsetX - previousMousePosition.x,
+                    y: e.offsetY - previousMousePosition.y
+                };
+                
+                // Adjust rotation based on mouse movement
+                treeGroup.rotation.y += deltaMove.x * 0.01;
+                treeGroup.rotation.x += deltaMove.y * 0.01;
+                
+                // Limit vertical rotation to prevent flipping
+                treeGroup.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, treeGroup.rotation.x));
+            }
+            
+            previousMousePosition = {
+                x: e.offsetX,
+                y: e.offsetY
+            };
+        });
+        
+        renderer.domElement.addEventListener('mouseup', function(e) {
+            isDragging = false;
+        });
+        
+        renderer.domElement.addEventListener('mouseleave', function(e) {
+            isDragging = false;
+        });
+        
+        // Mouse wheel for zoom
+        renderer.domElement.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            
+            // Adjust camera position based on wheel direction
+            const zoomSpeed = 30;
+            if (e.deltaY > 0) {
+                // Zoom out
+                camera.position.z = Math.min(700, camera.position.z + zoomSpeed);
+            } else {
+                // Zoom in
+                camera.position.z = Math.max(100, camera.position.z - zoomSpeed);
+            }
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Auto-rotate if enabled
+            if (params.autoRotate && !isDragging) {
+                treeGroup.rotation.y += params.rotationSpeed * 0.01;
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Initialize
+        updateFibonacciSequence();
+        animate();
+        
+        // Automatically start growing after a short delay
+        setTimeout(startGrowth, 1000);
+    </script>
+</body>
+</html>

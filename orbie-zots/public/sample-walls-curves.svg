@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer boundary - Rectangle with beveled corners -->
+  <path d="M 80,50 
+           L 720,50 
+           L 750,80 
+           L 750,520 
+           L 720,550 
+           L 80,550 
+           L 50,520 
+           L 50,80 Z" 
+        fill="none" 
+        stroke="#ffffff" 
+        stroke-width="2"
+        data-force="2.5" />
+  
+  <!-- Central maze with mixed straight lines and curves -->
+  <path d="M 200,150 
+           L 600,150 
+           C 650,150 650,250 600,250 
+           L 200,250 
+           C 150,250 150,350 200,350 
+           L 600,350 
+           C 650,350 650,450 600,450 
+           L 200,450" 
+        fill="none" 
+        stroke="#88aaff" 
+        stroke-width="2"
+        data-force="1.0" />
+  
+  <!-- Left side chamber with arcs -->
+  <path d="M 150,200 
+           A 50,50 0 0 1 150,300 
+           L 100,300 
+           A 50,50 0 0 1 100,200 Z" 
+        fill="none" 
+        stroke="#ff5588" 
+        stroke-width="2"
+        data-force="1.8" />
+        
+  <!-- Right side chamber with arcs -->
+  <path d="M 650,200 
+           A 50,50 0 0 0 650,300 
+           L 700,300 
+           A 50,50 0 0 0 700,200 Z" 
+        fill="none" 
+        stroke="#ff5588" 
+        stroke-width="2"
+        data-force="1.8" />
+  
+  <!-- Top wavy barrier - using quadratic bezier -->
+  <path d="M 250,100 
+           Q 300,120 350,100 
+           Q 400,80 450,100 
+           Q 500,120 550,100" 
+        fill="none" 
+        stroke="#88ff88" 
+        stroke-width="2"
+        data-force="0.7" />
+  
+  <!-- Bottom wavy barrier - using cubic bezier -->
+  <path d="M 250,500 
+           C 300,480 325,520 375,500 
+           C 425,480 450,520 500,500 
+           C 550,480 575,520 550,500" 
+        fill="none" 
+        stroke="#88ff88" 
+        stroke-width="2"
+        data-force="0.7" />
+        
+  <!-- Diagonal barriers with high repulsion -->
+  <path d="M 100,100 L 200,200" 
+        fill="none" 
+        stroke="#ff8800" 
+        stroke-width="3"
+        data-force="3.0" />
+        
+  <path d="M 700,100 L 600,200" 
+        fill="none" 
+        stroke="#ff8800" 
+        stroke-width="3"
+        data-force="3.0" />
+        
+  <path d="M 100,500 L 200,400" 
+        fill="none" 
+        stroke="#ff8800" 
+        stroke-width="3"
+        data-force="3.0" />
+        
+  <path d="M 700,500 L 600,400" 
+        fill="none" 
+        stroke="#ff8800" 
+        stroke-width="3"
+        data-force="3.0" />
+  
+  <!-- Central spiral using cubic bezier curves -->
+  <path d="M 400,275 
+           C 425,275 450,250 450,300 
+           C 450,350 375,350 350,300 
+           C 325,250 375,225 400,275" 
+        fill="none" 
+        stroke="#ffdd00" 
+        stroke-width="2"
+        data-force="1.2" />
+        
+  <!-- Circle obstacles with varying forces -->
+  <path d="M 150,400 A 25,25 0 1 0 150,450 A 25,25 0 1 0 150,400 Z" 
+        fill="none" 
+        stroke="#00ffff" 
+        stroke-width="1.5"
+        data-force="0.5" />
+        
+  <path d="M 650,400 A 25,25 0 1 0 650,450 A 25,25 0 1 0 650,400 Z" 
+        fill="none" 
+        stroke="#00ffff" 
+        stroke-width="1.5"
+        data-force="0.5" />
+</svg> 

@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Golden Ratio Growth Visualization</title>
+    <style>
+        :root {
+            --main-bg-color: #121212;
+            --text-color: #e0e0e0;
+            --accent-color: #ffd700;
+            --secondary-color: #9370db;
+            --tertiary-color: #3cb371;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--main-bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--secondary-color);
+            margin-bottom: 20px;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+        }
+        
+        .visualization-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            width: 100%;
+        }
+        
+        .canvas-container {
+            position: relative;
+            width: 500px;
+            height: 500px;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            width: 300px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        label {
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: var(--tertiary-color);
+            transform: scale(1.2);
+        }
+        
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: var(--accent-color);
+            color: var(--main-bg-color);
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        button:hover {
+            background-color: var(--tertiary-color);
+            transform: translateY(-2px);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        select {
+            padding: 8px;
+            border-radius: 5px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--text-color);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .info-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 30px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-top: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            width: 100%;
+        }
+        
+        .info-card {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 15px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .info-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            background-color: rgba(255, 255, 255, 0.08);
+        }
+        
+        .info-header {
+            font-size: 1.3rem;
+            color: var(--tertiary-color);
+        }
+        
+        .zoom-controls {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px;
+        }
+        
+        .zoom-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .zoom-btn:hover {
+            background-color: var(--accent-color);
+            color: var(--main-bg-color);
+        }
+        
+        @media (max-width: 1000px) {
+            .visualization-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .canvas-container, .controls {
+                width: 90%;
+                max-width: 500px;
+            }
+            
+            .canvas-container {
+                height: 400px;
+            }
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
+        
+        .formula {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+            font-size: 1.2rem;
+        }
+        
+        .golden-number {
+            color: var(--accent-color);
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        
+        .parameter-display {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .parameter {
+            padding: 5px 10px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            font-size: 0.9rem;
+        }
+        
+        .parameter span {
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Golden Ratio Growth Visualization</h1>
+            <div class="subtitle">Explore how the golden ratio (φ ≈ 1.618...) creates beautiful patterns in nature</div>
+            <div class="formula">
+                <span>φ = </span>
+                <span class="golden-number">1.6180339887...</span>
+                <span> = (1 + √5) ÷ 2</span>
+            </div>
+        </div>
+        
+        <div class="visualization-container">
+            <div class="canvas-container">
+                <canvas id="spiralCanvas" width="500" height="500"></canvas>
+                <canvas id="overlayCanvas" width="500" height="500"></canvas>
+                <div class="zoom-controls">
+                    <div class="zoom-btn" id="zoomIn">+</div>
+                    <div class="zoom-btn" id="zoomOut">-</div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <label for="pattern-select">Pattern Type:</label>
+                    <select id="pattern-select">
+                        <option value="fibonacci">Fibonacci Spiral</option>
+                        <option value="shell">Nautilus Shell</option>
+                        <option value="sunflower">Sunflower</option>
+                        <option value="galaxy">Galaxy</option>
+                        <option value="leaf">Leaf Growth</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="iterations-slider">Number of Iterations: <span id="iterations-value">20</span></label>
+                    <input type="range" id="iterations-slider" min="5" max="50" value="20">
+                </div>
+                
+                <div class="control-group">
+                    <label for="growth-factor-slider">Growth Factor: <span id="growth-factor-value">1.618</span></label>
+                    <input type="range" id="growth-factor-slider" min="1.1" max="2" step="0.01" value="1.618">
+                </div>
+                
+                <div class="control-group">
+                    <label for="rotation-slider">Rotation Angle: <span id="rotation-value">137.5°</span></label>
+                    <input type="range" id="rotation-slider" min="0" max="360" step="0.5" value="137.5">
+                </div>
+                
+                <div class="control-group">
+                    <label for="speed-slider">Animation Speed: <span id="speed-value">5</span></label>
+                    <input type="range" id="speed-slider" min="1" max="10" value="5">
+                </div>
+                
+                <div class="parameter-display">
+                    <div class="parameter">Golden Ratio: <span>φ ≈ 1.618</span></div>
+                    <div class="parameter">Golden Angle: <span>137.5°</span></div>
+                </div>
+                
+                <div class="button-group">
+                    <button id="play-button">Play Animation</button>
+                    <button id="reset-button">Reset</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <div class="info-card">
+                <div class="info-header">Fibonacci Spiral</div>
+                <p>The Fibonacci spiral is created by drawing arcs connecting the opposite corners of squares in the Fibonacci tiling. This spiral approximates the golden spiral, which grows by a factor of φ for every quarter turn.</p>
+            </div>
+            
+            <div class="info-card">
+                <div class="info-header">Nautilus Shell</div>
+                <p>The shell of a nautilus is a perfect example of the golden spiral in nature. As the nautilus grows, it creates new, larger chambers in its shell that follow the logarithmic spiral pattern with a growth factor close to φ.</p>
+            </div>
+            
+            <div class="info-card">
+                <div class="info-header">Sunflower Seeds</div>
+                <p>Sunflower seeds are arranged in a pattern of interconnecting spirals, with the number of spirals being consecutive Fibonacci numbers. This arrangement maximizes the number of seeds that can fit in the flower head.</p>
+            </div>
+            
+            <div class="info-card">
+                <div class="info-header">Galaxy Formation</div>
+                <p>Many spiral galaxies exhibit arms that approximate logarithmic spirals with various growth factors. The golden ratio can be observed in the structure of galaxies like the Milky Way.</p>
+            </div>
+            
+            <div class="info-card">
+                <div class="info-header">Plant Growth</div>
+                <p>Phyllotaxis, the arrangement of leaves around a plant stem, often follows the golden angle (approximately 137.5°), which is derived from the golden ratio. This arrangement ensures optimal exposure to sunlight.</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Constants
+        const PHI = (1 + Math.sqrt(5)) / 2; // Golden ratio ≈ 1.618033988749895
+        const GOLDEN_ANGLE = 137.5; // Golden angle in degrees
+        
+        // Canvas setup
+        const spiralCanvas = document.getElementById('spiralCanvas');
+        const overlayCanvas = document.getElementById('overlayCanvas');
+        const spiralCtx = spiralCanvas.getContext('2d');
+        const overlayCtx = overlayCanvas.getContext('2d');
+        
+        // Control elements
+        const patternSelect = document.getElementById('pattern-select');
+        const iterationsSlider = document.getElementById('iterations-slider');
+        const iterationsValue = document.getElementById('iterations-value');
+        const growthFactorSlider = document.getElementById('growth-factor-slider');
+        const growthFactorValue = document.getElementById('growth-factor-value');
+        const rotationSlider = document.getElementById('rotation-slider');
+        const rotationValue = document.getElementById('rotation-value');
+        const speedSlider = document.getElementById('speed-slider');
+        const speedValue = document.getElementById('speed-value');
+        const playButton = document.getElementById('play-button');
+        const resetButton = document.getElementById('reset-button');
+        const zoomIn = document.getElementById('zoomIn');
+        const zoomOut = document.getElementById('zoomOut');
+        
+        // State variables
+        let isAnimating = false;
+        let animationId = null;
+        let currentIteration = 0;
+        let zoomLevel = 1;
+        let centerX = spiralCanvas.width / 2;
+        let centerY = spiralCanvas.height / 2;
+        
+        // Default parameters
+        let pattern = 'fibonacci';
+        let iterations = 20;
+        let growthFactor = PHI;
+        let rotationAngle = GOLDEN_ANGLE;
+        let animationSpeed = 5;
+        
+        // Update display values
+        function updateDisplayValues() {
+            iterationsValue.textContent = iterations;
+            growthFactorValue.textContent = growthFactor.toFixed(3);
+            rotationValue.textContent = rotationAngle.toFixed(1) + '°';
+            speedValue.textContent = animationSpeed;
+        }
+        
+        // Initialize
+        function init() {
+            // Set initial values
+            iterationsSlider.value = iterations;
+            growthFactorSlider.value = growthFactor;
+            rotationSlider.value = rotationAngle;
+            speedSlider.value = animationSpeed;
+            
+            updateDisplayValues();
+            
+            // Draw initial pattern
+            drawPattern();
+            
+            // Setup event listeners
+            setupEventListeners();
+        }
+        
+        function setupEventListeners() {
+            patternSelect.addEventListener('change', function() {
+                pattern = this.value;
+                resetAndDraw();
+            });
+            
+            iterationsSlider.addEventListener('input', function() {
+                iterations = parseInt(this.value);
+                iterationsValue.textContent = iterations;
+                if (!isAnimating) drawPattern();
+            });
+            
+            growthFactorSlider.addEventListener('input', function() {
+                growthFactor = parseFloat(this.value);
+                growthFactorValue.textContent = growthFactor.toFixed(3);
+                if (!isAnimating) drawPattern();
+            });
+            
+            rotationSlider.addEventListener('input', function() {
+                rotationAngle = parseFloat(this.value);
+                rotationValue.textContent = rotationAngle.toFixed(1) + '°';
+                if (!isAnimating) drawPattern();
+            });
+            
+            speedSlider.addEventListener('input', function() {
+                animationSpeed = parseInt(this.value);
+                speedValue.textContent = animationSpeed;
+            });
+            
+            playButton.addEventListener('click', toggleAnimation);
+            resetButton.addEventListener('click', resetAndDraw);
+            
+            zoomIn.addEventListener('click', function() {
+                zoomLevel *= 1.2;
+                drawPattern();
+            });
+            
+            zoomOut.addEventListener('click', function() {
+                zoomLevel /= 1.2;
+                drawPattern();
+            });
+            
+            // Allow dragging the canvas to pan
+            let isDragging = false;
+            let lastX, lastY;
+            
+            overlayCanvas.addEventListener('mousedown', function(e) {
+                isDragging = true;
+                lastX = e.clientX;
+                lastY = e.clientY;
+                overlayCanvas.style.cursor = 'grabbing';
+            });
+            
+            document.addEventListener('mouseup', function() {
+                if (isDragging) {
+                    isDragging = false;
+                    overlayCanvas.style.cursor = 'grab';
+                }
+            });
+            
+            document.addEventListener('mousemove', function(e) {
+                if (isDragging) {
+                    const deltaX = e.clientX - lastX;
+                    const deltaY = e.clientY - lastY;
+                    centerX += deltaX / zoomLevel;
+                    centerY += deltaY / zoomLevel;
+                    lastX = e.clientX;
+                    lastY = e.clientY;
+                    drawPattern();
+                }
+            });
+            
+            // Touch events for mobile
+            overlayCanvas.addEventListener('touchstart', function(e) {
+                if (e.touches.length === 1) {
+                    isDragging = true;
+                    lastX = e.touches[0].clientX;
+                    lastY = e.touches[0].clientY;
+                    e.preventDefault();
+                }
+            });
+            
+            document.addEventListener('touchend', function() {
+                isDragging = false;
+            });
+            
+            document.addEventListener('touchmove', function(e) {
+                if (isDragging && e.touches.length === 1) {
+                    const deltaX = e.touches[0].clientX - lastX;
+                    const deltaY = e.touches[0].clientY - lastY;
+                    centerX += deltaX / zoomLevel;
+                    centerY += deltaY / zoomLevel;
+                    lastX = e.touches[0].clientX;
+                    lastY = e.touches[0].clientY;
+                    drawPattern();
+                    e.preventDefault();
+                }
+            });
+        }
+        
+        function toggleAnimation() {
+            if (isAnimating) {
+                stopAnimation();
+                playButton.textContent = 'Play Animation';
+            } else {
+                startAnimation();
+                playButton.textContent = 'Stop Animation';
+            }
+        }
+        
+        function startAnimation() {
+            isAnimating = true;
+            currentIteration = 0;
+            animate();
+        }
+        
+        function stopAnimation() {
+            isAnimating = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+        }
+        
+        function resetAndDraw() {
+            stopAnimation();
+            playButton.textContent = 'Play Animation';
+            currentIteration = 0;
+            centerX = spiralCanvas.width / 2;
+            centerY = spiralCanvas.height / 2;
+            zoomLevel = 1;
+            drawPattern();
+        }
+        
+        function animate() {
+            if (!isAnimating) return;
+            
+            clearCanvases();
+            
+            // Determine how many iterations to show based on animation progress
+            const iterationsToShow = Math.min(Math.ceil(currentIteration), iterations);
+            
+            // Draw pattern with current number of iterations
+            drawPatternWithIterations(iterationsToShow);
+            
+            // Increment iteration counter
+            currentIteration += animationSpeed / 10;
+            
+            if (currentIteration > iterations) {
+                currentIteration = 0; // Reset to start animation over
+            }
+            
+            // Continue animation
+            animationId = requestAnimationFrame(animate);
+        }
+        
+        function clearCanvases() {
+            spiralCtx.clearRect(0, 0, spiralCanvas.width, spiralCanvas.height);
+            overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+        }
+        
+        function drawPattern() {
+            clearCanvases();
+            drawPatternWithIterations(iterations);
+        }
+        
+        function drawPatternWithIterations(numIterations) {
+            switch (pattern) {
+                case 'fibonacci':
+                    drawFibonacciSpiral(numIterations);
+                    break;
+                case 'shell':
+                    drawNautilusShell(numIterations);
+                    break;
+                case 'sunflower':
+                    drawSunflower(numIterations);
+                    break;
+                case 'galaxy':
+                    drawGalaxy(numIterations);
+                    break;
+                case 'leaf':
+                    drawLeafGrowth(numIterations);
+                    break;
+                default:
+                    drawFibonacciSpiral(numIterations);
+            }
+        }
+        
+        function applyTransformation(ctx) {
+            // Apply zoom and centering transformations
+            ctx.translate(spiralCanvas.width / 2, spiralCanvas.height / 2);
+            ctx.scale(zoomLevel, zoomLevel);
+            ctx.translate(-centerX, -centerY);
+        }
+        
+        function drawFibonacciSpiral(numIterations) {
+            spiralCtx.save();
+            applyTransformation(spiralCtx);
+            
+            // Draw background squares
+            const baseSize = 5;
+            let size = baseSize;
+            let x = centerX;
+            let y = centerY;
+            let angle = 0;
+            
+            spiralCtx.lineWidth = 1 / zoomLevel;
+            
+            // Draw squares for Fibonacci tiling
+            for (let i = 0; i < numIterations; i++) {
+                const hue = (i * 10) % 360;
+                spiralCtx.fillStyle = `hsla(${hue}, 80%, 60%, 0.3)`;
+                spiralCtx.strokeStyle = `hsla(${hue}, 90%, 70%, 0.8)`;
+                
+                spiralCtx.beginPath();
+                spiralCtx.rect(x, y, size, size);
+                spiralCtx.fill();
+                spiralCtx.stroke();
+                
+                // Calculate next position and size
+                const nextSize = size * growthFactor;
+                const radians = (angle * Math.PI) / 180;
+                x = x + Math.cos(radians) * size;
+                y = y + Math.sin(radians) * size;
+                size = nextSize;
+                angle += rotationAngle;
+            }
+            
+            // Draw the spiral
+            x = centerX;
+            y = centerY;
+            size = baseSize;
+            angle = 0;
+            
+            spiralCtx.beginPath();
+            spiralCtx.moveTo(x, y);
+            
+            spiralCtx.lineWidth = 2 / zoomLevel;
+            spiralCtx.strokeStyle = '#FFD700';
+            
+            for (let i = 0; i < numIterations * 10; i++) {
+                const radians = (angle * Math.PI) / 180;
+                const radius = baseSize * Math.pow(growthFactor, i / 10);
+                x = centerX + Math.cos(radians) * radius;
+                y = centerY + Math.sin(radians) * radius;
+                
+                spiralCtx.lineTo(x, y);
+                angle += rotationAngle / 10;
+            }
+            
+            spiralCtx.stroke();
+            spiralCtx.restore();
+        }
+        
+        function drawNautilusShell(numIterations) {
+            spiralCtx.save();
+            applyTransformation(spiralCtx);
+            
+            const baseRadius = 5;
+            let angle = 0;
+            
+            // Draw the shell chambers
+            for (let i = 0; i < numIterations; i++) {
+                const hue = (i * 10) % 360;
+                const radius = baseRadius * Math.pow(growthFactor, i / 4);
+                const nextRadius = baseRadius * Math.pow(growthFactor, (i + 1) / 4);
+                
+                // Draw chamber
+                spiralCtx.beginPath();
+                spiralCtx.fillStyle = `hsla(${hue}, 70%, 60%, 0.3)`;
+                spiralCtx.strokeStyle = `hsla(${hue}, 80%, 70%, 0.8)`;
+                spiralCtx.lineWidth = 1 / zoomLevel;
+                
+                for (let j = 0; j <= 90; j += 5) {
+                    const rad1 = ((angle + j) * Math.PI) / 180;
+                    const x1 = centerX + Math.cos(rad1) * radius;
+                    const y1 = centerY + Math.sin(rad1) * radius;
+                    
+                    if (j === 0) {
+                        spiralCtx.moveTo(x1, y1);
+                    } else {
+                        spiralCtx.lineTo(x1, y1);
+                    }
+                }
+                
+                for (let j = 90; j >= 0; j -= 5) {
+                    const rad2 = ((angle + j) * Math.PI) / 180;
+                    const x2 = centerX + Math.cos(rad2) * nextRadius;
+                    const y2 = centerY + Math.sin(rad2) * nextRadius;
+                    spiralCtx.lineTo(x2, y2);
+                }
+                
+                spiralCtx.closePath();
+                spiralCtx.fill();
+                spiralCtx.stroke();
+                
+                angle += 90;
+            }
+            
+            // Draw the spiral curve
+            angle = 0;
+            spiralCtx.beginPath();
+            spiralCtx.moveTo(centerX + baseRadius, centerY);
+            spiralCtx.lineWidth = 2 / zoomLevel;
+            spiralCtx.strokeStyle = '#FFD700';
+            
+            for (let i = 0; i < numIterations * 20; i++) {
+                const rad = (angle * Math.PI) / 180;
+                const radius = baseRadius * Math.pow(growthFactor, i / 20);
+                const x = centerX + Math.cos(rad) * radius;
+                const y = centerY + Math.sin(rad) * radius;
+                
+                spiralCtx.lineTo(x, y);
+                angle += 90 / 20;
+            }
+            
+            spiralCtx.stroke();
+            spiralCtx.restore();
+        }
+        
+        function drawSunflower(numIterations) {
+            spiralCtx.save();
+            applyTransformation(spiralCtx);
+            
+            const maxRadius = Math.min(spiralCanvas.width, spiralCanvas.height) / 3;
+            
+            // Draw sunflower center
+            spiralCtx.beginPath();
+            spiralCtx.arc(centerX, centerY, maxRadius, 0, Math.PI * 2);
+            const gradient = spiralCtx.createRadialGradient(
+                centerX, centerY, 0,
+                centerX, centerY, maxRadius
+            );
+            gradient.addColorStop(0, '#663300');
+            gradient.addColorStop(1, '#331a00');
+            spiralCtx.fillStyle = gradient;
+            spiralCtx.fill();
+            
+            // Draw seeds
+            const seedCount = numIterations * 20;
+            const seedRadius = Math.max(1, 3 / zoomLevel);
+            
+            for (let i = 0; i < seedCount; i++) {
+                const ratio = i / seedCount;
+                const angle = i * rotationAngle;
+                const radians = (angle * Math.PI) / 180;
+                const distance = maxRadius * Math.sqrt(ratio);
+                
+                const x = centerX + Math.cos(radians) * distance;
+                const y = centerY + Math.sin(radians) * distance;
+                
+                // Draw seed
+                spiralCtx.beginPath();
+                spiralCtx.arc(x, y, seedRadius, 0, Math.PI * 2);
+                spiralCtx.fillStyle = `rgba(255, 230, 150, ${0.7 + 0.3 * ratio})`;
+                spiralCtx.fill();
+                
+                // Draw connecting lines to show spirals
+                if (i % 5 === 0 && i > 0) {
+                    spiralCtx.beginPath();
+                    spiralCtx.moveTo(x, y);
+                    const prevRatio = (i - 5) / seedCount;
+                    const prevAngle = (i - 5) * rotationAngle;
+                    const prevRadians = (prevAngle * Math.PI) / 180;
+                    const prevDistance = maxRadius * Math.sqrt(prevRatio);
+                    const prevX = centerX + Math.cos(prevRadians) * prevDistance;
+                    const prevY = centerY + Math.sin(prevRadians) * prevDistance;
+                    spiralCtx.lineTo(prevX, prevY);
+                    spiralCtx.strokeStyle = `rgba(255, 215, 0, 0.3)`;
+                    spiralCtx.lineWidth = 0.5 / zoomLevel;
+                    spiralCtx.stroke();
+                }
+            }
+            
+            // Draw spiral guides
+            for (let spiral = 0; spiral < 2; spiral++) {
+                spiralCtx.beginPath();
+                let angle = spiral * (360 / 5);
+                
+                for (let i = 0; i < seedCount; i += 5) {
+                    const ratio = i / seedCount;
+                    const radians = (angle * Math.PI) / 180;
+                    const distance = maxRadius * Math.sqrt(ratio);
+                    
+                    const x = centerX + Math.cos(radians) * distance;
+                    const y = centerY + Math.sin(radians) * distance;
+                    
+                    if (i === 0) {
+                        spiralCtx.moveTo(x, y);
+                    } else {
+                        spiralCtx.lineTo(x, y);
+                    }
+                    
+                    angle += 5 * rotationAngle;
+                }
+                
+                spiralCtx.strokeStyle = spiral === 0 ? '#FFD700' : '#9370DB';
+                spiralCtx.lineWidth = 2 / zoomLevel;
+                spiralCtx.stroke();
+            }
+            
+            spiralCtx.restore();
+        }
+        
+        function drawGalaxy(numIterations) {
+            spiralCtx.save();
+            applyTransformation(spiralCtx);
+            
+            // Draw galaxy center
+            const galaxyRadius = Math.min(spiralCanvas.width, spiralCanvas.height) / 2.5;
+            const centerGlowRadius = galaxyRadius / 5;
+            
+            // Create a radial gradient for the galaxy core
+            const coreGradient = spiralCtx.createRadialGradient(
+                centerX, centerY, 0,
+                centerX, centerY, centerGlowRadius
+            );
+            coreGradient.addColorStop(0, 'rgba(255, 255, 200, 1)');
+            coreGradient.addColorStop(0.5, 'rgba(255, 255, 150, 0.8)');
+            coreGradient.addColorStop(1, 'rgba(255, 255, 100, 0)');
+            
+            spiralCtx.beginPath();
+            spiralCtx.arc(centerX, centerY, centerGlowRadius, 0, Math.PI * 2);
+            spiralCtx.fillStyle = coreGradient;
+            spiralCtx.fill();
+            
+            // Draw galaxy arms
+            const arms = 2; // Number of spiral arms
+            const particleCount = numIterations * 50;
+            
+            for (let arm = 0; arm < arms; arm++) {
+                const armOffset = (360 / arms) * arm;
+                
+                for (let i = 0; i < particleCount; i++) {
+                    const ratio = i / particleCount;
+                    const distance = galaxyRadius * Math.pow(ratio, 0.5);
+                    const angle = (ratio * 360 * 1.5) + armOffset;
+                    const radians = (angle * Math.PI) / 180;
+                    
+                    // Add some random variation to make it look more natural
+                    const randomOffset = (Math.random() - 0.5) * 20;
+                    const randomDistance = distance + (Math.random() - 0.5) * (distance * 0.2);
+                    const armWidth = 0.15; // Width of the spiral arm
+                    
+                    const x = centerX + Math.cos(radians + randomOffset / 100) * randomDistance;
+                    const y = centerY + Math.sin(radians + randomOffset / 100) * randomDistance;
+                    
+                    // Star brightness and size based on position
+                    const brightness = Math.random() * 0.5 + 0.5;
+                    const size = Math.random() * 2 + 1;
+                    
+                    // Determine star color
+                    let starColor;
+                    const colorRand = Math.random();
+                    if (colorRand < 0.7) {
+                        // White/yellow stars (most common)
+                        const yellowing = Math.random() * 50;
+                        starColor = `rgba(255, ${255 - yellowing}, ${200 - yellowing}, ${brightness})`;
+                    } else if (colorRand < 0.85) {
+                        // Blue stars
+                        starColor = `rgba(200, 220, 255, ${brightness})`;
+                    } else {
+                        // Red stars
+                        starColor = `rgba(255, 180, 180, ${brightness})`;
+                    }
+                    
+                    // Draw star
+                    spiralCtx.beginPath();
+                    spiralCtx.arc(x, y, size / zoomLevel, 0, Math.PI * 2);
+                    spiralCtx.fillStyle = starColor;
+                    spiralCtx.fill();
+                }
+            }
+            
+            // Draw spiral guides
+            for (let arm = 0; arm < arms; arm++) {
+                const armOffset = (360 / arms) * arm;
+                
+                spiralCtx.beginPath();
+                
+                for (let i = 0; i <= 100; i++) {
+                    const ratio = i / 100;
+                    const distance = galaxyRadius * Math.pow(ratio, 0.5);
+                    const angle = (ratio * 360 * 1.5) + armOffset;
+                    const radians = (angle * Math.PI) / 180;
+                    
+                    const x = centerX + Math.cos(radians) * distance;
+                    const y = centerY + Math.sin(radians) * distance;
+                    
+                    if (i === 0) {
+                        spiralCtx.moveTo(x, y);
+                    } else {
+                        spiralCtx.lineTo(x, y);
+                    }
+                }
+                
+                spiralCtx.strokeStyle = arm === 0 ? 'rgba(255, 215, 0, 0.6)' : 'rgba(173, 216, 230, 0.6)';
+                spiralCtx.lineWidth = 2 / zoomLevel;
+                spiralCtx.stroke();
+            }
+            
+            spiralCtx.restore();
+        }
+        
+        function drawLeafGrowth(numIterations) {
+            spiralCtx.save();
+            applyTransformation(spiralCtx);
+            
+            const stemLength = Math.min(spiralCanvas.width, spiralCanvas.height) / 3;
+            const stemWidth = 4 / zoomLevel;
+            
+            // Draw stem
+            spiralCtx.beginPath();
+            spiralCtx.moveTo(centerX, centerY + stemLength / 2);
+            spiralCtx.lineTo(centerX, centerY - stemLength / 2);
+            spiralCtx.strokeStyle = '#006400';
+            spiralCtx.lineWidth = stemWidth;
+            spiralCtx.stroke();
+            
+            // Draw leaves along the stem
+            const leavesPerSide = Math.floor(numIterations / 2);
+            
+            for (let i = 0; i < leavesPerSide; i++) {
+                // Alternate leaves on each side using the golden angle
+                const side = i % 2 === 0 ? 1 : -1;
+                const verticalPosition = centerY - (i * stemLength / leavesPerSide) + (stemLength / 2);
+                const leafSize = Math.max(5, 20 / zoomLevel) * (1 - i / leavesPerSide) * 1.5;
+                const leafAngle = rotationAngle * (i + 1) * side;
+                
+                drawLeaf(centerX, verticalPosition, leafSize, leafAngle, i);
+            }
+            
+            spiralCtx.restore();
+        }
+        
+        function drawLeaf(x, y, size, angle, index) {
+            spiralCtx.save();
+            spiralCtx.translate(x, y);
+            spiralCtx.rotate((angle * Math.PI) / 180);
+            
+            // Draw leaf vein
+            spiralCtx.beginPath();
+            spiralCtx.moveTo(0, 0);
+            spiralCtx.lineTo(size, 0);
+            spiralCtx.strokeStyle = '#2e8b57';
+            spiralCtx.lineWidth = 1 / zoomLevel;
+            spiralCtx.stroke();
+            
+            // Leaf shape
+            spiralCtx.beginPath();
+            spiralCtx.moveTo(0, 0);
+            
+            // Upper curve of leaf using golden ratio
+            for (let i = 0; i <= 20; i++) {
+                const ratio = i / 20;
+                const xPos = size * ratio;
+                
+                // Use golden ratio to determine the curvature
+                const yPos = Math.sin(ratio * Math.PI) * size / (PHI * 2);
+                spiralCtx.lineTo(xPos, yPos);
+            }
+            
+            // Lower curve of leaf
+            for (let i = 20; i >= 0; i--) {
+                const ratio = i / 20;
+                const xPos = size * ratio;
+                
+                // Use golden ratio to determine the curvature
+                const yPos = -Math.sin(ratio * Math.PI) * size / (PHI * 2);
+                spiralCtx.lineTo(xPos, yPos);
+            }
+            
+            spiralCtx.closePath();
+            
+            // Color gradient for leaf
+            const hue = 100 + index * 5; // Vary from green to yellow-green
+            const leafGradient = spiralCtx.createLinearGradient(0, 0, size, 0);
+            leafGradient.addColorStop(0, `hsla(${hue}, 80%, 30%, 0.9)`);
+            leafGradient.addColorStop(0.7, `hsla(${hue}, 80%, 45%, 0.8)`);
+            leafGradient.addColorStop(1, `hsla(${hue}, 70%, 40%, 0.7)`);
+            
+            spiralCtx.fillStyle = leafGradient;
+            spiralCtx.fill();
+            
+            spiralCtx.strokeStyle = `hsla(${hue}, 60%, 30%, 0.7)`;
+            spiralCtx.lineWidth = 0.5 / zoomLevel;
+            spiralCtx.stroke();
+            
+            // Draw secondary veins
+            const numVeins = 5;
+            for (let v = 1; v <= numVeins; v++) {
+                const veinLength = (size / numVeins) * v;
+                const veinHeight = Math.sin((v / numVeins) * Math.PI) * size / (PHI * 3);
+                
+                // Upper vein
+                spiralCtx.beginPath();
+                spiralCtx.moveTo(veinLength, 0);
+                spiralCtx.lineTo(veinLength - size / 15, veinHeight);
+                
+                // Lower vein
+                spiralCtx.moveTo(veinLength, 0);
+                spiralCtx.lineTo(veinLength - size / 15, -veinHeight);
+                
+                spiralCtx.strokeStyle = `hsla(${hue}, 60%, 35%, 0.5)`;
+                spiralCtx.lineWidth = 0.5 / zoomLevel;
+                spiralCtx.stroke();
+            }
+            
+            spiralCtx.restore();
+        }
+        
+        // Initialize the visualization
+        init();
+    </script>
+</body>
+</html>

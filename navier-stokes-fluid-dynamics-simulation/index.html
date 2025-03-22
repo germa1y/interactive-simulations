@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fluid Dynamics Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #121212;
+            font-family: Arial, sans-serif;
+        }
+        #canvas {
+            display: block;
+            border: 1px solid #333;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+        }
+        .controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            color: white;
+            z-index: 2;
+        }
+        .slider-container {
+            margin: 10px 0;
+            position: relative;
+        }
+        .slider-container label {
+            display: inline-block;
+            width: 120px;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        select {
+            padding: 5px;
+            border-radius: 4px;
+            margin-left: 5px;
+        }
+        .status {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 5px 10px;
+            border-radius: 5px;
+            z-index: 2;
+        }
+        .tooltip {
+            visibility: hidden;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 4px;
+            padding: 5px 10px;
+            position: absolute;
+            z-index: 3;
+            left: 100%;
+            top: 0;
+            margin-left: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            width: 200px;
+        }
+        .slider-container:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+            transition-delay: 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <h3>Fluid Simulation Controls</h3>
+        <div class="slider-container">
+            <label for="viscosity">Viscosity:</label>
+            <input type="range" id="viscosity" min="0" max="0.1" step="0.001" value="0">
+            <span id="viscosity-value">0</span>
+            <div class="tooltip">Controls fluid thickness. Higher values make fluid move more slowly.</div>
+        </div>
+        <div class="slider-container">
+            <label for="diffusion">Diffusion:</label>
+            <input type="range" id="diffusion" min="0" max="0.01" step="0.0001" value="0">
+            <span id="diffusion-value">0</span>
+            <div class="tooltip">Controls how quickly fluid spreads. Keep at 0 for best results.</div>
+        </div>
+        <div class="slider-container">
+            <label for="iterations">Solver Iterations:</label>
+            <input type="range" id="iterations" min="1" max="50" step="1" value="20">
+            <span id="iterations-value">20</span>
+            <div class="tooltip">Higher values improve accuracy but may reduce performance. Only affects non-zero viscosity.</div>
+        </div>
+        <div class="slider-container">
+            <label for="velocity">Input Velocity:</label>
+            <input type="range" id="velocity" min="50" max="2000" step="10" value="1000">
+            <span id="velocity-value">1000</span>
+            <div class="tooltip">Controls how strongly your mouse movements affect the fluid.</div>
+        </div>
+        <div class="slider-container">
+            <label for="colorMode">Color Mode:</label>
+            <select id="colorMode">
+                <option value="rainbow">Rainbow</option>
+                <option value="fire">Fire</option>
+                <option value="ocean">Ocean</option>
+                <option value="smoke">Smoke</option>
+            </select>
+        </div>
+        <button id="reset">Reset Simulation</button>
+        <button id="addRandom">Add Random Fluid</button>
+    </div>
+    <div class="status">Click and drag to add fluid</div>
+
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set fixed dimensions for canvas
+        const canvasWidth = Math.min(window.innerWidth - 60, 800);
+        const canvasHeight = Math.min(window.innerHeight - 60, 800);
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+        
+        // Simulation parameters
+        let viscositySlider = document.getElementById('viscosity');
+        let diffusionSlider = document.getElementById('diffusion');
+        let iterationsSlider = document.getElementById('iterations');
+        let velocitySlider = document.getElementById('velocity');
+        let colorModeSelect = document.getElementById('colorMode');
+        let resetButton = document.getElementById('reset');
+        let addRandomButton = document.getElementById('addRandom');
+        
+        // Parameters with delay
+        let currentViscosity = 0;
+        let currentDiffusion = 0;
+        let currentIterations = 20;
+        let currentVelocity = 1000;
+        let parameterUpdateTimeout = null;
+        
+        // Display values
+        document.getElementById('viscosity-value').textContent = viscositySlider.value;
+        document.getElementById('diffusion-value').textContent = diffusionSlider.value;
+        document.getElementById('iterations-value').textContent = iterationsSlider.value;
+        document.getElementById('velocity-value').textContent = velocitySlider.value;
+        
+        // Add event listeners for sliders with immediate updates
+        viscositySlider.addEventListener('input', function() {
+            document.getElementById('viscosity-value').textContent = this.value;
+            currentViscosity = parseFloat(this.value);
+        });
+        
+        diffusionSlider.addEventListener('input', function() {
+            document.getElementById('diffusion-value').textContent = this.value;
+            currentDiffusion = parseFloat(this.value);
+        });
+        
+        iterationsSlider.addEventListener('input', function() {
+            document.getElementById('iterations-value').textContent = this.value;
+            currentIterations = parseInt(this.value);
+        });
+        
+        velocitySlider.addEventListener('input', function() {
+            document.getElementById('velocity-value').textContent = this.value;
+            currentVelocity = parseFloat(this.value);
+        });
+        
+        // Reset simulation
+        resetButton.addEventListener('click', function() {
+            resetFields();
+            // Add new fluid immediately after reset
+            for (let i = 0; i < 10; i++) {
+                addRandomFluid();
+            }
+        });
+        
+        // Add random fluid
+        addRandomButton.addEventListener('click', function() {
+            addRandomFluid();
+        });
+        
+        // Grid parameters
+        const N = 128; // Grid size
+        const SCALE = Math.min(canvasWidth, canvasHeight) / N;
+        
+        // Arrays for velocity and density
+        let velocityX = new Array(N * N).fill(0);
+        let velocityY = new Array(N * N).fill(0);
+        let velocityX0 = new Array(N * N).fill(0);
+        let velocityY0 = new Array(N * N).fill(0);
+        let density = new Array(N * N).fill(0);
+        let density0 = new Array(N * N).fill(0);
+        
+        // Mouse tracking
+        let mouseX = 0;
+        let mouseY = 0;
+        let mouseDown = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        
+        // Add initial fluid to make it visible
+        function addRandomFluid() {
+            for (let i = 0; i < 5; i++) {
+                const x = Math.floor(N / 2 - 15 + Math.random() * 30);
+                const y = Math.floor(N / 2 - 15 + Math.random() * 30);
+                
+                if (x >= 1 && x <= N - 2 && y >= 1 && y <= N - 2) {
+                    // Add random velocity with higher magnitude
+                    const vx = (Math.random() - 0.5) * 5000;
+                    const vy = (Math.random() - 0.5) * 5000;
+                    
+                    // Apply velocity directly to bypass viscosity issues
+                    const idx = IX(x, y);
+                    velocityX[idx] += vx;
+                    velocityY[idx] += vy;
+                    
+                    // Add density with higher value
+                    addDensity(x, y, 500);
+                }
+            }
+        }
+        
+        // Add initial fluid on load
+        window.addEventListener('load', function() {
+            // Initialize current parameters
+            currentViscosity = parseFloat(viscositySlider.value);
+            currentDiffusion = parseFloat(diffusionSlider.value);
+            currentIterations = parseInt(iterationsSlider.value);
+            currentVelocity = parseFloat(velocitySlider.value);
+            
+            addRandomFluid();
+        });
+        
+        // Track mouse movement
+        canvas.addEventListener('mousemove', function(e) {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = Math.floor((e.clientX - rect.left) / (rect.width / N));
+            mouseY = Math.floor((e.clientY - rect.top) / (rect.height / N));
+            
+            if (mouseDown) {
+                let dx = mouseX - lastMouseX;
+                let dy = mouseY - lastMouseY;
+                
+                // Add velocity at mouse position
+                if (mouseX >= 1 && mouseX <= N - 2 && mouseY >= 1 && mouseY <= N - 2) {
+                    addVelocity(mouseX, mouseY, dx * currentVelocity, dy * currentVelocity);
+                    // Add density with higher value to make it more visible
+                    addDensity(mouseX, mouseY, 200);
+                }
+            }
+            
+            lastMouseX = mouseX;
+            lastMouseY = mouseY;
+        });
+        
+        canvas.addEventListener('mousedown', function(e) {
+            mouseDown = true;
+            const rect = canvas.getBoundingClientRect();
+            lastMouseX = Math.floor((e.clientX - rect.left) / (rect.width / N));
+            lastMouseY = Math.floor((e.clientY - rect.top) / (rect.height / N));
+        });
+        
+        canvas.addEventListener('mouseup', function() {
+            mouseDown = false;
+        });
+        
+        canvas.addEventListener('mouseleave', function() {
+            mouseDown = false;
+        });
+        
+        // Mobile touch support
+        canvas.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            mouseDown = true;
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            lastMouseX = Math.floor((touch.clientX - rect.left) / (rect.width / N));
+            lastMouseY = Math.floor((touch.clientY - rect.top) / (rect.height / N));
+        });
+        
+        canvas.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            mouseX = Math.floor((touch.clientX - rect.left) / (rect.width / N));
+            mouseY = Math.floor((touch.clientY - rect.top) / (rect.height / N));
+            
+            let dx = mouseX - lastMouseX;
+            let dy = mouseY - lastMouseY;
+            
+            // Add velocity at touch position
+            if (mouseX >= 1 && mouseX <= N - 2 && mouseY >= 1 && mouseY <= N - 2) {
+                addVelocity(mouseX, mouseY, dx * currentVelocity, dy * currentVelocity);
+                addDensity(mouseX, mouseY, 200);
+            }
+            
+            lastMouseX = mouseX;
+            lastMouseY = mouseY;
+        });
+        
+        canvas.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            mouseDown = false;
+        });
+        
+        // Fluid dynamics helper functions
+        function IX(x, y) {
+            return x + y * N;
+        }
+        
+        function resetFields() {
+            velocityX = new Array(N * N).fill(0);
+            velocityY = new Array(N * N).fill(0);
+            velocityX0 = new Array(N * N).fill(0);
+            velocityY0 = new Array(N * N).fill(0);
+            density = new Array(N * N).fill(0);
+            density0 = new Array(N * N).fill(0);
+        }
+        
+        function addDensity(x, y, amount) {
+            // Add density to a 3x3 area to make it more visible
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    const xi = x + i;
+                    const yj = y + j;
+                    if (xi >= 1 && xi < N - 1 && yj >= 1 && yj < N - 1) {
+                        const index = IX(xi, yj);
+                        density[index] += amount * (i === 0 && j === 0 ? 2 : 1);
+                    }
+                }
+            }
+        }
+        
+        function addVelocity(x, y, amountX, amountY) {
+            // Add velocity to a 3x3 area
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    const xi = x + i;
+                    const yj = y + j;
+                    if (xi >= 1 && xi < N - 1 && yj >= 1 && yj < N - 1) {
+                        const index = IX(xi, yj);
+                        const factor = (i === 0 && j === 0 ? 1 : 0.5);
+                        
+                        // Apply velocity directly to bypass viscosity issues
+                        velocityX[index] += amountX * factor;
+                        velocityY[index] += amountY * factor;
+                    }
+                }
+            }
+        }
+        
+        function diffuse(b, x, x0, diff, dt) {
+            const a = dt * diff * (N - 2) * (N - 2);
+            linearSolve(b, x, x0, a, 1 + 6 * a);
+        }
+        
+        function linearSolve(b, x, x0, a, c) {
+            const iterations = currentIterations;
+            
+            for (let k = 0; k < iterations; k++) {
+                for (let j = 1; j < N - 1; j++) {
+                    for (let i = 1; i < N - 1; i++) {
+                        x[IX(i, j)] = (x0[IX(i, j)] + a * (
+                            x[IX(i + 1, j)] + x[IX(i - 1, j)] +
+                            x[IX(i, j + 1)] + x[IX(i, j - 1)]
+                        )) / c;
+                    }
+                }
+                setBoundary(b, x);
+            }
+        }
+        
+        function project(velocX, velocY, p, div) {
+            for (let j = 1; j < N - 1; j++) {
+                for (let i = 1; i < N - 1; i++) {
+                    div[IX(i, j)] = -0.5 * (
+                        velocX[IX(i + 1, j)] - velocX[IX(i - 1, j)] +
+                        velocY[IX(i, j + 1)] - velocY[IX(i, j - 1)]
+                    ) / N;
+                    p[IX(i, j)] = 0;
+                }
+            }
+            
+            setBoundary(0, div);
+            setBoundary(0, p);
+            linearSolve(0, p, div, 1, 6);
+            
+            for (let j = 1; j < N - 1; j++) {
+                for (let i = 1; i < N - 1; i++) {
+                    velocX[IX(i, j)] -= 0.5 * (p[IX(i + 1, j)] - p[IX(i - 1, j)]) * N;
+                    velocY[IX(i, j)] -= 0.5 * (p[IX(i, j + 1)] - p[IX(i, j - 1)]) * N;
+                }
+            }
+            
+            setBoundary(1, velocX);
+            setBoundary(2, velocY);
+        }
+        
+        function advect(b, d, d0, velocX, velocY, dt) {
+            let i0, i1, j0, j1;
+            let dtx = dt * (N - 2);
+            let dty = dt * (N - 2);
+            
+            let s0, s1, t0, t1;
+            let tmp1, tmp2, tmp3, x, y;
+            
+            for (let j = 1; j < N - 1; j++) {
+                for (let i = 1; i < N - 1; i++) {
+                    tmp1 = dtx * velocX[IX(i, j)];
+                    tmp2 = dty * velocY[IX(i, j)];
+                    
+                    x = i - tmp1;
+                    y = j - tmp2;
+                    
+                    if (x < 0.5) x = 0.5;
+                    if (x > N - 1.5) x = N - 1.5;
+                    i0 = Math.floor(x);
+                    i1 = i0 + 1;
+                    
+                    if (y < 0.5) y = 0.5;
+                    if (y > N - 1.5) y = N - 1.5;
+                    j0 = Math.floor(y);
+                    j1 = j0 + 1;
+                    
+                    s1 = x - i0;
+                    s0 = 1 - s1;
+                    t1 = y - j0;
+                    t0 = 1 - t1;
+                    
+                    d[IX(i, j)] = s0 * (t0 * d0[IX(i0, j0)] + t1 * d0[IX(i0, j1)]) +
+                                 s1 * (t0 * d0[IX(i1, j0)] + t1 * d0[IX(i1, j1)]);
+                }
+            }
+            
+            setBoundary(b, d);
+        }
+        
+        function setBoundary(b, x) {
+            // Handle boundaries to create a closed box
+            for (let i = 1; i < N - 1; i++) {
+                x[IX(i, 0)] = b === 2 ? -x[IX(i, 1)] : x[IX(i, 1)];
+                x[IX(i, N - 1)] = b === 2 ? -x[IX(i, N - 2)] : x[IX(i, N - 2)];
+            }
+            
+            for (let j = 1; j < N - 1; j++) {
+                x[IX(0, j)] = b === 1 ? -x[IX(1, j)] : x[IX(1, j)];
+                x[IX(N - 1, j)] = b === 1 ? -x[IX(N - 2, j)] : x[IX(N - 2, j)];
+            }
+            
+            // Handle corners
+            x[IX(0, 0)] = 0.5 * (x[IX(1, 0)] + x[IX(0, 1)]);
+            x[IX(0, N - 1)] = 0.5 * (x[IX(1, N - 1)] + x[IX(0, N - 2)]);
+            x[IX(N - 1, 0)] = 0.5 * (x[IX(N - 2, 0)] + x[IX(N - 1, 1)]);
+            x[IX(N - 1, N - 1)] = 0.5 * (x[IX(N - 2, N - 1)] + x[IX(N - 1, N - 2)]);
+        }
+        
+        // Main fluid simulation step
+        function fluidStep() {
+            let visc = currentViscosity;
+            let diff = currentDiffusion;
+            let dt = 0.1;
+            
+            // Velocity diffusion
+            diffuse(1, velocityX0, velocityX, visc, dt);
+            diffuse(2, velocityY0, velocityY, visc, dt);
+            
+            // Projection (mass conservation)
+            project(velocityX0, velocityY0, velocityX, velocityY);
+            
+            // Velocity advection
+            advect(1, velocityX, velocityX0, velocityX0, velocityY0, dt);
+            advect(2, velocityY, velocityY0, velocityX0, velocityY0, dt);
+            
+            // Projection again
+            project(velocityX, velocityY, velocityX0, velocityY0);
+            
+            // Density diffusion - only apply minimal diffusion to avoid instability
+            diffuse(0, density0, density, Math.min(0.001, diff), dt);
+            
+            // Density advection
+            advect(0, density, density0, velocityX, velocityY, dt);
+            
+            // Apply decay to density - slower decay to keep the fluid visible longer
+            for (let i = 0; i < density.length; i++) {
+                density[i] *= 0.997;
+            }
+        }
+        
+        // Visualization function
+        function renderFields() {
+            // Clear canvas with black background
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Create image data for rendering
+            const imageData = ctx.createImageData(N, N);
+            const data = imageData.data;
+            
+            const colorMode = colorModeSelect.value;
+            
+            // Flag to check if there's anything to render
+            let hasVisibleContent = false;
+            
+            for (let j = 0; j < N; j++) {
+                for (let i = 0; i < N; i++) {
+                    const index = IX(i, j);
+                    const pixel = (i + j * N) * 4;
+                    
+                    // Get values
+                    let d = density[index];
+                    const vx = velocityX[index];
+                    const vy = velocityY[index];
+                    const velocity = Math.sqrt(vx * vx + vy * vy);
+                    
+                    // Increase the effect of small density values
+                    if (d > 0) {
+                        d = Math.max(d, 0.01);
+                    }
+                    
+                    if (d > 0.001) {
+                        hasVisibleContent = true;
+                    }
+                    
+                    // Get color based on selected mode
+                    let r, g, b, a;
+                    
+                    // Calculate velocity angle and normalized magnitude for all color modes
+                    const angle = Math.atan2(vy, vx) + Math.PI;  // 0 to 2PI
+                    const normalizedAngle = angle / (2 * Math.PI); // 0 to 1
+                    const normalizedVelocity = Math.min(1, velocity / 100);
+                    
+                    if (colorMode === 'rainbow') {
+                        // Rainbow mode - use velocity direction for hue
+                        const hue = normalizedAngle * 360;
+                        const value = Math.min(255, d * 10); 
+                        
+                        // HSV to RGB conversion
+                        const h = hue / 60;
+                        const s = 1;
+                        const v = value / 255;
+                        
+                        const i = Math.floor(h);
+                        const f = h - i;
+                        const p = v * (1 - s);
+                        const q = v * (1 - s * f);
+                        const t = v * (1 - s * (1 - f));
+                        
+                        switch (i % 6) {
+                            case 0: r = v; g = t; b = p; break;
+                            case 1: r = q; g = v; b = p; break;
+                            case 2: r = p; g = v; b = t; break;
+                            case 3: r = p; g = q; b = v; break;
+                            case 4: r = t; g = p; b = v; break;
+                            case 5: r = v; g = p; b = q; break;
+                        }
+                        
+                        r = Math.floor(r * 255);
+                        g = Math.floor(g * 255);
+                        b = Math.floor(b * 255);
+                        a = Math.min(255, d * 1000);
+                    } else if (colorMode === 'fire') {
+                        // Enhanced fire color scheme with more dramatic effects and black edges
+                        const intensityBase = Math.min(1, d * 5.5);
+                        
+                        // Add more dramatic variation based on velocity and angle
+                        const vFactor = normalizedVelocity * 0.7 + 0.3; // 0.3 to 1.0 range
+                        const variation = (Math.sin(angle * 3) * 0.5 + 0.5) * vFactor;
+                        
+                        // Create black charred areas for contrast at low densities
+                        const blackEffect = Math.pow(1 - intensityBase, 2.2) * 0.85;
+                        
+                        // Base fire colors
+                        let baseR = 255; // Always strong red component
+                        let baseG = intensityBase * 230 * variation;
+                        let baseB = 0; // Minimal blue initially
+                        
+                        // Add black charred edges
+                        if (blackEffect > 0.5) {
+                            const blackFactor = (blackEffect - 0.5) * 2;
+                            baseR = Math.max(0, baseR - blackFactor * 255);
+                            baseG = Math.max(0, baseG - blackFactor * 230);
+                        }
+                        
+                        // Add yellow-white highlights in active areas
+                        const highlightEffect = Math.pow(normalizedVelocity * intensityBase, 1.2) * 2.0;
+                        
+                        r = Math.min(255, baseR + highlightEffect * 100);
+                        g = Math.min(255, baseG + highlightEffect * 200);
+                        b = Math.min(255, baseB + highlightEffect * 150);
+                        
+                        // Higher alpha with stronger contrast
+                        a = Math.min(255, d * (1700 + highlightEffect * 500));
+                    } else if (colorMode === 'ocean') {
+                        // Ocean color scheme with persistent black/dark blue areas
+                        const intensityBase = Math.min(1, d * 7.5);
+                        
+                        // Create wave effects with persistent black regions
+                        const wavePhase = angle * 3 + d * 10; 
+                        const waveEffect = (Math.sin(wavePhase) * 0.5 + 0.5) * Math.pow(normalizedVelocity, 1.2);
+                        
+                        // Create persistent black/dark areas that don't dissipate as quickly
+                        const persistentDarkEffect = Math.pow(1 - intensityBase, 1.7) * 0.95;
+                        
+                        // Black current patterns based on velocity
+                        const currentPattern = (Math.sin(angle * 5 + normalizedVelocity * 8) * 0.5 + 0.5) * persistentDarkEffect;
+                        
+                        // Start with very dark blue / almost black base
+                        let baseB = intensityBase * 140; // 0-140 range starting from near black
+                        let baseG = intensityBase * 50;  // Very low green for dark base
+                        let baseR = intensityBase * 15;  // Almost no red in dark areas
+                        
+                        // Add baby blue tones in medium intensity areas
+                        if (intensityBase > 0.25) {
+                            // Baby blue transition
+                            baseB = 140 + (intensityBase - 0.25) * 160; // 140-300 range (capped at 255)
+                            baseG = 50 + (intensityBase - 0.25) * 210;  // 50-260 range (capped at 255)
+                            baseR = 15 + (intensityBase - 0.25) * 160;  // 15-175 range for baby blue
+                        }
+                        
+                        // Add bright white foam highlights in high velocity areas
+                        const foamEffect = Math.pow(waveEffect * intensityBase, 1.4) * 5.5;
+                        
+                        // Apply persistent dark effect for black currents and deep areas
+                        const currentStrength = currentPattern * 1.3;
+                        baseB = Math.max(0, baseB - currentStrength * 140);
+                        baseG = Math.max(0, baseG - currentStrength * 90); 
+                        baseR = Math.max(0, baseR - currentStrength * 60);
+                        
+                        // Create gradient from black/dark blue to baby blue to white foam
+                        r = Math.floor(Math.min(255, baseR + foamEffect * 255));
+                        g = Math.floor(Math.min(255, baseG + foamEffect * 255));
+                        b = Math.floor(Math.min(255, baseB + foamEffect * 155));
+                        
+                        // Increase alpha for better visibility especially in dark areas
+                        const darkAreaBoost = Math.pow(currentStrength, 0.7) * 800;
+                        a = Math.min(255, d * (2200 + darkAreaBoost + foamEffect * 900));
+                    } else if (colorMode === 'smoke') {
+                        // Smoke with persistent black regions and improved contrast
+                        const intensityBase = Math.min(1, d * 7.5);
+                        
+                        // Create more complex swirl patterns
+                        const swirlPhase = angle * 4 + normalizedVelocity * 15;
+                        const swirlEffect = (Math.sin(swirlPhase) * 0.5 + 0.5);
+                        
+                        // Create persistent black areas that don't dissipate as quickly
+                        const persistentBlackEffect = Math.pow(1 - intensityBase, 2) * Math.pow(1 - normalizedVelocity, 1.5) * 1.8;
+                        
+                        // Smoke density pattern for additional texture
+                        const densityPattern = (Math.sin(angle * 6 + d * 15) * 0.5 + 0.5) * 0.7;
+                        
+                        // Start with a darker base for low density areas
+                        let baseValue = intensityBase * 240; // 0-240 range
+                        
+                        // Apply true black regions with stronger persistence
+                        if (persistentBlackEffect > 0.3) {
+                            const blackAmount = (persistentBlackEffect - 0.3) * (1 + densityPattern);
+                            baseValue = Math.max(0, baseValue - blackAmount * 600);
+                        }
+                        
+                        // Apply dramatic highlights in high velocity areas
+                        const highlightEffect = Math.pow(swirlEffect * normalizedVelocity, 1.0) * 4.0;
+                        const highlightValue = Math.min(255, baseValue + highlightEffect * 220);
+                        
+                        // Create stronger color variations between warm and cool tones
+                        const colorVariation = Math.sin(angle * 2.8) * 0.9;
+                        
+                        // Apply color tinting with greater contrast between tones
+                        r = Math.min(255, highlightValue + colorVariation * 80);
+                        g = highlightValue;
+                        b = Math.min(255, highlightValue - colorVariation * 80);
+                        
+                        // Even higher alpha with stronger definition in dark areas
+                        const darkAreaBoost = Math.pow(persistentBlackEffect, 0.5) * 1000;
+                        a = Math.min(255, d * (2400 + darkAreaBoost + highlightEffect * 1200));
+                    }
+                    
+                    // Set color with alpha blending
+                    data[pixel] = r;
+                    data[pixel + 1] = g;
+                    data[pixel + 2] = b;
+                    data[pixel + 3] = a;
+                }
+            }
+            
+            // Create a temporary canvas for scaling
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = N;
+            tempCanvas.height = N;
+            const tempContext = tempCanvas.getContext('2d');
+            tempContext.putImageData(imageData, 0, 0);
+            
+            // Scale up to canvas size with smooth interpolation
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(tempCanvas, 0, 0, N, N, 0, 0, canvas.width, canvas.height);
+            
+            // If nothing is visible, add some random fluid
+            if (!hasVisibleContent) {
+                addRandomFluid();
+            }
+        }
+        
+        // Animation loop
+        function animate() {
+            fluidStep();
+            renderFields();
+            requestAnimationFrame(animate);
+        }
+        
+        // Start animation
+        animate();
+        
+        // Add initial fluid to make it visible immediately
+        for (let i = 0; i < 10; i++) {  // Increase the number of initial fluid particles
+            addRandomFluid();
+        }
+    </script>
+</body>
+</html>

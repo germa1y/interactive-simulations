@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Conway's Game of Life</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #1a1a2e;
+            color: #e6e6e6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            transition: background-color 0.5s;
+        }
+
+        h1 {
+            color: #4cc9f0;
+            margin-bottom: 10px;
+            text-align: center;
+            text-shadow: 0 0 10px rgba(76, 201, 240, 0.5);
+        }
+
+        .description {
+            max-width: 600px;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #b8c1ec;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #16213e;
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 90vw;
+        }
+
+        .grid-container {
+            position: relative;
+            margin: 12px 0;
+            overflow: hidden;
+            border-radius: 8px;
+            border: 2px solid #4cc9f0;
+            box-shadow: 0 0 15px rgba(76, 201, 240, 0.4);
+            display: flex;
+            justify-content: center;
+        }
+
+        #grid {
+            display: grid;
+            background-color: #0f3460;
+            aspect-ratio: 1 / 1;
+        }
+
+        .cell {
+            border: 1px solid rgba(76, 201, 240, 0.2);
+            transition: background-color 0.2s ease;
+            cursor: pointer;
+            aspect-ratio: 1 / 1;
+        }
+
+        .cell.alive {
+            background-color: #4cc9f0;
+            box-shadow: 0 0 5px #4cc9f0, 0 0 10px #4cc9f0;
+            z-index: 1;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            width: 100%;
+        }
+
+        button {
+            background-color: #0f3460;
+            color: #e6e6e6;
+            border: 2px solid #4cc9f0;
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 90px;
+        }
+
+        button:hover {
+            background-color: #4cc9f0;
+            color: #0f3460;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 201, 240, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        button.active {
+            background-color: #4cc9f0;
+            color: #0f3460;
+        }
+
+        .settings {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .setting {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        label {
+            font-size: 14px;
+            margin-bottom: 5px;
+            color: #b8c1ec;
+        }
+
+        input[type="range"] {
+            width: 120px;
+        }
+
+        input[type="color"] {
+            width: 40px;
+            height: 30px;
+            border: none;
+            cursor: pointer;
+        }
+
+        select {
+            padding: 5px;
+            border-radius: 5px;
+            background-color: #0f3460;
+            color: #e6e6e6;
+            border: 1px solid #4cc9f0;
+        }
+
+        .stats {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #b8c1ec;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #e6e6e6;
+            font-size: 24px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .theme-toggle:hover {
+            transform: rotate(45deg);
+        }
+
+        .pattern-selector {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 10px;
+            width: 100%;
+            padding: 8px;
+            background-color: rgba(15, 52, 96, 0.2);
+            border-radius: 10px;
+        }
+
+        .pattern-display {
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #4cc9f0;
+        }
+
+        .pattern-info-text {
+            margin-top: 5px;
+            font-size: 13px;
+            text-align: center;
+            color: #b8c1ec;
+            max-width: 400px;
+        }
+
+        .light-theme {
+            background-color: #f0f2f5;
+            color: #333;
+        }
+
+        .light-theme h1 {
+            color: #0f3460;
+            text-shadow: 0 0 10px rgba(15, 52, 96, 0.3);
+        }
+
+        .light-theme .description {
+            color: #333;
+        }
+
+        .light-theme .container {
+            background-color: #ffffff;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .light-theme .grid-container {
+            border: 2px solid #0f3460;
+            box-shadow: 0 0 15px rgba(15, 52, 96, 0.3);
+        }
+
+        .light-theme #grid {
+            background-color: #e6e6e6;
+        }
+
+        .light-theme .cell {
+            border: 1px solid rgba(15, 52, 96, 0.2);
+        }
+
+        .light-theme .cell.alive {
+            background-color: #0f3460;
+            box-shadow: 0 0 5px #0f3460, 0 0 10px #0f3460;
+        }
+
+        .light-theme button {
+            background-color: #f0f2f5;
+            color: #0f3460;
+            border: 2px solid #0f3460;
+        }
+
+        .light-theme button:hover {
+            background-color: #0f3460;
+            color: #f0f2f5;
+            box-shadow: 0 5px 15px rgba(15, 52, 96, 0.3);
+        }
+
+        .light-theme button.active {
+            background-color: #0f3460;
+            color: #f0f2f5;
+        }
+
+        .light-theme label {
+            color: #333;
+        }
+
+        .light-theme .stats {
+            color: #333;
+        }
+
+        .light-theme select {
+            background-color: #f0f2f5;
+            color: #0f3460;
+            border: 1px solid #0f3460;
+        }
+
+        .history-controls {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            gap: 10px;
+            margin-top: 15px;
+            align-items: center;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 500px;
+            gap: 10px;
+            margin: 5px 0;
+        }
+        
+        #patternSlider {
+            width: 100%;
+            margin: 5px 0;
+        }
+
+        #historySlider {
+            flex-grow: 1;
+        }
+
+        .history-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .pattern-info {
+            background-color: rgba(15, 52, 96, 0.8);
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .tabs {
+            display: flex;
+            margin-top: 15px;
+            border-bottom: 1px solid #4cc9f0;
+            width: 100%;
+        }
+
+        .tab {
+            padding: 8px 15px;
+            cursor: pointer;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+        }
+
+        .tab.active {
+            background-color: #4cc9f0;
+            color: #0f3460;
+        }
+
+        .tab-content {
+            padding: 15px 0;
+            width: 100%;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .pattern-badge {
+            display: inline-block;
+            background-color: #4cc9f0;
+            color: #0f3460;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin: 3px;
+        }
+        
+        .pattern-count {
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        
+        .pattern-category {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #4cc9f0;
+        }
+
+        @media (max-width: 700px) {
+            .container {
+                width: 95%;
+                padding: 15px;
+            }
+            
+            .controls, .settings, .patterns {
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .setting {
+                flex-direction: row;
+                gap: 10px;
+                justify-content: space-between;
+                width: 80%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button id="themeToggle" class="theme-toggle">🌓</button>
+    <h1>Advanced Game of Life</h1>
+    <div class="description">
+        <p>An enhanced cellular automaton with cell aging, alternative rule sets, pattern detection, and history controls.</p>
+    </div>
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" data-tab="controls">Controls</div>
+            <div class="tab" data-tab="rules">Rules</div>
+            <div class="tab" data-tab="history">History</div>
+        </div>
+
+        <div class="tab-content" id="controls-tab">
+            <div class="controls">
+                <button id="startBtn">Start</button>
+                <button id="stepBtn">Step</button>
+                <button id="resetBtn">Reset</button>
+                <button id="randomBtn">Random</button>
+            </div>
+            
+            <div class="settings">
+                <div class="setting">
+                    <label for="speedRange">Speed</label>
+                    <input type="range" id="speedRange" min="10" max="30" value="10">
+                </div>
+                <div class="setting">
+                    <label for="sizeRange">Cell Size</label>
+                    <input type="range" id="sizeRange" min="5" max="20" value="15">
+                </div>
+                <div class="setting">
+                    <label for="gridSizeRange">Grid Size</label>
+                    <input type="range" id="gridSizeRange" min="40" max="200" value="40" step="10">
+                    <span id="gridSizeDisplay">40x40</span>
+                </div>
+                <div class="setting">
+                    <label for="cellColor">Base Color</label>
+                    <input type="color" id="cellColor" value="#4cc9f0">
+                </div>
+                <div class="setting">
+                    <label for="enableAging">Cell Aging</label>
+                    <input type="checkbox" id="enableAging" checked>
+                </div>
+                
+                <div class="pattern-selector">
+                    <div class="pattern-display">
+                        <label>Pattern: <span id="currentPatternName">None</span></label>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" id="patternSlider" min="0" max="12" value="0" step="1">
+                    </div>
+                    <div class="pattern-info-text">
+                        <p id="patternDescription">Select a pattern using the slider.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content hidden" id="rules-tab">
+            <div class="settings">
+                <div class="setting">
+                    <label for="rulesPreset">Rule Preset</label>
+                    <select id="rulesPreset">
+                        <option value="conway">Conway's Game of Life (B3/S23)</option>
+                        <option value="highlife">HighLife (B36/S23)</option>
+                        <option value="daynight">Day & Night (B3678/S34678)</option>
+                        <option value="seeds">Seeds (B2/S)</option>
+                        <option value="lifewithoutdeath">Life Without Death (B3/S012345678)</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                
+                <div class="setting">
+                    <label for="birthRules">Birth Rules (B)</label>
+                    <div>
+                        <input type="checkbox" id="birth0" value="0"> 0
+                        <input type="checkbox" id="birth1" value="1"> 1
+                        <input type="checkbox" id="birth2" value="2"> 2
+                        <input type="checkbox" id="birth3" value="3" checked> 3
+                        <input type="checkbox" id="birth4" value="4"> 4
+                        <input type="checkbox" id="birth5" value="5"> 5
+                        <input type="checkbox" id="birth6" value="6"> 6
+                        <input type="checkbox" id="birth7" value="7"> 7
+                        <input type="checkbox" id="birth8" value="8"> 8
+                    </div>
+                </div>
+                
+                <div class="setting">
+                    <label for="survivalRules">Survival Rules (S)</label>
+                    <div>
+                        <input type="checkbox" id="survival0" value="0"> 0
+                        <input type="checkbox" id="survival1" value="1"> 1
+                        <input type="checkbox" id="survival2" value="2" checked> 2
+                        <input type="checkbox" id="survival3" value="3" checked> 3
+                        <input type="checkbox" id="survival4" value="4"> 4
+                        <input type="checkbox" id="survival5" value="5"> 5
+                        <input type="checkbox" id="survival6" value="6"> 6
+                        <input type="checkbox" id="survival7" value="7"> 7
+                        <input type="checkbox" id="survival8" value="8"> 8
+                    </div>
+                </div>
+                
+                <div class="setting">
+                    <label>Current Rule: <span id="currentRule">B3/S23</span></label>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content hidden" id="history-tab">
+            <div class="history-controls">
+                <div class="slider-container">
+                    <span>0</span>
+                    <input type="range" id="historySlider" min="0" max="0" value="0">
+                    <span id="maxGeneration">0</span>
+                </div>
+                <div class="history-buttons">
+                    <button id="rewindBtn">⏪ Rewind</button>
+                    <button id="backBtn">⏮ Back</button>
+                    <button id="forwardBtn">⏭ Forward</button>
+                    <button id="fastForwardBtn">⏩ Fast Forward</button>
+                    <button id="saveStateBtn">📥 Save State</button>
+                    <button id="loadStateBtn">📤 Load State</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Removed patterns tab as it's now integrated in controls -->
+
+        <div class="grid-container">
+            <div id="grid"></div>
+        </div>
+
+        <div class="stats">
+            <div>Generation: <span id="generation">0</span></div>
+            <div>Population: <span id="population">0</span></div>
+            <div>Rule: <span id="ruleDisplay">B3/S23</span></div>
+        </div>
+
+        <div id="patternInfo" class="pattern-info hidden">
+            <div id="detectedPatterns"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Game settings
+            const settings = {
+                columns: 40,
+                rows: 40,
+                cellSize: 15,
+                speed: 100,
+                isRunning: false,
+                generation: 0,
+                population: 0,
+                cellColor: '#4cc9f0',
+                darkMode: true,
+                enableAging: true,
+                birthRules: [3],              // Default Conway: Born with 3 neighbors
+                survivalRules: [2, 3],        // Default Conway: Survive with 2 or 3 neighbors
+                historyMaxLength: 100,        // Maximum states to keep in history
+                fastForwardSpeed: 5,           // How many generations to calculate when fast forwarding
+                stabilityCheckInterval: 10,    // Check stability every 10 generations
+                checkForStableOscillators: true, // Toggle for the stability detection feature
+                maxOscillatorPeriod: 10         // Maximum oscillator period to detect
+            };
+
+            // DOM elements
+            const gridEl = document.getElementById('grid');
+            const startBtn = document.getElementById('startBtn');
+            const stepBtn = document.getElementById('stepBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const randomBtn = document.getElementById('randomBtn');
+            const speedRange = document.getElementById('speedRange');
+            const sizeRange = document.getElementById('sizeRange');
+            const gridSizeRange = document.getElementById('gridSizeRange');
+            const gridSizeDisplay = document.getElementById('gridSizeDisplay');
+            const cellColorPicker = document.getElementById('cellColor');
+            const enableAgingCheckbox = document.getElementById('enableAging');
+            const generationEl = document.getElementById('generation');
+            const populationEl = document.getElementById('population');
+            const ruleDisplayEl = document.getElementById('ruleDisplay');
+            const currentRuleEl = document.getElementById('currentRule');
+            const themeToggle = document.getElementById('themeToggle');
+            const rulesPreset = document.getElementById('rulesPreset');
+            const historySlider = document.getElementById('historySlider');
+            const maxGenerationEl = document.getElementById('maxGeneration');
+            const rewindBtn = document.getElementById('rewindBtn');
+            const backBtn = document.getElementById('backBtn');
+            const forwardBtn = document.getElementById('forwardBtn');
+            const fastForwardBtn = document.getElementById('fastForwardBtn');
+            const saveStateBtn = document.getElementById('saveStateBtn');
+            const loadStateBtn = document.getElementById('loadStateBtn');
+            const patternInfoEl = document.getElementById('patternInfo');
+            const detectedPatternsEl = document.getElementById('detectedPatterns');
+            
+            // Pattern buttons
+            const patternSlider = document.getElementById('patternSlider');
+            const currentPatternNameEl = document.getElementById('currentPatternName');
+            const patternDescriptionEl = document.getElementById('patternDescription');
+
+            // Tab navigation
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            // Game state
+            let grid = [];
+            let ages = [];
+            let gameInterval;
+            let isDrawing = false;
+            let drawMode = true;
+            let gameHistory = [];
+            let currentHistoryIndex = -1;
+            let isViewingHistory = false;
+            let detectedPatterns = {};
+
+            // Initialize the grid
+            function initializeGrid() {
+                gridEl.innerHTML = '';
+                gridEl.style.gridTemplateColumns = `repeat(${settings.columns}, ${settings.cellSize}px)`;
+                gridEl.style.gridTemplateRows = `repeat(${settings.rows}, ${settings.cellSize}px)`;
+                
+                grid = Array(settings.rows).fill().map(() => Array(settings.columns).fill(false));
+                ages = Array(settings.rows).fill().map(() => Array(settings.columns).fill(0));
+                
+                for (let row = 0; row < settings.rows; row++) {
+                    for (let col = 0; col < settings.columns; col++) {
+                        const cell = document.createElement('div');
+                        cell.classList.add('cell');
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
+                        cell.style.width = `${settings.cellSize}px`;
+                        cell.style.height = `${settings.cellSize}px`;
+                        
+                        // Cell event listeners
+                        cell.addEventListener('mousedown', (e) => {
+                            if (isViewingHistory) return;
+                            isDrawing = true;
+                            toggleCell(cell, row, col);
+                        });
+                        
+                        cell.addEventListener('mouseenter', (e) => {
+                            if (isViewingHistory) return;
+                            if (isDrawing) {
+                                toggleCell(cell, row, col, drawMode);
+                            }
+                        });
+                        
+                        gridEl.appendChild(cell);
+                    }
+                }
+                
+                updateStats();
+                resetHistory();
+            }
+
+            // Toggle cell state
+            function toggleCell(cell, row, col, forcedState = null) {
+                if (forcedState !== null) {
+                    grid[row][col] = forcedState;
+                } else {
+                    drawMode = !grid[row][col];
+                    grid[row][col] = drawMode;
+                }
+
+                if (grid[row][col]) {
+                    ages[row][col] = 1; // Reset age for newly alive cells
+                } else {
+                    ages[row][col] = 0; // Reset age for dead cells
+                }
+
+                updateCellAppearance(cell, grid[row][col], ages[row][col]);
+                updateStats();
+            }
+
+            // Update a cell's appearance
+            function updateCellAppearance(cell, isAlive, age) {
+                if (isAlive) {
+                    cell.classList.add('alive');
+                    
+                    if (settings.enableAging && age > 0) {
+                        // Apply color gradient based on age
+                        // Start with base color and gradually shift to white
+                        const baseColor = hexToRgb(settings.cellColor);
+                        const maxAge = 10; // Cells reach full color at this age
+                        const ageRatio = Math.min(age / maxAge, 1);
+                        
+                        const r = Math.floor(baseColor.r * (1 - ageRatio) + 255 * ageRatio);
+                        const g = Math.floor(baseColor.g * (1 - ageRatio) + 255 * ageRatio);
+                        const b = Math.floor(baseColor.b * (1 - ageRatio) + 255 * ageRatio);
+                        
+                        const cellColor = `rgb(${r}, ${g}, ${b})`;
+                        cell.style.backgroundColor = cellColor;
+                        cell.style.boxShadow = `0 0 5px ${cellColor}, 0 0 10px ${cellColor}`;
+                    } else {
+                        cell.style.backgroundColor = settings.cellColor;
+                        cell.style.boxShadow = `0 0 5px ${settings.cellColor}, 0 0 10px ${settings.cellColor}`;
+                    }
+                } else {
+                    cell.classList.remove('alive');
+                    cell.style.backgroundColor = '';
+                    cell.style.boxShadow = '';
+                }
+            }
+
+            // Update all cell appearances based on grid state
+            function updateGridAppearance() {
+                const cells = gridEl.querySelectorAll('.cell');
+                let cellIndex = 0;
+                
+                for (let row = 0; row < settings.rows; row++) {
+                    for (let col = 0; col < settings.columns; col++) {
+                        updateCellAppearance(cells[cellIndex], grid[row][col], ages[row][col]);
+                        cellIndex++;
+                    }
+                }
+            }
+
+            // Calculate the next generation
+            function nextGeneration() {
+                // Save current state to history if not viewing history
+                if (!isViewingHistory) {
+                    addToHistory();
+                }
+
+                const newGrid = Array(settings.rows).fill().map(() => Array(settings.columns).fill(false));
+                const newAges = Array(settings.rows).fill().map(() => Array(settings.columns).fill(0));
+                
+                let hasLiveCells = false;
+                
+                for (let row = 0; row < settings.rows; row++) {
+                    for (let col = 0; col < settings.columns; col++) {
+                        const liveNeighbors = countLiveNeighbors(row, col);
+                        
+                        // Apply current rule set
+                        if (grid[row][col]) {
+                            hasLiveCells = true;
+                            // Cell is alive
+                            newGrid[row][col] = settings.survivalRules.includes(liveNeighbors);
+                            if (newGrid[row][col]) {
+                                newAges[row][col] = ages[row][col] + 1; // Increment age if cell survives
+                            }
+                        } else {
+                            // Cell is dead
+                            newGrid[row][col] = settings.birthRules.includes(liveNeighbors);
+                            if (newGrid[row][col]) {
+                                newAges[row][col] = 1; // New cells start with age 1
+                                hasLiveCells = true;
+                            }
+                        }
+                    }
+                }
+                
+                // Check if grid is static by comparing with previous state
+                let isStatic = true;
+                if (hasLiveCells) {
+                    for (let row = 0; row < settings.rows; row++) {
+                        for (let col = 0; col < settings.columns; col++) {
+                            if (grid[row][col] !== newGrid[row][col]) {
+                                isStatic = false;
+                                break;
+                            }
+                        }
+                        if (!isStatic) break;
+                    }
+                } else {
+                    // All cells are dead
+                    isStatic = true;
+                }
+                
+                grid = newGrid;
+                ages = newAges;
+                
+                if (!isViewingHistory) {
+                    if (!isStatic) {
+                        settings.generation++;
+                        
+                        // Check for stable oscillators periodically to avoid performance impact
+                        if (settings.checkForStableOscillators && 
+                            settings.generation % settings.stabilityCheckInterval === 0 &&
+                            gameHistory.length > settings.maxOscillatorPeriod) {
+                            const isStableOscillator = checkForStableOscillators();
+                            if (isStableOscillator && settings.isRunning) {
+                                console.log(`Stable oscillator with period ${isStableOscillator} detected`);
+                                toggleGame(); // Pause the game
+                            }
+                        }
+                    } else if (settings.isRunning) {
+                        // If grid is static (no changes or all cells dead), pause the simulation
+                        toggleGame();
+                    }
+                }
+                
+                updateGridAppearance();
+                updateStats();
+                detectPatterns();
+            }
+
+            // Count live neighbors of a cell
+            function countLiveNeighbors(row, col) {
+                let count = 0;
+                
+                for (let i = -1; i <= 1; i++) {
+                    for (let j = -1; j <= 1; j++) {
+                        if (i === 0 && j === 0) continue;
+                        
+                        const newRow = row + i;
+                        const newCol = col + j;
+                        
+                        if (newRow >= 0 && newRow < settings.rows && newCol >= 0 && newCol < settings.columns) {
+                            count += grid[newRow][newCol] ? 1 : 0;
+                        }
+                    }
+                }
+                
+                return count;
+            }
+
+            // Start or pause the game
+            function toggleGame() {
+                settings.isRunning = !settings.isRunning;
+                
+                if (settings.isRunning) {
+                    startBtn.textContent = 'Pause';
+                    startBtn.classList.add('active');
+                    stepBtn.disabled = true;
+                    isViewingHistory = false; // Exit history mode when starting
+                    updateHistorySlider();
+                    gameInterval = setInterval(nextGeneration, 1000 / (settings.speed / 10));
+                } else {
+                    startBtn.textContent = 'Start';
+                    startBtn.classList.remove('active');
+                    stepBtn.disabled = false;
+                    clearInterval(gameInterval);
+                }
+            }
+
+            // Clear the grid
+            function clearGrid() {
+                if (settings.isRunning) toggleGame();
+                
+                grid = Array(settings.rows).fill().map(() => Array(settings.columns).fill(false));
+                ages = Array(settings.rows).fill().map(() => Array(settings.columns).fill(0));
+                settings.generation = 0;
+                isViewingHistory = false;
+                
+                updateGridAppearance();
+                updateStats();
+                resetHistory();
+                patternInfoEl.classList.add('hidden');
+            }
+
+            // Reset with current pattern in random location/orientation
+            function resetWithRandomOrientation() {
+                if (settings.isRunning) toggleGame();
+                
+                const currentPatternIndex = parseInt(patternSlider.value);
+                const patternData = patternsData[currentPatternIndex];
+                
+                // If no pattern is selected, just clear the grid
+                if (patternData.name === "None") {
+                    clearGrid();
+                    return;
+                }
+                
+                clearGrid();
+                
+                // Handle dynamic patterns
+                if (patternData.patternType === "dynamic") {
+                    // For dynamic patterns (checkerboard, perimeter, etc.), 
+                    // simply regenerate them as they're already randomized by the grid size
+                    setPattern(patternData);
+                    return;
+                }
+                
+                // Handle traditional static patterns with random orientation
+                
+                // Choose a random location on the grid
+                const rowOffset = Math.floor(Math.random() * (settings.rows - 10)) - Math.floor((settings.rows - 10) / 2);
+                const colOffset = Math.floor(Math.random() * (settings.columns - 10)) - Math.floor((settings.columns - 10) / 2);
+                
+                // Choose a random rotation (0, 90, 180, or 270 degrees)
+                const rotation = Math.floor(Math.random() * 4);
+                
+                // Choose a random flip (horizontal, vertical, or none)
+                const flipHorizontal = Math.random() > 0.5;
+                const flipVertical = Math.random() > 0.5;
+                
+                // Apply the pattern with random transformations
+                patternData.pattern.forEach(([r, c]) => {
+                    let newRow = r;
+                    let newCol = c;
+                    
+                    // Apply rotation
+                    if (rotation === 1) {
+                        // 90 degrees
+                        [newRow, newCol] = [-c, r];
+                    } else if (rotation === 2) {
+                        // 180 degrees
+                        [newRow, newCol] = [-r, -c];
+                    } else if (rotation === 3) {
+                        // 270 degrees
+                        [newRow, newCol] = [c, -r];
+                    }
+                    
+                    // Apply flips
+                    if (flipHorizontal) {
+                        newCol = -newCol;
+                    }
+                    if (flipVertical) {
+                        newRow = -newRow;
+                    }
+                    
+                    // Apply offsets
+                    const finalRow = Math.floor(settings.rows / 2) + newRow + rowOffset;
+                    const finalCol = Math.floor(settings.columns / 2) + newCol + colOffset;
+                    
+                    if (finalRow >= 0 && finalRow < settings.rows && finalCol >= 0 && finalCol < settings.columns) {
+                        grid[finalRow][finalCol] = true;
+                        ages[finalRow][finalCol] = 1;
+                    }
+                });
+                
+                updateGridAppearance();
+                updateStats();
+                resetHistory();
+            }
+
+            // Randomize the grid
+            function randomizeGrid() {
+                if (settings.isRunning) toggleGame();
+                
+                for (let row = 0; row < settings.rows; row++) {
+                    for (let col = 0; col < settings.columns; col++) {
+                        grid[row][col] = Math.random() > 0.7;
+                        ages[row][col] = grid[row][col] ? 1 : 0;
+                    }
+                }
+                
+                settings.generation = 0;
+                isViewingHistory = false;
+                updateGridAppearance();
+                updateStats();
+                resetHistory();
+            }
+
+            // Update the rule display
+            function updateRuleDisplay() {
+                const birthStr = 'B' + settings.birthRules.join('');
+                const survivalStr = 'S' + settings.survivalRules.join('');
+                const ruleStr = birthStr + '/' + survivalStr;
+                
+                ruleDisplayEl.textContent = ruleStr;
+                currentRuleEl.textContent = ruleStr;
+            }
+
+            // Update stats display
+            function updateStats() {
+                settings.population = grid.flat().filter(cell => cell).length;
+                generationEl.textContent = settings.generation;
+                populationEl.textContent = settings.population;
+                updateRuleDisplay();
+            }
+
+            // Detect common patterns in the grid
+            function detectPatterns() {
+                // Reset detected patterns
+                detectedPatterns = {
+                    stillLifes: [],
+                    oscillators: [],
+                    spaceships: []
+                };
+                
+                // Pattern counters
+                const patternCounts = {
+                    stillLifes: {},
+                    oscillators: {},
+                    spaceships: {}
+                };
+                
+                // Patterns to detect
+                const patterns = {
+                    stillLifes: {
+                        block: [
+                            [1, 1],
+                            [1, 1]
+                        ],
+                        beehive: [
+                            [0, 1, 1, 0],
+                            [1, 0, 0, 1],
+                            [0, 1, 1, 0]
+                        ],
+                        loaf: [
+                            [0, 1, 1, 0],
+                            [1, 0, 0, 1],
+                            [0, 1, 0, 1],
+                            [0, 0, 1, 0]
+                        ],
+                        boat: [
+                            [1, 1, 0],
+                            [1, 0, 1],
+                            [0, 1, 0]
+                        ]
+                    },
+                    // For simplicity, we'll just detect blinkers
+                    // More complex oscillators would need multiple frame detection
+                    oscillators: {
+                        blinker: [
+                            [0, 0, 0],
+                            [1, 1, 1],
+                            [0, 0, 0]
+                        ]
+                    },
+                    spaceships: {
+                        glider: [
+                            [0, 1, 0],
+                            [0, 0, 1],
+                            [1, 1, 1]
+                        ]
+                    }
+                };
+                
+                // Check for each pattern in the grid
+                for (let patternType in patterns) {
+                    for (let patternName in patterns[patternType]) {
+                        const patternMatrix = patterns[patternType][patternName];
+                        const patternHeight = patternMatrix.length;
+                        const patternWidth = patternMatrix[0].length;
+                        
+                        // Scan the grid for this pattern
+                        for (let row = 0; row <= settings.rows - patternHeight; row++) {
+                            for (let col = 0; col <= settings.columns - patternWidth; col++) {
+                                let matches = true;
+                                
+                                // Check if the pattern matches at this position
+                                for (let i = 0; i < patternHeight; i++) {
+                                    for (let j = 0; j < patternWidth; j++) {
+                                        if (patternMatrix[i][j] !== (grid[row + i][col + j] ? 1 : 0)) {
+                                            matches = false;
+                                            break;
+                                        }
+                                    }
+                                    if (!matches) break;
+                                }
+                                
+                                if (matches) {
+                                    detectedPatterns[patternType].push({
+                                        name: patternName,
+                                        position: `(${row},${col})`
+                                    });
+                                    
+                                    // Increment counter for this pattern
+                                    patternCounts[patternType][patternName] = (patternCounts[patternType][patternName] || 0) + 1;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Store the counts for UI display
+                detectedPatterns.counts = patternCounts;
+                
+                // Update the UI with detected patterns
+                updatePatternInfo();
+            }
+
+            // Update the pattern information display
+            function updatePatternInfo() {
+                let hasPatterns = false;
+                detectedPatternsEl.innerHTML = '';
+                
+                // Collect all patterns and their counts
+                const allPatterns = {};
+                let totalPatternCount = 0;
+                
+                // Combine all pattern types into a single collection
+                for (const type of ['stillLifes', 'oscillators', 'spaceships']) {
+                    Object.entries(detectedPatterns.counts[type] || {}).forEach(([name, count]) => {
+                        if (count > 0) {
+                            allPatterns[name] = count;
+                            totalPatternCount += count;
+                        }
+                    });
+                }
+                
+                // Display the patterns if any exist
+                if (totalPatternCount > 0) {
+                    hasPatterns = true;
+                    
+                    // Add header with total count
+                    const headerDiv = document.createElement('div');
+                    headerDiv.classList.add('pattern-category');
+                    headerDiv.textContent = `Detected Patterns: ${totalPatternCount} total`;
+                    detectedPatternsEl.appendChild(headerDiv);
+                    
+                    // Add all pattern badges in a single row
+                    Object.entries(allPatterns).forEach(([name, count]) => {
+                        const badge = document.createElement('span');
+                        badge.classList.add('pattern-badge');
+                        badge.textContent = `${name}`;
+                        
+                        const countSpan = document.createElement('span');
+                        countSpan.classList.add('pattern-count');
+                        countSpan.textContent = `${count}`;
+                        badge.appendChild(countSpan);
+                        
+                        detectedPatternsEl.appendChild(badge);
+                    });
+                }
+                
+                patternInfoEl.classList.toggle('hidden', !hasPatterns);
+            }
+
+            // Set a pattern on the grid
+            function setPattern(pattern) {
+                if (!pattern || (Array.isArray(pattern) && pattern.length === 0)) {
+                    clearGrid();
+                    return;
+                }
+                
+                if (settings.isRunning) toggleGame();
+                clearGrid();
+                
+                // Handle dynamic pattern types
+                if (typeof pattern === 'object' && pattern.patternType === 'dynamic' && typeof pattern.generator === 'function') {
+                    // Get dynamically generated pattern based on current grid size
+                    const generatedPattern = pattern.generator(settings.rows, settings.columns);
+                    
+                    // Apply the generated pattern directly
+                    generatedPattern.forEach(([row, col]) => {
+                        if (row >= 0 && row < settings.rows && col >= 0 && col < settings.columns) {
+                            grid[row][col] = true;
+                            ages[row][col] = 1;
+                        }
+                    });
+                } else {
+                    // Handle traditional static patterns (centered on grid)
+                    const centerRow = Math.floor(settings.rows / 2);
+                    const centerCol = Math.floor(settings.columns / 2);
+                    
+                    pattern.forEach(([rowOffset, colOffset]) => {
+                        const row = centerRow + rowOffset;
+                        const col = centerCol + colOffset;
+                        
+                        if (row >= 0 && row < settings.rows && col >= 0 && col < settings.columns) {
+                            grid[row][col] = true;
+                            ages[row][col] = 1;
+                        }
+                    });
+                }
+                
+                updateGridAppearance();
+                updateStats();
+                addToHistory();
+            }
+
+            // History management
+            function addToHistory() {
+                // If we're in the middle of history, truncate the future
+                if (currentHistoryIndex < gameHistory.length - 1) {
+                    gameHistory = gameHistory.slice(0, currentHistoryIndex + 1);
+                }
+                
+                // Deep clone the current state
+                const gridCopy = JSON.parse(JSON.stringify(grid));
+                const agesCopy = JSON.parse(JSON.stringify(ages));
+                
+                // Add to history
+                gameHistory.push({
+                    grid: gridCopy,
+                    ages: agesCopy,
+                    generation: settings.generation
+                });
+                
+                // Trim history if it gets too long
+                if (gameHistory.length > settings.historyMaxLength) {
+                    gameHistory.shift();
+                }
+                
+                currentHistoryIndex = gameHistory.length - 1;
+                updateHistorySlider();
+            }
+
+            // Reset history
+            function resetHistory() {
+                gameHistory = [];
+                currentHistoryIndex = -1;
+                addToHistory(); // Add initial state
+                updateHistorySlider();
+            }
+
+            // Update history slider
+            function updateHistorySlider() {
+                historySlider.min = 0;
+                historySlider.max = gameHistory.length - 1;
+                historySlider.value = currentHistoryIndex;
+                maxGenerationEl.textContent = gameHistory.length - 1;
+            }
+
+            // Load a state from history
+            function loadHistoryState(index) {
+                if (index >= 0 && index < gameHistory.length) {
+                    currentHistoryIndex = index;
+                    const state = gameHistory[index];
+                    
+                    grid = JSON.parse(JSON.stringify(state.grid));
+                    ages = JSON.parse(JSON.stringify(state.ages));
+                    settings.generation = state.generation;
+                    
+                    updateGridAppearance();
+                    updateStats();
+                    historySlider.value = currentHistoryIndex;
+                }
+            }
+
+            // Save current state
+            function saveState() {
+                const state = {
+                    grid: JSON.parse(JSON.stringify(grid)),
+                    ages: JSON.parse(JSON.stringify(ages)),
+                    generation: settings.generation,
+                    birthRules: settings.birthRules,
+                    survivalRules: settings.survivalRules
+                };
+                
+                const stateStr = JSON.stringify(state);
+                localStorage.setItem('gameOfLifeState', stateStr);
+                alert('Current state saved successfully!');
+            }
+
+            // Load saved state
+            function loadState() {
+                const stateStr = localStorage.getItem('gameOfLifeState');
+                if (stateStr) {
+                    try {
+                        const state = JSON.parse(stateStr);
+                        
+                        // Only load if dimensions match
+                        if (state.grid.length === settings.rows && state.grid[0].length === settings.columns) {
+                            grid = state.grid;
+                            ages = state.ages || Array(settings.rows).fill().map(() => Array(settings.columns).fill(1));
+                            settings.generation = state.generation;
+                            
+                            // Load rules if available
+                            if (state.birthRules) settings.birthRules = state.birthRules;
+                            if (state.survivalRules) settings.survivalRules = state.survivalRules;
+                            
+                            updateRuleCheckboxes();
+                            updateGridAppearance();
+                            updateStats();
+                            resetHistory();
+                            isViewingHistory = false;
+                        } else {
+                            alert('Saved state has different dimensions. Cannot load.');
+                        }
+                    } catch (e) {
+                        alert('Error loading saved state.');
+                        console.error(e);
+                    }
+                } else {
+                    alert('No saved state found.');
+                }
+            }
+
+            // Fast forward multiple generations
+            function fastForward() {
+                if (isViewingHistory) {
+                    isViewingHistory = false;
+                }
+                
+                for (let i = 0; i < settings.fastForwardSpeed; i++) {
+                    nextGeneration();
+                }
+            }
+
+            // Update rule checkboxes based on current rules
+            function updateRuleCheckboxes() {
+                // Clear all checkboxes
+                for (let i = 0; i <= 8; i++) {
+                    document.getElementById(`birth${i}`).checked = false;
+                    document.getElementById(`survival${i}`).checked = false;
+                }
+                
+                // Set checkboxes based on current rules
+                settings.birthRules.forEach(rule => {
+                    const checkbox = document.getElementById(`birth${rule}`);
+                    if (checkbox) checkbox.checked = true;
+                });
+                
+                settings.survivalRules.forEach(rule => {
+                    const checkbox = document.getElementById(`survival${rule}`);
+                    if (checkbox) checkbox.checked = true;
+                });
+            }
+
+            // Apply rule preset
+            function applyRulePreset(preset) {
+                switch (preset) {
+                    case 'conway':
+                        settings.birthRules = [3];
+                        settings.survivalRules = [2, 3];
+                        break;
+                    case 'highlife':
+                        settings.birthRules = [3, 6];
+                        settings.survivalRules = [2, 3];
+                        break;
+                    case 'daynight':
+                        settings.birthRules = [3, 6, 7, 8];
+                        settings.survivalRules = [3, 4, 6, 7, 8];
+                        break;
+                    case 'seeds':
+                        settings.birthRules = [2];
+                        settings.survivalRules = [];
+                        break;
+                    case 'lifewithoutdeath':
+                        settings.birthRules = [3];
+                        settings.survivalRules = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+                        break;
+                    case 'custom':
+                        // Keep current settings
+                        break;
+                }
+                
+                updateRuleCheckboxes();
+                updateRuleDisplay();
+            }
+
+            // Convert hex color to RGB
+            function hexToRgb(hex) {
+                // Remove # if present
+                hex = hex.replace('#', '');
+                
+                // Parse the hex values
+                const r = parseInt(hex.substring(0, 2), 16);
+                const g = parseInt(hex.substring(2, 4), 16);
+                const b = parseInt(hex.substring(4, 6), 16);
+                
+                return { r, g, b };
+            }
+
+            // Update custom rules from checkboxes
+            function updateCustomRules() {
+                const birthRules = [];
+                const survivalRules = [];
+                
+                // Collect birth rules
+                for (let i = 0; i <= 8; i++) {
+                    const checkbox = document.getElementById(`birth${i}`);
+                    if (checkbox && checkbox.checked) {
+                        birthRules.push(i);
+                    }
+                }
+                
+                // Collect survival rules
+                for (let i = 0; i <= 8; i++) {
+                    const checkbox = document.getElementById(`survival${i}`);
+                    if (checkbox && checkbox.checked) {
+                        survivalRules.push(i);
+                    }
+                }
+                
+                settings.birthRules = birthRules;
+                settings.survivalRules = survivalRules;
+                rulesPreset.value = 'custom';
+                
+                updateRuleDisplay();
+            }
+
+            // Predefined patterns with descriptions
+            const patternsData = [
+                {
+                    name: "None",
+                    pattern: [],
+                    description: "Clear grid. Click on cells to create your own pattern."
+                },
+                {
+                    name: "Glider",
+                    pattern: [
+                        [0, 0], [0, 2], [1, 1], [1, 2], [2, 1]
+                    ],
+                    description: "A simple 'spaceship' that moves diagonally across the grid."
+                },
+                {
+                    name: "Pulsar",
+                    pattern: [
+                        [-6, -4], [-6, -3], [-6, -2], [-6, 2], [-6, 3], [-6, 4],
+                        [-4, -6], [-4, -1], [-4, 1], [-4, 6],
+                        [-3, -6], [-3, -1], [-3, 1], [-3, 6],
+                        [-2, -6], [-2, -1], [-2, 1], [-2, 6],
+                        [-1, -4], [-1, -3], [-1, -2], [-1, 2], [-1, 3], [-1, 4],
+                        [1, -4], [1, -3], [1, -2], [1, 2], [1, 3], [1, 4],
+                        [2, -6], [2, -1], [2, 1], [2, 6],
+                        [3, -6], [3, -1], [3, 1], [3, 6],
+                        [4, -6], [4, -1], [4, 1], [4, 6],
+                        [6, -4], [6, -3], [6, -2], [6, 2], [6, 3], [6, 4]
+                    ],
+                    description: "A complex oscillator with period 3 that resembles a pulsar star."
+                },
+                {
+                    name: "Gosper Glider Gun",
+                    pattern: [
+                        [0, 24],
+                        [1, 22], [1, 24],
+                        [2, 12], [2, 13], [2, 20], [2, 21], [2, 34], [2, 35],
+                        [3, 11], [3, 15], [3, 20], [3, 21], [3, 34], [3, 35],
+                        [4, 0], [4, 1], [4, 10], [4, 16], [4, 20], [4, 21],
+                        [5, 0], [5, 1], [5, 10], [5, 14], [5, 16], [5, 17], [5, 22], [5, 24],
+                        [6, 10], [6, 16], [6, 24],
+                        [7, 11], [7, 15],
+                        [8, 12], [8, 13]
+                    ],
+                    description: "Continuously emits gliders. The first known pattern with unbounded growth."
+                },
+                {
+                    name: "Pentadecathlon",
+                    pattern: [
+                        [-4, 0], [-3, 0], [-2, -1], [-2, 1], [-1, 0], [0, 0], [1, 0], [2, 0], [3, -1], [3, 1], [4, 0], [5, 0]
+                    ],
+                    description: "An oscillator with a period of 15, discovered by John Conway."
+                },
+                {
+                    name: "Acorn",
+                    pattern: [
+                        [0, 1], [1, 3], [2, 0], [2, 1], [2, 4], [2, 5], [2, 6]
+                    ],
+                    description: "A methuselah that stabilizes after 5206 generations with 633 cells."
+                },
+                {
+                    name: "R-Pentomino",
+                    pattern: [
+                        [0, 1], [0, 2], [1, 0], [1, 1], [2, 1]
+                    ],
+                    description: "A methuselah that takes 1103 generations to stabilize."
+                },
+                {
+                    name: "Lightweight Spaceship",
+                    pattern: [
+                        [0, 1], [0, 2], [0, 3], [0, 4], [1, 0], [1, 4], [2, 4], [3, 0], [3, 3]
+                    ],
+                    description: "A small spaceship that moves horizontally across the grid."
+                },
+                {
+                    name: "Hammerhead",
+                    pattern: [
+                        [-6, 0], [-6, 1], [-6, 2], [-6, 3], [-6, 4], [-6, 5], [-6, 6], [-6, 7], [-6, 8],
+                        [-5, -1], [-5, 0], [-5, 8], [-5, 9],
+                        [-4, -2], [-4, -1], [-4, 9], [-4, 10],
+                        [-3, -2], [-3, 10],
+                        [-2, -2], [-2, 0], [-2, 8], [-2, 10],
+                        [-1, -1], [-1, 1], [-1, 2], [-1, 6], [-1, 7], [-1, 9],
+                        [0, 2], [0, 6],
+                        [1, -1], [1, 1], [1, 2], [1, 6], [1, 7], [1, 9],
+                        [2, -2], [2, 0], [2, 8], [2, 10],
+                        [3, -2], [3, 10],
+                        [4, -2], [4, -1], [4, 9], [4, 10],
+                        [5, -1], [5, 0], [5, 8], [5, 9],
+                        [6, 0], [6, 1], [6, 2], [6, 3], [6, 4], [6, 5], [6, 6], [6, 7], [6, 8]
+                    ],
+                    description: "A large spaceship that moves horizontally and resembles a hammerhead shark."
+                },
+                {
+                    name: "Diehard",
+                    pattern: [
+                        [0, 6], [1, 0], [1, 1], [2, 1], [2, 5], [2, 6], [2, 7]
+                    ],
+                    description: "A methuselah that disappears after 130 generations, leaving no stable patterns."
+                },
+                {
+                    name: "Infinite Growth 1",
+                    pattern: [
+                        [0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6], [0, 7], [0, 9], [0, 10], [0, 11], [0, 12], [0, 13], [0, 17], [0, 18], [0, 19], [0, 26], [0, 27], [0, 28], [0, 29], [0, 30], [0, 31], [0, 32], [0, 34], [0, 35], [0, 36], [0, 37], [0, 38]
+                    ],
+                    description: "A simple 1D pattern that exhibits unbounded growth along a line."
+                },
+                {
+                    name: "Glider Synthesis",
+                    pattern: [
+                        [-6, -2], [-6, -1], [-6, 0], [-5, -3], [-5, 0], [-4, -4], [-4, 0], [-3, 0], [-2, -2], [-1, -1], [-1, 0], [0, 0],
+                        [5, 3], [5, 4], [5, 5], [6, 3], [7, 4]
+                    ],
+                    description: "A pattern that creates a glider through collision of two R-pentominos."
+                },
+                {
+                    name: "Garden of Eden",
+                    pattern: [
+                        [-4, -4], [-4, -3], [-4, -1], [-4, 0], [-4, 1], [-4, 3], [-4, 4],
+                        [-3, -4], [-3, -2], [-3, -1], [-3, 1], [-3, 2], [-3, 4],
+                        [-2, -4], [-2, -3], [-2, -1], [-2, 0], [-2, 1], [-2, 3], [-2, 4],
+                        [-1, -4], [-1, -2], [-1, 0], [-1, 2], [-1, 4],
+                        [0, -4], [0, -3], [0, -1], [0, 1], [0, 3], [0, 4],
+                        [1, -4], [1, -2], [1, 0], [1, 2], [1, 4],
+                        [2, -4], [2, -3], [2, -1], [2, 0], [2, 1], [2, 3], [2, 4],
+                        [3, -4], [3, -2], [3, -1], [3, 1], [3, 2], [3, 4],
+                        [4, -4], [4, -3], [4, -1], [4, 0], [4, 1], [4, 3], [4, 4]
+                    ],
+                    description: "A pattern that cannot be constructed from any previous pattern - it must be created directly."
+                },
+                {
+                    name: "Checkerboard",
+                    patternType: "dynamic",
+                    generator: function(rows, cols) {
+                        const pattern = [];
+                        for (let row = 0; row < rows; row++) {
+                            for (let col = 0; col < cols; col++) {
+                                if ((row + col) % 2 === 0) {
+                                    pattern.push([row, col]);
+                                }
+                            }
+                        }
+                        return pattern;
+                    },
+                    description: "Every other cell is alive, creating a checkerboard pattern."
+                },
+                {
+                    name: "Perimeter",
+                    patternType: "dynamic",
+                    generator: function(rows, cols) {
+                        const pattern = [];
+                        // Top and bottom rows
+                        for (let col = 0; col < cols; col++) {
+                            pattern.push([0, col]);
+                            pattern.push([rows - 1, col]);
+                        }
+                        // Left and right columns (excluding corners already added)
+                        for (let row = 1; row < rows - 1; row++) {
+                            pattern.push([row, 0]);
+                            pattern.push([row, cols - 1]);
+                        }
+                        return pattern;
+                    },
+                    description: "All cells around the perimeter of the grid are alive."
+                },
+                {
+                    name: "Zigzag Perimeter",
+                    patternType: "dynamic",
+                    generator: function(rows, cols) {
+                        const pattern = [];
+                        
+                        // Outer perimeter - alternating cells
+                        // Top and bottom rows
+                        for (let col = 0; col < cols; col++) {
+                            if (col % 2 === 0) {
+                                pattern.push([0, col]);
+                                pattern.push([rows - 1, col]);
+                            }
+                        }
+                        // Left and right columns
+                        for (let row = 1; row < rows - 1; row++) {
+                            if (row % 2 === 0) {
+                                pattern.push([row, 0]);
+                                pattern.push([row, cols - 1]);
+                            }
+                        }
+                        
+                        // Inner perimeter - one cell in from edges, also alternating
+                        // Top and bottom rows (one row in)
+                        for (let col = 0; col < cols; col++) {
+                            if (col % 2 === 1) {
+                                pattern.push([1, col]);
+                                pattern.push([rows - 2, col]);
+                            }
+                        }
+                        // Left and right columns (one column in)
+                        for (let row = 2; row < rows - 2; row++) {
+                            if (row % 2 === 1) {
+                                pattern.push([row, 1]);
+                                pattern.push([row, cols - 2]);
+                            }
+                        }
+                        
+                        return pattern;
+                    },
+                    description: "Alternating cells around the perimeter, two cells deep, creating a zigzag pattern."
+                },
+                {
+                    name: "Crisscross",
+                    patternType: "dynamic",
+                    generator: function(rows, cols) {
+                        const pattern = [];
+                        
+                        // Find the center point
+                        const centerRow = Math.floor(rows / 2);
+                        const centerCol = Math.floor(cols / 2);
+                        
+                        // Draw lines from each corner to the center
+                        // Top-left to center
+                        for (let i = 0; i <= centerRow && i <= centerCol; i++) {
+                            pattern.push([i, i]);
+                        }
+                        
+                        // Top-right to center
+                        for (let i = 0; i <= centerRow && i <= cols - centerCol - 1; i++) {
+                            pattern.push([i, cols - i - 1]);
+                        }
+                        
+                        // Bottom-left to center
+                        for (let i = 0; i <= rows - centerRow - 1 && i <= centerCol; i++) {
+                            pattern.push([rows - i - 1, i]);
+                        }
+                        
+                        // Bottom-right to center
+                        for (let i = 0; i <= rows - centerRow - 1 && i <= cols - centerCol - 1; i++) {
+                            pattern.push([rows - i - 1, cols - i - 1]);
+                        }
+                        
+                        return pattern;
+                    },
+                    description: "Lines from each corner meeting in the middle, creating a crisscross pattern."
+                }
+            ];
+
+            // Tab switching
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.dataset.tab;
+                    
+                    // Hide all tab contents
+                    tabContents.forEach(content => {
+                        content.classList.add('hidden');
+                    });
+                    
+                    // Remove active class from all tabs
+                    tabs.forEach(t => {
+                        t.classList.remove('active');
+                    });
+                    
+                    // Show selected tab content and mark tab as active
+                    document.getElementById(`${tabId}-tab`).classList.remove('hidden');
+                    tab.classList.add('active');
+                });
+            });
+
+            // Initialize the app
+            initializeGrid();
+
+            // Event listeners
+            startBtn.addEventListener('click', toggleGame);
+            
+            stepBtn.addEventListener('click', () => {
+                if (!settings.isRunning) {
+                    isViewingHistory = false;
+                    nextGeneration();
+                }
+            });
+            
+            resetBtn.addEventListener('click', resetWithRandomOrientation);
+            randomBtn.addEventListener('click', randomizeGrid);
+            
+            document.addEventListener('mouseup', () => {
+                isDrawing = false;
+            });
+            
+            document.addEventListener('mouseleave', () => {
+                isDrawing = false;
+            });
+            
+            // Speed control
+            speedRange.addEventListener('input', (e) => {
+                settings.speed = e.target.value * 10;
+                if (settings.isRunning) {
+                    clearInterval(gameInterval);
+                    gameInterval = setInterval(nextGeneration, 1000 / (settings.speed / 10));
+                }
+            });
+            
+            // Cell size control
+            sizeRange.addEventListener('input', (e) => {
+                settings.cellSize = parseInt(e.target.value);
+                initializeGrid();
+            });
+            
+            // Grid size control
+            gridSizeRange.addEventListener('input', (e) => {
+                const size = parseInt(e.target.value);
+                gridSizeDisplay.textContent = `${size}x${size}`;
+            });
+            
+            gridSizeRange.addEventListener('change', (e) => {
+                const size = parseInt(e.target.value);
+                settings.columns = size;
+                settings.rows = size;
+                if (settings.isRunning) toggleGame();
+                initializeGrid();
+            });
+            
+            // Cell color control
+            cellColorPicker.addEventListener('input', (e) => {
+                settings.cellColor = e.target.value;
+                updateGridAppearance();
+            });
+            
+            // Cell aging toggle
+            enableAgingCheckbox.addEventListener('change', (e) => {
+                settings.enableAging = e.target.checked;
+                updateGridAppearance();
+            });
+            
+            // Theme toggle
+            themeToggle.addEventListener('click', () => {
+                settings.darkMode = !settings.darkMode;
+                document.body.classList.toggle('light-theme', !settings.darkMode);
+            });
+            
+            // Rule preset change
+            rulesPreset.addEventListener('change', (e) => {
+                applyRulePreset(e.target.value);
+            });
+            
+            // Birth/survival rule checkboxes
+            for (let i = 0; i <= 8; i++) {
+                document.getElementById(`birth${i}`).addEventListener('change', updateCustomRules);
+                document.getElementById(`survival${i}`).addEventListener('change', updateCustomRules);
+            }
+            
+            // History controls
+            historySlider.addEventListener('input', (e) => {
+                if (settings.isRunning) toggleGame();
+                isViewingHistory = true;
+                loadHistoryState(parseInt(e.target.value));
+            });
+            
+            rewindBtn.addEventListener('click', () => {
+                if (settings.isRunning) toggleGame();
+                isViewingHistory = true;
+                loadHistoryState(0);
+            });
+            
+            backBtn.addEventListener('click', () => {
+                if (settings.isRunning) toggleGame();
+                isViewingHistory = true;
+                loadHistoryState(Math.max(0, currentHistoryIndex - 1));
+            });
+            
+            forwardBtn.addEventListener('click', () => {
+                if (settings.isRunning) toggleGame();
+                isViewingHistory = true;
+                loadHistoryState(Math.min(gameHistory.length - 1, currentHistoryIndex + 1));
+            });
+            
+            fastForwardBtn.addEventListener('click', () => {
+                if (settings.isRunning) toggleGame();
+                fastForward();
+            });
+            
+            saveStateBtn.addEventListener('click', saveState);
+            loadStateBtn.addEventListener('click', loadState);
+            
+            // Pattern slider
+            patternSlider.addEventListener('input', (e) => {
+                const index = parseInt(e.target.value);
+                const patternData = patternsData[index];
+                
+                currentPatternNameEl.textContent = patternData.name;
+                patternDescriptionEl.textContent = patternData.description;
+                
+                if (settings.isRunning) toggleGame();
+                
+                if (patternData.name === "None") {
+                    clearGrid();
+                } else if (patternData.patternType === "dynamic") {
+                    // Pass the entire pattern object for dynamic patterns
+                    setPattern(patternData);
+                } else {
+                    // For traditional patterns, just pass the coordinates array
+                    setPattern(patternData.pattern);
+                }
+            });
+            
+            // Update the max value for the pattern slider
+            patternSlider.max = patternsData.length - 1;
+            
+            // Add function to check for stable oscillators
+            function checkForStableOscillators() {
+                // Check if the current state matches any state from a few generations ago
+                // This will detect repeating patterns (oscillators)
+                
+                const currentGridString = JSON.stringify(grid);
+                
+                // Check for periods from 2 up to maxOscillatorPeriod
+                for (let period = 2; period <= settings.maxOscillatorPeriod; period++) {
+                    if (gameHistory.length > period) {
+                        const historicState = gameHistory[gameHistory.length - period - 1];
+                        if (historicState && JSON.stringify(historicState.grid) === currentGridString) {
+                            return period; // Return the period of the oscillator
+                        }
+                    }
+                }
+                
+                return false; // No stable oscillator detected
+            }
+        });
+    </script>
+</body>
+</html>

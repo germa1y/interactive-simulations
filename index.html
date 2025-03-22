@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XDCHJQ15WZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-XDCHJQ15WZ');
+</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Simulations</title>
+    <style>
+        :root {
+            --primary-color: #3a506b;
+            --secondary-color: #5bc0be;
+            --accent-color: #ffa500;
+            --bg-color: #0b132b;
+            --text-color: #f0f0f0;
+            --card-bg: #1c2541;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            padding: 0;
+            overflow-x: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary-color), #1e2a45);
+            padding: 2rem 0;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #particles-js {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            position: relative;
+            z-index: 2;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--text-color);
+            position: relative;
+            display: inline-block;
+            text-shadow: 0 0 10px rgba(91, 192, 190, 0.5);
+        }
+        
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-color), var(--secondary-color));
+            border-radius: 2px;
+        }
+        
+        .tagline {
+            font-size: 1.3rem;
+            font-weight: 300;
+            margin-bottom: 1rem;
+            opacity: 0.9;
+        }
+        
+        .description {
+            max-width: 800px;
+            margin: 0 auto;
+            font-size: 1.1rem;
+        }
+        
+        main {
+            max-width: 1200px;
+            margin: 3rem auto;
+            padding: 0 2rem;
+            position: relative;
+        }
+        
+        .intro {
+            text-align: center;
+            margin-bottom: 4rem;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        
+        .intro.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        h2 {
+            font-size: 2.2rem;
+            margin-bottom: 1.5rem;
+            color: var(--secondary-color);
+            position: relative;
+            display: inline-block;
+        }
+        
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 25%;
+            width: 50%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--secondary-color), transparent);
+            border-radius: 2px;
+        }
+        
+        .random-sim-btn {
+            background: linear-gradient(135deg, var(--accent-color), #ff6b35);
+            color: #fff;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 0rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            z-index: 5;  /* Increased z-index */
+            font-weight: 700;
+        }
+        
+        .btn-ripple {
+            position: absolute;
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple 0.6s linear;
+            background-color: rgba(255, 255, 255, 0.4);
+            z-index: -1;
+        }
+        
+        @keyframes ripple {
+            to {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+        
+        .random-sim-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(255, 107, 53, 0.3);
+        }
+        
+        .random-sim-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #ff6b35, var(--accent-color));
+            z-index: -1;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+        }
+        
+        .random-sim-btn:hover::before {
+            opacity: 1;
+        }
+        
+        .simulations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2.5rem;
+            perspective: 1000px;
+        }
+        
+        .simulation-card {
+            background: linear-gradient(145deg, #1c2541, #162040);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.5s ease, box-shadow 0.5s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 7px 15px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transform: translateY(50px);
+            z-index: 1;
+        }
+        
+        .simulation-card.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .simulation-card:hover {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3),
+                        0 0 20px rgba(91, 192, 190, 0.4);
+        }
+        
+        .card-image {
+            height: 200px;
+            background: linear-gradient(135deg, #253657, #1a2539);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .card-image::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(91, 192, 190, 0.1), rgba(255, 165, 0, 0.1));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .simulation-card:hover .card-image::before {
+            opacity: 1;
+        }
+        
+        .card-image img {
+            max-width: 100%;
+            max-height: 100%;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .simulation-card:hover .card-image img {
+            transform: scale(1.1);
+        }
+        
+        .card-content {
+            padding: 1.8rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .card-title {
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            color: var(--secondary-color);
+            position: relative;
+            display: inline-block;
+            transition: transform 0.3s ease;
+        }
+        
+        .simulation-card:hover .card-title {
+            transform: translateX(5px);
+        }
+        
+        .card-title::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 40px;
+            height: 2px;
+            background-color: var(--accent-color);
+            transition: width 0.3s ease;
+        }
+        
+        .simulation-card:hover .card-title::after {
+            width: 100%;
+        }
+        
+        .card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .tag {
+            background: rgba(91, 192, 190, 0.15);
+            color: var(--secondary-color);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .simulation-card:hover .tag {
+            background: rgba(91, 192, 190, 0.3);
+        }
+        
+        .card-description {
+            margin-bottom: 1.5rem;
+            flex-grow: 1;
+            line-height: 1.7;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--accent-color), #ff8c00);
+            color: #0b132b;
+            padding: 0.8rem 1.5rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+            border: none;
+            cursor: pointer;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.7s ease;
+            z-index: -1;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(255, 140, 0, 0.3);
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        footer {
+            background: linear-gradient(135deg, #1e2a45, var(--primary-color));
+            padding: 3rem 0 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .footer-wave {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z' opacity='.25' fill='%230b132b'%3E%3C/path%3E%3Cpath d='M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z' opacity='.5' fill='%230b132b'%3E%3C/path%3E%3Cpath d='M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z' fill='%230b132b'%3E%3C/path%3E%3C/svg%3E");
+            background-size: cover;
+            transform: rotateX(180deg);
+        }
+        
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .footer-left {
+            margin-bottom: 1.5rem;
+        }
+        
+        .footer-left h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--secondary-color);
+        }
+        
+        .footer-right {
+            margin-bottom: 1.5rem;
+        }
+        
+        .footer-nav {
+            display: flex;
+            gap: 1.5rem;
+        }
+        
+        .footer-nav a {
+            color: var(--text-color);
+            text-decoration: none;
+            position: relative;
+            padding: 0.3rem 0;
+            transition: color 0.3s ease;
+        }
+        
+        .footer-nav a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: var(--accent-color);
+            transition: width 0.3s ease;
+        }
+        
+        .footer-nav a:hover {
+            color: var(--accent-color);
+        }
+        
+        .footer-nav a:hover::after {
+            width: 100%;
+        }
+        
+        .copyright {
+            width: 100%;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+        
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .social-links a {
+            color: var(--text-color);
+            font-size: 1.2rem;
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+        
+        .social-links a:hover {
+            color: var(--accent-color);
+            transform: translateY(-3px);
+        }
+        
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(28, 37, 65, 0.7);
+            border: 1px solid rgba(91, 192, 190, 0.3);
+            color: var(--text-color);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+        }
+        
+        .theme-toggle:hover {
+            transform: rotate(30deg);
+            background: rgba(91, 192, 190, 0.2);
+        }
+        
+        .light-mode {
+            --primary-color: #6d97c9;
+            --secondary-color: #38a3a5;
+            --accent-color: #ff9e00;
+            --bg-color: #f5f7fa;
+            --text-color: #333;
+            --card-bg: #fff;
+        }
+        
+        .light-mode .simulation-card {
+            background: linear-gradient(145deg, #fff, #f0f4f8);
+            box-shadow: 0 7px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .light-mode .card-image {
+            background: linear-gradient(135deg, #e9f0f8, #dde7f3);
+        }
+        
+        #secret-character {
+            position: fixed;
+            bottom: -100px;
+            right: 30px;
+            width: 80px;
+            height: 80px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%235bc0be'/%3E%3Ccircle cx='30' cy='40' r='8' fill='white'/%3E%3Ccircle cx='70' cy='40' r='8' fill='white'/%3E%3Ccircle cx='30' cy='40' r='3' fill='black'/%3E%3Ccircle cx='70' cy='40' r='3' fill='black'/%3E%3Cpath d='M35,65 Q50,80 65,65' fill='none' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-size: contain;
+            z-index: 100;
+            cursor: pointer;
+            transition: bottom 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.3));
+        }
+        
+        @media (max-width: 768px) {
+            .simulations-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .footer-content {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .tagline {
+                font-size: 1.1rem;
+            }
+            
+            .theme-toggle {
+                top: 10px;
+                right: 10px;
+                width: 35px;
+                height: 35px;
+            }
+        }
+        
+        @keyframes gradientAnimation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .gradient-text {
+            background: linear-gradient(90deg, var(--secondary-color), var(--accent-color), #ff6b35, var(--secondary-color));
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientAnimation 6s infinite;
+        }
+        
+        .button-container {
+            background: rgba(28, 37, 65, 0.7);
+            border-radius: 12px;
+            padding: 1rem 2rem;
+            text-align: center;
+            margin: 1rem auto 4rem;
+            max-width: 300px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(91, 192, 190, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            position: relative;
+            z-index: 10;
+        }
+        
+        .light-mode .button-container {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(56, 163, 165, 0.2);
+        }
+        
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+    </style>
+</head>
+<body>
+    <div id="particles-js"></div>
+    <div class="theme-toggle">🌓</div>
+    <div id="secret-character"></div>
+    
+    <header>
+        <div class="header-content">
+            <h1>Interactive <span class="gradient-text">Simulations</span></h1>
+            <p class="tagline">Explore the beauty of mathematical and physical phenomena</p>
+            <p class="description">A collection of interactive web-based simulations to visualize complex systems and natural patterns</p>
+        </div>
+    </header>
+    
+    <main>
+        <section class="intro">
+            <h2>Featured Simulations</h2>
+            <p>Dive into our growing library of interactive simulations. Each one allows you to manipulate parameters and observe how complex systems evolve over time.</p>
+        </section>
+        
+        <div class="button-container">
+            <button class="random-sim-btn">Random Simulation</button>
+        </div>
+        
+        <section class="simulations-grid">
+            <div class="simulation-card">
+                <div class="card-image">
+                    <img src="./conway-game-of-life.png" alt="Conway's Game of Life">
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Conway's Game of Life</h3>
+                    <div class="card-tags">
+                        <span class="tag">Cellular Automata</span>
+                        <span class="tag">Emergent Behavior</span>
+                    </div>
+                    <p class="card-description">Explore how simple rules can lead to complex patterns in this classic cellular automaton. Create your own patterns or use famous configurations like gliders and pulsars.</p>
+                    <a href="./conway-game-of-life/index.html" class="btn">Try Simulation</a>
+                </div>
+            </div>
+            
+            <div class="simulation-card">
+                <div class="card-image">
+                    <img src="./fibonacci-phyllotaxis-visualization.png" alt="Fibonacci Phyllotaxis">
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Fibonacci Phyllotaxis</h3>
+                    <div class="card-tags">
+                        <span class="tag">Golden Ratio</span>
+                        <span class="tag">Botany</span>
+                    </div>
+                    <p class="card-description">Visualize how plants optimize sunlight exposure by arranging their leaves or seeds according to the golden angle, creating beautiful spiral patterns.</p>
+                    <a href="./fibonacci-phyllotaxis-visualization/index.html" class="btn">Try Simulation</a>
+                </div>
+            </div>
+            
+            <div class="simulation-card">
+                <div class="card-image">
+                    <img src="./fibonacci-tree.png" alt="Fibonacci Tree">
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Fibonacci Tree</h3>
+                    <div class="card-tags">
+                        <span class="tag">Recursion</span>
+                        <span class="tag">Fractals</span>
+                    </div>
+                    <p class="card-description">Watch a tree grow through recursive branching based on the Fibonacci sequence. Adjust parameters to create different tree shapes and structures.</p>
+                    <a href="./fibonacci-tree/index2d.html" class="btn">2D Version</a>
+                    <a href="./fibonacci-tree/index3d.html" class="btn">3D Version</a>
+                </div>
+            </div>
+            
+            <div class="simulation-card">
+                <div class="card-image">
+                    <img src="./golden-ratio-growth-visualization.png" alt="Golden Ratio Growth">
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Golden Ratio Growth</h3>
+                    <div class="card-tags">
+                        <span class="tag">Mathematics</span>
+                        <span class="tag">Aesthetics</span>
+                    </div>
+                    <p class="card-description">Observe how shapes and patterns that follow the golden ratio (approximately 1.618) are created and how they appear throughout nature and design.</p>
+                    <a href="./golden-ratio-growth-visualization/index.html" class="btn">Try Simulation</a>
+                </div>
+            </div>
+            
+            <div class="simulation-card">
+                <div class="card-image">
+                    <img src="./navier-stokes-fluid-dynamics-simulation.png" alt="Navier-Stokes Fluid Simulation">
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Navier-Stokes Fluid Simulation</h3>
+                    <div class="card-tags">
+                        <span class="tag">Physics</span>
+                        <span class="tag">Fluid Dynamics</span>
+                    </div>
+                    <p class="card-description">Interact with a real-time fluid simulation based on the Navier-Stokes equations. Create vortices, observe flow patterns, and experiment with viscosity and velocity.</p>
+                    <a href="./navier-stokes-fluid-dynamics-simulation/index.html" class="btn">Try Simulation</a>
+                </div>
+            </div>
+            
+            <div class="simulation-card">
+                <div class="card-image">
+                    <img src="./particle-swarm-simulation.png" alt="Particle Swarm">
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Particle Swarm Simulation</h3>
+                    <div class="card-tags">
+                        <span class="tag">Swarm Intelligence</span>
+                        <span class="tag">Optimization</span>
+                    </div>
+                    <p class="card-description">Witness emergent behavior as particles follow simple rules of attraction, alignment, and avoidance. See how complex flocking behaviors arise from basic interactions.</p>
+                    <a href="./particle-swarm-simulation/index.html" class="btn">Try Simulation</a>
+                </div>
+            </div>
+            
+            <div class="simulation-card">
+                <div class="card-image">
+                    <img src="./slime-mold-maze.png" alt="Slime Mold Maze">
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Slime Mold Maze Solver</h3>
+                    <div class="card-tags">
+                        <span class="tag">Pathfinding</span>
+                        <span class="tag">Biologically-inspired</span>
+                    </div>
+                    <p class="card-description">Watch slime mold-inspired algorithms solve mazes and find optimal paths between points. These simple organisms can solve complex problems without a brain!</p>
+                    <a href="./slime-mold-maze/index.html" class="btn">Try Simulation</a>
+                </div>
+            </div>
+            
+            <div class="simulation-card">
+                <div class="card-image">
+                    <img src="./galaxy-simulation.png" alt="Galaxy Simulation">
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Galaxy Simulation</h3>
+                    <div class="card-tags">
+                        <span class="tag">Astronomy</span>
+                        <span class="tag">Gravity</span>
+                    </div>
+                    <p class="card-description">Watch the formation and evolution of galaxies as cosmic forces shape the universe. Adjust parameters to create spiral galaxies, elliptical galaxies, and more.</p>
+                    <a href="./galaxy-simulation/index.html" class="btn">Try Simulation</a>
+                </div>
+            </div>
+            
+            <div class="simulation-card">
+                <div class="card-image">
+                    <img src="./stellar-life-cycle.png" alt="Stellar Life Cycle">
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Stellar Life Cycle</h3>
+                    <div class="card-tags">
+                        <span class="tag">Astronomy</span>
+                        <span class="tag">Astrophysics</span>
+                    </div>
+                    <p class="card-description">Explore the fascinating life cycle of stars from nebula formation to supernovae. Observe how stars evolve through different stages depending on their mass.</p>
+                    <a href="./stellar-life-cycle/index2d.html" class="btn">2D Version</a>
+                    <a href="./stellar-life-cycle/index3d.html" class="btn">3D Version</a>
+                </div>
+            </div>
+            
+            <div class="simulation-card">
+                <div class="card-image">
+                    <img src="./orbie-zots.png" alt="Orbie Zots">
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Orbie Zots</h3>
+                    <div class="card-tags">
+                        <span class="tag">Particle Physics</span>
+                        <span class="tag">Interactive</span>
+                    </div>
+                    <p class="card-description">Experience the mesmerizing dance of luminous particles as they orbit a central energy source. Adjust attraction forces and particle properties to create unique patterns.</p>
+                    <a href="./orbie-zots/public/index.html" class="btn">Try Simulation</a>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <footer>
+        <div class="footer-wave"></div>
+        <div class="footer-content">
+            <div class="footer-left">
+                <h3>Interactive Simulations</h3>
+                <p>Exploring complex systems through interactive web simulations</p>
+            </div>
+            <div class="footer-right">
+                <nav class="footer-nav">
+                    <a href="#">Home</a>
+                    <a href="#">About</a>
+                    <a href="#">Contact</a>
+                </nav>
+            </div>
+            <div class="social-links">
+                <a href="#" title="GitHub">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+                </a>
+                <a href="#" title="Twitter">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path></svg>
+                </a>
+                <a href="#" title="LinkedIn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
+                </a>
+            </div>
+            <p class="copyright">© 2025 Interactive-Simulations.com. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
+    <script>
+        // Particle.js configuration for the header background
+        if (typeof particlesJS !== 'undefined') {
+            particlesJS('particles-js', {
+                "particles": {
+                    "number": {
+                        "value": 80,
+                        "density": {
+                            "enable": true,
+                            "value_area": 800
+                        }
+                    },
+                    "color": {
+                        "value": "#5bc0be"
+                    },
+                    "shape": {
+                        "type": "circle",
+                        "stroke": {
+                            "width": 0,
+                            "color": "#000000"
+                        },
+                        "polygon": {
+                            "nb_sides": 5
+                        }
+                    },
+                    "opacity": {
+                        "value": 0.5,
+                        "random": false,
+                        "anim": {
+                            "enable": false,
+                            "speed": 1,
+                            "opacity_min": 0.1,
+                            "sync": false
+                        }
+                    },
+                    "size": {
+                        "value": 3,
+                        "random": true,
+                        "anim": {
+                            "enable": false,
+                            "speed": 40,
+                            "size_min": 0.1,
+                            "sync": false
+                        }
+                    },
+                    "line_linked": {
+                        "enable": true,
+                        "distance": 150,
+                        "color": "#5bc0be",
+                        "opacity": 0.4,
+                        "width": 1
+                    },
+                    "move": {
+                        "enable": true,
+                        "speed": 2,
+                        "direction": "none",
+                        "random": false,
+                        "straight": false,
+                        "out_mode": "out",
+                        "bounce": false,
+                        "attract": {
+                            "enable": false,
+                            "rotateX": 600,
+                            "rotateY": 1200
+                        }
+                    }
+                },
+                "interactivity": {
+                    "detect_on": "canvas",
+                    "events": {
+                        "onhover": {
+                            "enable": true,
+                            "mode": "grab"
+                        },
+                        "onclick": {
+                            "enable": true,
+                            "mode": "push"
+                        },
+                        "resize": true
+                    },
+                    "modes": {
+                        "grab": {
+                            "distance": 140,
+                            "line_linked": {
+                                "opacity": 1
+                            }
+                        },
+                        "bubble": {
+                            "distance": 400,
+                            "size": 40,
+                            "duration": 2,
+                            "opacity": 8,
+                            "speed": 3
+                        },
+                        "repulse": {
+                            "distance": 200,
+                            "duration": 0.4
+                        },
+                        "push": {
+                            "particles_nb": 4
+                        },
+                        "remove": {
+                            "particles_nb": 2
+                        }
+                    }
+                },
+                "retina_detect": true
+            });
+        }
+
+        // Show elements with animation as they come into view
+        document.addEventListener('DOMContentLoaded', function() {
+            const intro = document.querySelector('.intro');
+            const cards = document.querySelectorAll('.simulation-card');
+            const themeToggle = document.querySelector('.theme-toggle');
+            const secretCharacter = document.getElementById('secret-character');
+            
+            // Define all simulation links globally
+            const simulationLinks = [
+                './conway-game-of-life/index.html',
+                './fibonacci-phyllotaxis-visualization/index.html',
+                './fibonacci-tree/index2d.html',
+                './fibonacci-tree/index3d.html',
+                './golden-ratio-growth-visualization/index.html',
+                './navier-stokes-fluid-dynamics-simulation/index.html',
+                './particle-swarm-simulation/index.html',
+                './slime-mold-maze/index.html',
+                './galaxy-simulation/index.html',
+                './stellar-life-cycle/index2d.html',
+                './stellar-life-cycle/index3d.html',
+                './orbie-zots/index.html'
+            ];
+            
+            // Set up random simulation button - completely new implementation
+            document.querySelector('.random-sim-btn').onclick = function() {
+                const randomLink = simulationLinks[Math.floor(Math.random() * simulationLinks.length)];
+                console.log("Navigating to: " + randomLink);
+                window.location = randomLink;
+                return false; // Prevent default
+            };
+            
+            // Show intro with animation
+            setTimeout(() => {
+                intro.classList.add('visible');
+            }, 300);
+            
+            // Initialize the Intersection Observer
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.2 });
+            
+            // Observe each card
+            cards.forEach((card, index) => {
+                setTimeout(() => {
+                    observer.observe(card);
+                }, index * 100);
+            });
+            
+            // Theme toggle functionality
+            themeToggle.addEventListener('click', () => {
+                document.body.classList.toggle('light-mode');
+                themeToggle.textContent = document.body.classList.contains('light-mode') ? '🌙' : '🌓';
+            });
+            
+            // Konami code Easter egg
+            let konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+            let konamiPosition = 0;
+            
+            document.addEventListener('keydown', (e) => {
+                if (e.key === konamiCode[konamiPosition]) {
+                    konamiPosition++;
+                    
+                    if (konamiPosition === konamiCode.length) {
+                        // Trigger Easter egg
+                        secretCharacter.style.bottom = '30px';
+                        konamiPosition = 0;
+                    }
+                } else {
+                    konamiPosition = 0;
+                }
+            });
+            
+            // Secret character interaction
+            secretCharacter.addEventListener('click', () => {
+                secretCharacter.classList.toggle('floating');
+                
+                if (secretCharacter.classList.contains('floating')) {
+                    secretCharacter.style.filter = 'drop-shadow(0 5px 15px rgba(91, 192, 190, 0.7)) hue-rotate(180deg)';
+                } else {
+                    secretCharacter.style.filter = 'drop-shadow(0 5px 15px rgba(0, 0, 0, 0.3))';
+                }
+            });
+            
+            // Add some visual feedback on hover for buttons
+            const buttons = document.querySelectorAll('.btn, .random-sim-btn');
+            buttons.forEach(button => {
+                button.addEventListener('mouseenter', () => {
+                    button.style.transform = 'translateY(-3px)';
+                    button.style.boxShadow = '0 10px 20px rgba(255, 140, 0, 0.3)';
+                });
+                
+                button.addEventListener('mouseleave', () => {
+                    button.style.transform = '';
+                    button.style.boxShadow = '';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

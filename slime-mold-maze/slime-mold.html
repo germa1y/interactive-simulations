@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slime Mold Maze Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #111;
+            color: #eee;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+        }
+        canvas {
+            display: block;
+            margin: 10px auto;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 8px;
+            max-width: 800px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            background-color: rgba(40, 40, 40, 0.7);
+            border-radius: 4px;
+        }
+        label {
+            margin-bottom: 5px;
+            font-size: 14px;
+            cursor: help;
+        }
+        input[type="range"] {
+            width: 120px;
+            cursor: pointer;
+        }
+        input[type="color"] {
+            border: none;
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            background: none;
+            cursor: pointer;
+        }
+        button {
+            padding: 8px 12px;
+            background-color: #2a9d8f;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #1e7b6d;
+        }
+        .preset-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .metrics {
+            font-size: 14px;
+            color: #aaa;
+            text-align: center;
+            margin-top: 5px;
+        }
+        h1 {
+            margin: 10px 0;
+            font-size: 24px;
+            color: #2a9d8f;
+        }
+        .credit {
+            margin-top: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+        /* Custom tooltip styling to enhance the default browser tooltips */
+        [title] {
+            position: relative;
+        }
+        [title]:hover::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            white-space: nowrap;
+            z-index: 10;
+            font-size: 12px;
+            pointer-events: none;
+            opacity: 0;
+            animation: fadeIn 0.3s forwards;
+        }
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Slime Mold Maze Explorer</h1>
+    <div class="controls">
+        <div class="control-group">
+            <label for="numAgents" title="Controls how many slime mold agents are in the simulation. More agents explore faster but may reduce performance.">Number of Agents</label>
+            <input type="range" id="numAgents" min="1000" max="50000" step="1000" value="10000" title="Controls how many slime mold agents are in the simulation. More agents explore faster but may reduce performance.">
+            <span id="numAgentsValue">10,000</span>
+        </div>
+        <div class="control-group">
+            <label for="sensorAngle" title="The angle between the left and right sensors. Wider angles help explore open areas, narrower angles follow trails better.">Sensor Angle</label>
+            <input type="range" id="sensorAngle" min="10" max="120" value="45" title="The angle between the left and right sensors. Wider angles help explore open areas, narrower angles follow trails better.">
+            <span id="sensorAngleValue">45°</span>
+        </div>
+        <div class="control-group">
+            <label for="sensorDistance" title="How far agents can sense pheromones. Longer distances help agents detect trails from farther away.">Sensor Distance</label>
+            <input type="range" id="sensorDistance" min="1" max="30" value="9" title="How far agents can sense pheromones. Longer distances help agents detect trails from farther away.">
+            <span id="sensorDistanceValue">9px</span>
+        </div>
+        <div class="control-group">
+            <label for="depositAmount" title="How much pheromone each agent deposits per step. Higher values create stronger trails but may overwhelm subtle patterns.">Deposit Amount</label>
+            <input type="range" id="depositAmount" min="1" max="100" value="5" title="How much pheromone each agent deposits per step. Higher values create stronger trails but may overwhelm subtle patterns.">
+            <span id="depositAmountValue">5</span>
+        </div>
+        <div class="control-group">
+            <label for="evaporationRate" title="How quickly pheromone trails fade away. Higher rates create more temporary paths, lower rates preserve history longer.">Evaporation Rate</label>
+            <input type="range" id="evaporationRate" min="1" max="10" value="2" step="0.1" title="How quickly pheromone trails fade away. Higher rates create more temporary paths, lower rates preserve history longer.">
+            <span id="evaporationRateValue">0.2%</span>
+        </div>
+        <div class="control-group">
+            <label for="diffusionRate" title="How much pheromones spread to neighboring cells. Higher values create wider trails but may blur detailed structures.">Diffusion Rate</label>
+            <input type="range" id="diffusionRate" min="0" max="100" value="50" title="How much pheromones spread to neighboring cells. Higher values create wider trails but may blur detailed structures.">
+            <span id="diffusionRateValue">50%</span>
+        </div>
+        <div class="control-group">
+            <label for="moveSpeed" title="How quickly agents move through the maze. Faster agents cover more ground but may miss optimal paths.">Move Speed</label>
+            <input type="range" id="moveSpeed" min="0.1" max="5" value="1" step="0.1" title="How quickly agents move through the maze. Faster agents cover more ground but may miss optimal paths.">
+            <span id="moveSpeedValue">1</span>
+        </div>
+        <div class="control-group">
+            <label for="turnSpeed" title="How quickly agents can change direction. Higher values make more agile agents that can navigate tight corners.">Turn Speed</label>
+            <input type="range" id="turnSpeed" min="1" max="100" value="20" title="How quickly agents can change direction. Higher values make more agile agents that can navigate tight corners.">
+            <span id="turnSpeedValue">20°</span>
+        </div>
+        <div class="control-group">
+            <label for="mazeSize" title="Controls the complexity of the generated maze. Larger mazes are more challenging to solve.">Maze Size</label>
+            <input type="range" id="mazeSize" min="5" max="40" value="15" title="Controls the complexity of the generated maze. Larger mazes are more challenging to solve.">
+            <span id="mazeSizeValue">15 x 15</span>
+        </div>
+        <div class="control-group">
+            <label for="trailColor" title="The color of the pheromone trails deposited by agents.">Trail Color</label>
+            <input type="color" id="trailColor" value="#00ffcc" title="The color of the pheromone trails deposited by agents.">
+        </div>
+        <div class="control-group">
+            <label for="wallColor" title="The color of the maze walls.">Wall Color</label>
+            <input type="color" id="wallColor" value="#444444" title="The color of the maze walls.">
+        </div>
+        <div class="control-group">
+            <label for="bgColor" title="The background color of the simulation.">Background Color</label>
+            <input type="color" id="bgColor" value="#000000" title="The background color of the simulation.">
+        </div>
+        <div class="control-group">
+            <div class="maze-controls">
+                <button id="newMazeBtn" title="Create a completely new random maze structure.">Generate New Maze</button>
+                <button id="resetBtn" title="Clear all pheromone trails and move agents back to the entrance.">Reset Simulation</button>
+            </div>
+            <div class="preset-buttons">
+                <button id="presetExplore" title="Balanced settings for general maze exploration.">Explorer</button>
+                <button id="presetSolver" title="Optimized settings focused on efficiently finding the exit.">Solver</button>
+                <button id="presetRacer" title="Fast-moving agents that quickly map the maze network.">Racer</button>
+            </div>
+        </div>
+    </div>
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <div class="metrics">
+        <span id="fpsCounter">FPS: 0</span> | 
+        <span id="agentCounter">Agents: 0</span>
+    </div>
+    <div class="credit">Watch as the slime mold explores and solves the maze!</div>
+
+    <script>
+        // Main simulation class
+        class SlimeMoldSimulation {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                
+                // Fixed canvas size for simplicity
+                this.width = canvas.width;
+                this.height = canvas.height;
+                
+                // Simulation parameters
+                this.numAgents = 10000;
+                this.sensorAngle = 45 * (Math.PI / 180);
+                this.sensorDistance = 9;
+                this.depositAmount = 5;
+                this.evaporationRate = 0.002;
+                this.diffusionRate = 0.5;
+                this.moveSpeed = 1;
+                this.turnSpeed = 20 * (Math.PI / 180);
+                this.trailColor = [0, 255, 204]; // Default cyan color
+                this.wallColor = [68, 68, 68]; // Default gray for walls
+                this.bgColor = [0, 0, 0]; // Default black
+                
+                // Maze parameters
+                this.mazeSize = 15;
+                this.cellSize = Math.floor(Math.min(this.width, this.height) / this.mazeSize);
+                this.maze = [];
+                this.entrance = { x: 0, y: 0 };
+                this.exit = { x: 0, y: 0 };
+                
+                // Create the grid arrays
+                this.trailGrid = new Uint8Array(this.width * this.height * 4);
+                this.tmpTrailGrid = new Uint8Array(this.width * this.height * 4);
+                this.wallGrid = new Uint8Array(this.width * this.height);
+                this.imageData = this.ctx.createImageData(this.width, this.height);
+                
+                // Initialize
+                this.generateMaze();
+                this.initializeAgents();
+                
+                // Performance metrics
+                this.lastFrameTime = performance.now();
+                this.frameCount = 0;
+                this.fps = 0;
+                this.lastFpsUpdate = this.lastFrameTime;
+                
+                console.log("Simulation initialized");
+            }
+            
+            // Generate a random maze using depth-first search with backtracking
+            generateMaze() {
+                console.log("Generating maze of size", this.mazeSize);
+                
+                // Initialize the maze with all walls
+                this.maze = [];
+                for (let y = 0; y < this.mazeSize; y++) {
+                    const row = [];
+                    for (let x = 0; x < this.mazeSize; x++) {
+                        row.push({ visited: false, walls: [true, true, true, true] }); // [top, right, bottom, left]
+                    }
+                    this.maze.push(row);
+                }
+                
+                // Reset the wall grid
+                this.wallGrid.fill(0);
+                
+                // Start from the top-left corner
+                const startX = 0;
+                const startY = 0;
+                
+                // Set the entrance and exit
+                this.entrance = { x: startX, y: startY };
+                this.exit = { x: this.mazeSize - 1, y: this.mazeSize - 1 };
+                
+                // Remove the left wall of the entrance
+                this.maze[startY][startX].walls[3] = false;
+                
+                // Remove the right wall of the exit
+                this.maze[this.exit.y][this.exit.x].walls[1] = false;
+                
+                // Use a stack for the depth-first search
+                const stack = [];
+                stack.push({ x: startX, y: startY });
+                this.maze[startY][startX].visited = true;
+                
+                // Directions: [dx, dy, wallIndex, opposite wall index]
+                const directions = [
+                    [0, -1, 0, 2], // top
+                    [1, 0, 1, 3],  // right
+                    [0, 1, 2, 0],  // bottom
+                    [-1, 0, 3, 1]  // left
+                ];
+                
+                while (stack.length > 0) {
+                    const current = stack[stack.length - 1];
+                    
+                    // Find unvisited neighbors
+                    const unvisitedNeighbors = [];
+                    for (const [dx, dy, wallIdx, oppositeWallIdx] of directions) {
+                        const nx = current.x + dx;
+                        const ny = current.y + dy;
+                        
+                        if (nx >= 0 && nx < this.mazeSize && ny >= 0 && ny < this.mazeSize && !this.maze[ny][nx].visited) {
+                            unvisitedNeighbors.push({ x: nx, y: ny, wallIdx, oppositeWallIdx });
+                        }
+                    }
+                    
+                    if (unvisitedNeighbors.length > 0) {
+                        // Choose a random unvisited neighbor
+                        const next = unvisitedNeighbors[Math.floor(Math.random() * unvisitedNeighbors.length)];
+                        
+                        // Remove the walls between current and next
+                        this.maze[current.y][current.x].walls[next.wallIdx] = false;
+                        this.maze[next.y][next.x].walls[next.oppositeWallIdx] = false;
+                        
+                        // Mark the next cell as visited and push it to the stack
+                        this.maze[next.y][next.x].visited = true;
+                        stack.push({ x: next.x, y: next.y });
+                    } else {
+                        // Backtrack
+                        stack.pop();
+                    }
+                }
+                
+                // Draw the maze to the grid
+                this.drawMazeToGrid();
+                
+                console.log("Maze generation complete");
+            }
+            
+            // Draw the maze to the wall grid
+            drawMazeToGrid() {
+                // Clear the trail grid
+                this.trailGrid.fill(0);
+                this.tmpTrailGrid.fill(0);
+                this.wallGrid.fill(0);
+                
+                // Calculate offset to center the maze
+                const offsetX = Math.floor((this.width - this.cellSize * this.mazeSize) / 2);
+                const offsetY = Math.floor((this.height - this.cellSize * this.mazeSize) / 2);
+                
+                // Draw the maze walls
+                for (let y = 0; y < this.mazeSize; y++) {
+                    for (let x = 0; x < this.mazeSize; x++) {
+                        const cell = this.maze[y][x];
+                        const cellX = offsetX + x * this.cellSize;
+                        const cellY = offsetY + y * this.cellSize;
+                        
+                        // Draw cell walls
+                        if (cell.walls[0]) this.drawWall(cellX, cellY, cellX + this.cellSize, cellY); // Top
+                        if (cell.walls[1]) this.drawWall(cellX + this.cellSize, cellY, cellX + this.cellSize, cellY + this.cellSize); // Right
+                        if (cell.walls[2]) this.drawWall(cellX, cellY + this.cellSize, cellX + this.cellSize, cellY + this.cellSize); // Bottom
+                        if (cell.walls[3]) this.drawWall(cellX, cellY, cellX, cellY + this.cellSize); // Left
+                    }
+                }
+                
+                // Draw entrance and exit markers
+                const entranceX = offsetX + this.entrance.x * this.cellSize + this.cellSize / 2;
+                const entranceY = offsetY + this.entrance.y * this.cellSize + this.cellSize / 2;
+                const exitX = offsetX + this.exit.x * this.cellSize + this.cellSize / 2;
+                const exitY = offsetY + this.exit.y * this.cellSize + this.cellSize / 2;
+                
+                this.drawMarker(entranceX, entranceY, 10, [0, 255, 0, 255]); // Green for entrance
+                this.drawMarker(exitX, exitY, 10, [255, 0, 0, 255]); // Red for exit
+            }
+            
+            // Draw a wall line on the grid
+            drawWall(x1, y1, x2, y2) {
+                // Make the wall thicker
+                const thickness = 2;
+                
+                // Draw a line from (x1, y1) to (x2, y2)
+                const dx = x2 - x1;
+                const dy = y2 - y1;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                for (let i = 0; i <= distance; i++) {
+                    const x = Math.floor(x1 + (dx * i) / distance);
+                    const y = Math.floor(y1 + (dy * i) / distance);
+                    
+                    // Draw a thick wall
+                    for (let tx = -thickness; tx <= thickness; tx++) {
+                        for (let ty = -thickness; ty <= thickness; ty++) {
+                            const wallX = x + tx;
+                            const wallY = y + ty;
+                            
+                            if (wallX >= 0 && wallX < this.width && wallY >= 0 && wallY < this.height) {
+                                const idx = (wallY * this.width + wallX) * 4;
+                                const gridIdx = wallY * this.width + wallX;
+                                
+                                // Mark this position as a wall
+                                this.wallGrid[gridIdx] = 1;
+                                
+                                // Set wall color
+                                this.trailGrid[idx] = this.wallColor[0];
+                                this.trailGrid[idx + 1] = this.wallColor[1];
+                                this.trailGrid[idx + 2] = this.wallColor[2];
+                                this.trailGrid[idx + 3] = 255; // Full alpha
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Draw a marker (circle)
+            drawMarker(centerX, centerY, radius, color) {
+                for (let y = centerY - radius; y <= centerY + radius; y++) {
+                    for (let x = centerX - radius; x <= centerX + radius; x++) {
+                        // Check if point is in circle
+                        const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
+                        
+                        if (distance <= radius && x >= 0 && x < this.width && y >= 0 && y < this.height) {
+                            const idx = (y * this.width + x) * 4;
+                            
+                            this.trailGrid[idx] = color[0];
+                            this.trailGrid[idx + 1] = color[1];
+                            this.trailGrid[idx + 2] = color[2];
+                            this.trailGrid[idx + 3] = color[3];
+                        }
+                    }
+                }
+            }
+            
+            // Check if a point is inside a wall
+            isWall(x, y) {
+                if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
+                    return true; // Treat out of bounds as walls
+                }
+                return this.wallGrid[Math.floor(y) * this.width + Math.floor(x)] === 1;
+            }
+            
+            // Initialize agents at the entrance
+            initializeAgents() {
+                console.log("Initializing agents:", this.numAgents);
+                
+                this.agents = [];
+                
+                // Calculate offset to center the maze
+                const offsetX = Math.floor((this.width - this.cellSize * this.mazeSize) / 2);
+                const offsetY = Math.floor((this.height - this.cellSize * this.mazeSize) / 2);
+                
+                // Calculate entrance cell center
+                const entranceCellX = offsetX + this.entrance.x * this.cellSize + this.cellSize / 2;
+                const entranceCellY = offsetY + this.entrance.y * this.cellSize + this.cellSize / 2;
+                
+                // Create agents at the entrance
+                for (let i = 0; i < this.numAgents; i++) {
+                    // Position randomly around the entrance cell center
+                    const radius = (this.cellSize / 2) * 0.8 * Math.sqrt(Math.random());
+                    const angle = Math.random() * 2 * Math.PI;
+                    
+                    const x = entranceCellX + radius * Math.cos(angle);
+                    const y = entranceCellY + radius * Math.sin(angle);
+                    
+                    // Random initial angle (facing right with some variation)
+                    const initialAngle = 0 + (Math.random() - 0.5) * Math.PI;
+                    
+                    this.agents.push({
+                        x: x,
+                        y: y,
+                        angle: initialAngle
+                    });
+                }
+                
+                // Update agent counter
+                document.getElementById('agentCounter').textContent = `Agents: ${this.agents.length.toLocaleString()}`;
+                
+                console.log("Agents initialized at entrance");
+            }
+            
+            // Sense pheromones in a given direction
+            sense(agent, angleOffset) {
+                // Calculate the sensing position
+                const senseAngle = agent.angle + angleOffset;
+                const senseX = agent.x + Math.cos(senseAngle) * this.sensorDistance;
+                const senseY = agent.y + Math.sin(senseAngle) * this.sensorDistance;
+                
+                // Check if the sensing position is a wall
+                if (this.isWall(senseX, senseY)) {
+                    return 0;
+                }
+                
+                // Get the amount of pheromone at this position
+                const idx = (Math.floor(senseY) * this.width + Math.floor(senseX)) * 4;
+                return this.trailGrid[idx + 3]; // Use alpha channel for intensity
+            }
+            
+            // Deposit pheromone at a position
+            depositPheromone(x, y, amount) {
+                x = Math.floor(x);
+                y = Math.floor(y);
+                
+                // Ensure we're within bounds and not on a wall
+                if (x < 0 || x >= this.width || y < 0 || y >= this.height || this.isWall(x, y)) {
+                    return;
+                }
+                
+                const idx = (y * this.width + x) * 4;
+                
+                // Add pheromone, capping at 255
+                const newAmount = Math.min(255, (this.trailGrid[idx + 3] || 0) + amount);
+                
+                // Set the RGB values based on trail color and intensity
+                const intensity = newAmount / 255;
+                this.trailGrid[idx] = this.trailColor[0] * intensity;
+                this.trailGrid[idx + 1] = this.trailColor[1] * intensity;
+                this.trailGrid[idx + 2] = this.trailColor[2] * intensity;
+                this.trailGrid[idx + 3] = newAmount; // Alpha channel stores the actual pheromone value
+            }
+            
+            // Update all agents and trails
+            update() {
+                // Update agents
+                for (let agent of this.agents) {
+                    // Sense pheromones at three positions
+                    const senseLeft = this.sense(agent, -this.sensorAngle);
+                    const senseFront = this.sense(agent, 0);
+                    const senseRight = this.sense(agent, this.sensorAngle);
+                    
+                    // Determine turning behavior based on sensing
+                    if (senseFront > senseLeft && senseFront > senseRight) {
+                        // Continue forward if front is strongest
+                    } else if (senseLeft > senseRight) {
+                        // Turn left if left is strongest
+                        agent.angle -= this.turnSpeed;
+                    } else if (senseRight > senseLeft) {
+                        // Turn right if right is strongest
+                        agent.angle += this.turnSpeed;
+                    } else {
+                        // Random turn if all are equal
+                        agent.angle += (Math.random() - 0.5) * 2 * this.turnSpeed;
+                    }
+                    
+                    // Calculate the next position
+                    const nextX = agent.x + Math.cos(agent.angle) * this.moveSpeed;
+                    const nextY = agent.y + Math.sin(agent.angle) * this.moveSpeed;
+                    
+                    // Check if the next position is a wall
+                    if (this.isWall(nextX, nextY)) {
+                        // Hit a wall, bounce back with a random angle change
+                        agent.angle += Math.PI + (Math.random() - 0.5) * Math.PI / 2;
+                    } else {
+                        // Move the agent forward
+                        agent.x = nextX;
+                        agent.y = nextY;
+                        
+                        // Deposit pheromone at the new position
+                        this.depositPheromone(agent.x, agent.y, this.depositAmount);
+                    }
+                    
+                    // Keep agent inside the canvas
+                    if (agent.x < 0) agent.x = 0;
+                    if (agent.x >= this.width) agent.x = this.width - 1;
+                    if (agent.y < 0) agent.y = 0;
+                    if (agent.y >= this.height) agent.y = this.height - 1;
+                }
+                
+                // Apply diffusion and evaporation
+                this.diffuseAndEvaporate();
+                
+                // Render the current state
+                this.render();
+                
+                // Update FPS counter
+                this.updateFPS();
+            }
+            
+            // Apply diffusion and evaporation to the trail grid
+            diffuseAndEvaporate() {
+                // Copy the current trail grid to the temporary grid
+                this.tmpTrailGrid.set(this.trailGrid);
+                
+                // Simple diffusion and evaporation
+                for (let y = 1; y < this.height - 1; y++) {
+                    for (let x = 1; x < this.width - 1; x++) {
+                        const idx = (y * this.width + x) * 4;
+                        const gridIdx = y * this.width + x;
+                        
+                        // Skip walls
+                        if (this.wallGrid[gridIdx] === 1) {
+                            continue;
+                        }
+                        
+                        // Get center and adjacent values (using alpha channel for pheromone value)
+                        const center = this.tmpTrailGrid[idx + 3];
+                        
+                        // Skip if there's no trail
+                        if (center === 0) {
+                            continue;
+                        }
+                        
+                        // Check for valid neighbors (not walls)
+                        const leftIdx = idx - 4;
+                        const rightIdx = idx + 4;
+                        const upIdx = idx - this.width * 4;
+                        const downIdx = idx + this.width * 4;
+                        
+                        const left = !this.isWall(x - 1, y) ? this.tmpTrailGrid[leftIdx + 3] : 0;
+                        const right = !this.isWall(x + 1, y) ? this.tmpTrailGrid[rightIdx + 3] : 0;
+                        const up = !this.isWall(x, y - 1) ? this.tmpTrailGrid[upIdx + 3] : 0;
+                        const down = !this.isWall(x, y + 1) ? this.tmpTrailGrid[downIdx + 3] : 0;
+                        
+                        // Compute diffused value (weighted average)
+                        const diffusionWeight = this.diffusionRate;
+                        const centerWeight = 1 - diffusionWeight;
+                        
+                        // Count valid neighbors
+                        let validNeighbors = 0;
+                        if (!this.isWall(x - 1, y)) validNeighbors++;
+                        if (!this.isWall(x + 1, y)) validNeighbors++;
+                        if (!this.isWall(x, y - 1)) validNeighbors++;
+                        if (!this.isWall(x, y + 1)) validNeighbors++;
+                        
+                        const neighborWeight = validNeighbors > 0 ? diffusionWeight / validNeighbors : 0;
+                        
+                        let diffused = centerWeight * center;
+                        if (!this.isWall(x - 1, y)) diffused += neighborWeight * left;
+                        if (!this.isWall(x + 1, y)) diffused += neighborWeight * right;
+                        if (!this.isWall(x, y - 1)) diffused += neighborWeight * up;
+                        if (!this.isWall(x, y + 1)) diffused += neighborWeight * down;
+                        
+                        // Apply evaporation
+                        diffused = Math.max(0, diffused - diffused * this.evaporationRate);
+                        
+                        // Update the trail grid
+                        if (diffused > 0) {
+                            // Map the density to the RGB channels using the trail color
+                            const intensity = diffused / 255;
+                            this.trailGrid[idx] = this.trailColor[0] * intensity;
+                            this.trailGrid[idx + 1] = this.trailColor[1] * intensity;
+                            this.trailGrid[idx + 2] = this.trailColor[2] * intensity;
+                            this.trailGrid[idx + 3] = diffused; // Alpha channel stores pheromone value
+                        } else {
+                            // Clear the trail
+                            this.trailGrid[idx] = 0;
+                            this.trailGrid[idx + 1] = 0;
+                            this.trailGrid[idx + 2] = 0;
+                            this.trailGrid[idx + 3] = 0;
+                        }
+                    }
+                }
+            }
+            
+            // Render the simulation to the canvas
+            render() {
+                // Get image data for direct pixel manipulation
+                const imageData = this.imageData;
+                const data = imageData.data;
+                
+                // Render the simulation to the image data
+                for (let i = 0; i < this.width * this.height * 4; i += 4) {
+                    const gridIdx = Math.floor(i / 4);
+                    
+                    // Check if this is a wall
+                    if (this.wallGrid[gridIdx] === 1) {
+                        // Use wall color
+                        data[i] = this.wallColor[0];
+                        data[i + 1] = this.wallColor[1];
+                        data[i + 2] = this.wallColor[2];
+                        data[i + 3] = 255;
+                    } else {
+                        // Check if there's a trail
+                        const trailIntensity = this.trailGrid[i + 3] / 255;
+                        
+                        if (trailIntensity > 0) {
+                            // Blend trail color with background color
+                            const bgIntensity = 1 - trailIntensity;
+                            data[i] = this.trailGrid[i] + this.bgColor[0] * bgIntensity;
+                            data[i + 1] = this.trailGrid[i + 1] + this.bgColor[1] * bgIntensity;
+                            data[i + 2] = this.trailGrid[i + 2] + this.bgColor[2] * bgIntensity;
+                        } else {
+                            // Use background color
+                            data[i] = this.bgColor[0];
+                            data[i + 1] = this.bgColor[1];
+                            data[i + 2] = this.bgColor[2];
+                        }
+                        data[i + 3] = 255; // Full alpha
+                    }
+                }
+                
+                // Draw the image data to the canvas
+                this.ctx.putImageData(imageData, 0, 0);
+            }
+            
+            // Update FPS counter
+            updateFPS() {
+                const now = performance.now();
+                const elapsed = now - this.lastFrameTime;
+                this.lastFrameTime = now;
+                
+                this.frameCount++;
+                
+                if (now - this.lastFpsUpdate > 500) { // Update every 500ms
+                    this.fps = Math.round(this.frameCount / ((now - this.lastFpsUpdate) / 1000));
+                    document.getElementById('fpsCounter').textContent = `FPS: ${this.fps}`;
+                    
+                    this.frameCount = 0;
+                    this.lastFpsUpdate = now;
+                }
+            }
+            
+            // Update simulation parameters
+            updateParameters(params) {
+                let needReset = false;
+                let needRedrawMaze = false;
+                
+                if (params.numAgents !== undefined && params.numAgents !== this.numAgents) {
+                    this.numAgents = params.numAgents;
+                    needReset = true;
+                }
+                
+                if (params.sensorAngle !== undefined) {
+                    this.sensorAngle = params.sensorAngle * (Math.PI / 180); // Convert to radians
+                }
+                
+                if (params.sensorDistance !== undefined) {
+                    this.sensorDistance = params.sensorDistance;
+                }
+                
+                if (params.depositAmount !== undefined) {
+                    this.depositAmount = params.depositAmount;
+                }
+                
+                if (params.evaporationRate !== undefined) {
+                    this.evaporationRate = params.evaporationRate / 1000; // Scale for better UI control
+                }
+                
+                if (params.diffusionRate !== undefined) {
+                    this.diffusionRate = params.diffusionRate / 100; // Convert from percentage
+                }
+                
+                if (params.moveSpeed !== undefined) {
+                    this.moveSpeed = params.moveSpeed;
+                }
+                
+                if (params.turnSpeed !== undefined) {
+                    this.turnSpeed = params.turnSpeed * (Math.PI / 180); // Convert to radians
+                }
+                
+                if (params.mazeSize !== undefined && params.mazeSize !== this.mazeSize) {
+                    this.mazeSize = params.mazeSize;
+                    this.cellSize = Math.floor(Math.min(this.width, this.height) / this.mazeSize);
+                    this.generateMaze();
+                    needReset = true;
+                }
+                
+                if (params.trailColor !== undefined) {
+                    this.trailColor = params.trailColor;
+                }
+                
+                if (params.wallColor !== undefined) {
+                    this.wallColor = params.wallColor;
+                    needRedrawMaze = true;
+                }
+                
+                if (params.bgColor !== undefined) {
+                    this.bgColor = params.bgColor;
+                }
+                
+                if (needRedrawMaze) {
+                    this.drawMazeToGrid();
+                }
+                
+                if (needReset) {
+                    this.initializeAgents();
+                }
+            }
+            
+            // Reset the simulation
+            reset() {
+                // Clear trails but keep the maze
+                for (let i = 0; i < this.width * this.height * 4; i += 4) {
+                    const gridIdx = Math.floor(i / 4);
+                    
+                    // Only clear non-wall pixels
+                    if (this.wallGrid[gridIdx] !== 1) {
+                        this.trailGrid[i] = 0;
+                        this.trailGrid[i + 1] = 0;
+                        this.trailGrid[i + 2] = 0;
+                        this.trailGrid[i + 3] = 0;
+                    }
+                }
+                
+                // Redraw entrance and exit markers
+                const offsetX = Math.floor((this.width - this.cellSize * this.mazeSize) / 2);
+                const offsetY = Math.floor((this.height - this.cellSize * this.mazeSize) / 2);
+                
+                const entranceX = offsetX + this.entrance.x * this.cellSize + this.cellSize / 2;
+                const entranceY = offsetY + this.entrance.y * this.cellSize + this.cellSize / 2;
+                const exitX = offsetX + this.exit.x * this.cellSize + this.cellSize / 2;
+                const exitY = offsetY + this.exit.y * this.cellSize + this.cellSize / 2;
+                
+                this.drawMarker(entranceX, entranceY, 10, [0, 255, 0, 255]);
+                this.drawMarker(exitX, exitY, 10, [255, 0, 0, 255]);
+                
+                // Reset agents to entrance
+                this.initializeAgents();
+            }
+        }
+
+        // Helper function to parse color input
+        function parseColor(colorString) {
+            const r = parseInt(colorString.slice(1, 3), 16);
+            const g = parseInt(colorString.slice(3, 5), 16);
+            const b = parseInt(colorString.slice(5, 7), 16);
+            return [r, g, b];
+        }
+
+        // Main initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM loaded, initializing simulation");
+            
+            const canvas = document.getElementById('canvas');
+            if (!canvas) {
+                console.error("Canvas element not found!");
+                return;
+            }
+            
+            // Create the simulation
+            const simulation = new SlimeMoldSimulation(canvas);
+            
+            // Set up UI controls
+            const numAgentsSlider = document.getElementById('numAgents');
+            const sensorAngleSlider = document.getElementById('sensorAngle');
+            const sensorDistanceSlider = document.getElementById('sensorDistance');
+            const depositAmountSlider = document.getElementById('depositAmount');
+            const evaporationRateSlider = document.getElementById('evaporationRate');
+            const diffusionRateSlider = document.getElementById('diffusionRate');
+            const moveSpeedSlider = document.getElementById('moveSpeed');
+            const turnSpeedSlider = document.getElementById('turnSpeed');
+            const mazeSizeSlider = document.getElementById('mazeSize');
+            const trailColorPicker = document.getElementById('trailColor');
+            const wallColorPicker = document.getElementById('wallColor');
+            const bgColorPicker = document.getElementById('bgColor');
+            const newMazeBtn = document.getElementById('newMazeBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const presetExploreBtn = document.getElementById('presetExplore');
+            const presetSolverBtn = document.getElementById('presetSolver');
+            const presetRacerBtn = document.getElementById('presetRacer');
+            
+            // Display values
+            const numAgentsValue = document.getElementById('numAgentsValue');
+            const sensorAngleValue = document.getElementById('sensorAngleValue');
+            const sensorDistanceValue = document.getElementById('sensorDistanceValue');
+            const depositAmountValue = document.getElementById('depositAmountValue');
+            const evaporationRateValue = document.getElementById('evaporationRateValue');
+            const diffusionRateValue = document.getElementById('diffusionRateValue');
+            const moveSpeedValue = document.getElementById('moveSpeedValue');
+            const turnSpeedValue = document.getElementById('turnSpeedValue');
+            const mazeSizeValue = document.getElementById('mazeSizeValue');
+            
+            // Update functions
+            function updateNumAgents() {
+                const value = parseInt(numAgentsSlider.value);
+                numAgentsValue.textContent = value.toLocaleString();
+                simulation.updateParameters({ numAgents: value });
+            }
+            
+            function updateSensorAngle() {
+                const value = parseInt(sensorAngleSlider.value);
+                sensorAngleValue.textContent = `${value}°`;
+                simulation.updateParameters({ sensorAngle: value });
+            }
+            
+            function updateSensorDistance() {
+                const value = parseInt(sensorDistanceSlider.value);
+                sensorDistanceValue.textContent = `${value}px`;
+                simulation.updateParameters({ sensorDistance: value });
+            }
+            
+            function updateDepositAmount() {
+                const value = parseInt(depositAmountSlider.value);
+                depositAmountValue.textContent = value;
+                simulation.updateParameters({ depositAmount: value });
+            }
+            
+            function updateEvaporationRate() {
+                const value = parseFloat(evaporationRateSlider.value);
+                evaporationRateValue.textContent = `${(value / 10).toFixed(1)}%`;
+                simulation.updateParameters({ evaporationRate: value });
+            }
+            
+            function updateDiffusionRate() {
+                const value = parseInt(diffusionRateSlider.value);
+                diffusionRateValue.textContent = `${value}%`;
+                simulation.updateParameters({ diffusionRate: value });
+            }
+            
+            function updateMoveSpeed() {
+                const value = parseFloat(moveSpeedSlider.value);
+                moveSpeedValue.textContent = value.toFixed(1);
+                simulation.updateParameters({ moveSpeed: value });
+            }
+            
+            function updateTurnSpeed() {
+                const value = parseInt(turnSpeedSlider.value);
+                turnSpeedValue.textContent = `${value}°`;
+                simulation.updateParameters({ turnSpeed: value });
+            }
+            
+            function updateMazeSize() {
+                const value = parseInt(mazeSizeSlider.value);
+                mazeSizeValue.textContent = `${value} x ${value}`;
+                simulation.updateParameters({ mazeSize: value });
+            }
+            
+            function updateTrailColor() {
+                const colorValue = trailColorPicker.value;
+                const rgbColor = parseColor(colorValue);
+                simulation.updateParameters({ trailColor: rgbColor });
+            }
+            
+            function updateWallColor() {
+                const colorValue = wallColorPicker.value;
+                const rgbColor = parseColor(colorValue);
+                simulation.updateParameters({ wallColor: rgbColor });
+            }
+            
+            function updateBgColor() {
+                const colorValue = bgColorPicker.value;
+                const rgbColor = parseColor(colorValue);
+                simulation.updateParameters({ bgColor: rgbColor });
+            }
+            
+            // Preset configurations
+            function setPresetExplore() {
+                numAgentsSlider.value = 10000;
+                sensorAngleSlider.value = 45;
+                sensorDistanceSlider.value = 9;
+                depositAmountSlider.value = 5;
+                evaporationRateSlider.value = 2;
+                diffusionRateSlider.value = 50;
+                moveSpeedSlider.value = 1;
+                turnSpeedSlider.value = 20;
+                mazeSizeSlider.value = 15;
+                trailColorPicker.value = "#00ffcc";
+                wallColorPicker.value = "#444444";
+                bgColorPicker.value = "#000000";
+                
+                // Update all displays and apply settings
+                updateNumAgents();
+                updateSensorAngle();
+                updateSensorDistance();
+                updateDepositAmount();
+                updateEvaporationRate();
+                updateDiffusionRate();
+                updateMoveSpeed();
+                updateTurnSpeed();
+                updateMazeSize();
+                updateTrailColor();
+                updateWallColor();
+                updateBgColor();
+                
+                simulation.generateMaze();
+                simulation.reset();
+            }
+            
+            function setPresetSolver() {
+                numAgentsSlider.value = 20000;
+                sensorAngleSlider.value = 60;
+                sensorDistanceSlider.value = 12;
+                depositAmountSlider.value = 3;
+                evaporationRateSlider.value = 1;
+                diffusionRateSlider.value = 70;
+                moveSpeedSlider.value = 1.5;
+                turnSpeedSlider.value = 30;
+                mazeSizeSlider.value = 20;
+                trailColorPicker.value = "#ff9900";
+                wallColorPicker.value = "#333366";
+                bgColorPicker.value = "#000033";
+                
+                // Update all displays and apply settings
+                updateNumAgents();
+                updateSensorAngle();
+                updateSensorDistance();
+                updateDepositAmount();
+                updateEvaporationRate();
+                updateDiffusionRate();
+                updateMoveSpeed();
+                updateTurnSpeed();
+                updateMazeSize();
+                updateTrailColor();
+                updateWallColor();
+                updateBgColor();
+                
+                simulation.generateMaze();
+                simulation.reset();
+            }
+            
+            function setPresetRacer() {
+                numAgentsSlider.value = 30000;
+                sensorAngleSlider.value = 30;
+                sensorDistanceSlider.value = 15;
+                depositAmountSlider.value = 8;
+                evaporationRateSlider.value = 3;
+                diffusionRateSlider.value = 40;
+                moveSpeedSlider.value = 2.0;
+                turnSpeedSlider.value = 15;
+                mazeSizeSlider.value = 25;
+                trailColorPicker.value = "#ff3366";
+                wallColorPicker.value = "#336633";
+                bgColorPicker.value = "#110022";
+                
+                // Update all displays and apply settings
+                updateNumAgents();
+                updateSensorAngle();
+                updateSensorDistance();
+                updateDepositAmount();
+                updateEvaporationRate();
+                updateDiffusionRate();
+                updateMoveSpeed();
+                updateTurnSpeed();
+                updateMazeSize();
+                updateTrailColor();
+                updateWallColor();
+                updateBgColor();
+                
+                simulation.generateMaze();
+                simulation.reset();
+            }
+            
+            // Attach event listeners
+            numAgentsSlider.addEventListener('input', updateNumAgents);
+            sensorAngleSlider.addEventListener('input', updateSensorAngle);
+            sensorDistanceSlider.addEventListener('input', updateSensorDistance);
+            depositAmountSlider.addEventListener('input', updateDepositAmount);
+            evaporationRateSlider.addEventListener('input', updateEvaporationRate);
+            diffusionRateSlider.addEventListener('input', updateDiffusionRate);
+            moveSpeedSlider.addEventListener('input', updateMoveSpeed);
+            turnSpeedSlider.addEventListener('input', updateTurnSpeed);
+            mazeSizeSlider.addEventListener('input', updateMazeSize);
+            trailColorPicker.addEventListener('input', updateTrailColor);
+            wallColorPicker.addEventListener('input', updateWallColor);
+            bgColorPicker.addEventListener('input', updateBgColor);
+            
+            newMazeBtn.addEventListener('click', function() {
+                simulation.generateMaze();
+                simulation.reset();
+            });
+            
+            resetBtn.addEventListener('click', function() {
+                simulation.reset();
+            });
+            
+            presetExploreBtn.addEventListener('click', setPresetExplore);
+            presetSolverBtn.addEventListener('click', setPresetSolver);
+            presetRacerBtn.addEventListener('click', setPresetRacer);
+            
+            // Initialize displays
+            updateNumAgents();
+            updateSensorAngle();
+            updateSensorDistance();
+            updateDepositAmount();
+            updateEvaporationRate();
+            updateDiffusionRate();
+            updateMoveSpeed();
+            updateTurnSpeed();
+            updateMazeSize();
+            updateTrailColor();
+            updateWallColor();
+            updateBgColor();
+            
+            // Animation loop
+            function animate() {
+                simulation.update();
+                requestAnimationFrame(animate);
+            }
+            
+            // Start the animation
+            console.log("Starting animation loop");
+            animate();
+        });
+    </script>
+</body>
+</html>

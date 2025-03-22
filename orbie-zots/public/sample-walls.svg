@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer boundary - strong walls -->
+  <path d="M 50,50 L 750,50 L 750,550 L 50,550 Z" 
+        fill="none" 
+        stroke="#ffffff" 
+        stroke-width="2"
+        data-force="2.0" />
+  
+  <!-- Inner maze structure - regular walls -->
+  <path d="M 200,150 L 500,150 L 500,400 L 200,400" 
+        fill="none" 
+        stroke="#88aaff" 
+        stroke-width="2"
+        data-force="1.0" />
+  
+  <!-- Barrier - weak repulsion -->
+  <path d="M 600,150 L 600,450" 
+        fill="none" 
+        stroke="#ff8866" 
+        stroke-width="2"
+        data-force="0.5" />
+        
+  <!-- Example of connecting multiple segments -->
+  <path d="M 100,200 L 150,200 L 150,300 L 100,300 L 100,400 L 150,400" 
+        fill="none" 
+        stroke="#88ff88" 
+        stroke-width="2"
+        data-force="1.5" />
+</svg> 

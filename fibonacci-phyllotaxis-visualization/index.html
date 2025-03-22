@@ -1,0 +1,576 @@
+input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+            vertical-align: middle;
+        }<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fibonacci Phyllotaxis</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a2e;
+            font-family: Arial, sans-serif;
+            color: #e6e6e6;
+            overflow-x: hidden;
+        }
+        
+        #container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            max-width: 100%;
+        }
+        
+        canvas {
+            background-color: #1a1a2e;
+            display: block;
+            margin: 0 auto 20px auto;
+            border: 1px solid #444;
+            max-width: 100%;
+        }
+        
+        h1 {
+            color: #6a6aff;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .info-box {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            max-width: 600px;
+            text-align: center;
+        }
+        
+        .controls {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 20px;
+        }
+        
+        .control-group {
+            margin-bottom: 10px;
+        }
+        
+        label {
+            display: inline-block;
+            width: 150px;
+            margin-right: 10px;
+        }
+        
+        input[type="range"] {
+            width: 200px;
+            vertical-align: middle;
+        }
+        
+        .value-display {
+            display: inline-block;
+            width: 50px;
+            text-align: right;
+            margin-left: 10px;
+        }
+        
+        button {
+            background-color: #4a4ae4;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background-color: #3737b3;
+        }
+        
+        .button-group {
+            text-align: center;
+            margin-top: 15px;
+        }
+        
+        .color-options {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        
+        .color-option.active {
+            border: 2px solid white;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>Fibonacci Phyllotaxis Visualization</h1>
+        
+        <div class="info-box">
+            <p>This visualization demonstrates phyllotaxis - the arrangement of leaves, seeds, and petals in nature.</p>
+            <p>The pattern is based on the golden angle (approximately 137.5°), derived from the golden ratio.</p>
+            <p>Examples in nature: sunflower seeds, pine cones, and succulent rosettes.</p>
+        </div>
+        
+        <canvas id="phyllotaxisCanvas" width="600" height="600"></canvas>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="angleInput">Angle (degrees):</label>
+                <input type="range" id="angleInput" min="134" max="139" value="137.5" step="0.1">
+                <span class="value-display" id="angleValue">137.5°</span>
+            </div>
+            
+            <div class="control-group">
+                <label for="pointsInput">Number of points:</label>
+                <input type="range" id="pointsInput" min="100" max="1000" value="500" step="10">
+                <span class="value-display" id="pointsValue">500</span>
+            </div>
+            
+            <div class="control-group">
+                <label for="spacingInput">Point spacing:</label>
+                <input type="range" id="spacingInput" min="1" max="10" value="4" step="0.1">
+                <span class="value-display" id="spacingValue">4</span>
+            </div>
+            
+            <div class="control-group">
+                <label for="sizeInput">Point size:</label>
+                <input type="range" id="sizeInput" min="1" max="10" value="4" step="0.1">
+                <span class="value-display" id="sizeValue">4</span>
+            </div>
+            
+            <div class="control-group">
+                <label for="animStyleInput">Animation style:</label>
+                <select id="animStyleInput">
+                    <option value="pulse">Pulse</option>
+                    <option value="wave">Wave</option>
+                    <option value="bloom">Bloom</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="speedInput">Animation speed:</label>
+                <input type="range" id="speedInput" min="0.1" max="5" value="1" step="0.1">
+                <span class="value-display" id="speedValue">1.0</span>
+            </div>
+            
+            <div class="control-group">
+                <label for="rotationToggle">Rotation:</label>
+                <input type="checkbox" id="rotationToggle">
+                <span class="control-label">Enable rotation</span>
+            </div>
+            
+            <div class="control-group">
+                <label>Color scheme:</label>
+                <div class="color-options">
+                    <div class="color-option active" id="rainbow" style="background: linear-gradient(90deg, red, orange, yellow, green, blue, indigo, violet);"></div>
+                    <div class="color-option" id="sunset" style="background: linear-gradient(90deg, #ff7e5f, #feb47b);"></div>
+                    <div class="color-option" id="ocean" style="background: linear-gradient(90deg, #2193b0, #6dd5ed);"></div>
+                    <div class="color-option" id="forest" style="background: linear-gradient(90deg, #134E5E, #71B280);"></div>
+                    <div class="color-option" id="monochrome" style="background: linear-gradient(90deg, #ffffff, #777777);"></div>
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button id="resetButton">Reset to Default</button>
+                <button id="animateButton">Start Animation</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Wait for the window to load completely
+        window.onload = function() {
+            // Get canvas and context
+            var canvas = document.getElementById('phyllotaxisCanvas');
+            var ctx = canvas.getContext('2d');
+            
+            // Variables for the pattern
+            var angle = 137.5;
+            var numPoints = 500;
+            var spacing = 4;
+            var pointSize = 4;
+            var colorScheme = 'rainbow';
+            var isAnimating = false;
+            var rotation = 0;
+            var rotationEnabled = false;
+            var rotationSpeed = 0.002;
+            var animationFrame;
+            var animationStyle = 'pulse';
+            var animationSpeed = 1.0;
+            
+            // Variables for wave animation trails
+            var waveTrails = [];
+            var trailLifespan = 30; // frames (about 0.5 seconds at 60fps)
+            
+            // Get UI elements
+            var angleInput = document.getElementById('angleInput');
+            var pointsInput = document.getElementById('pointsInput');
+            var spacingInput = document.getElementById('spacingInput');
+            var sizeInput = document.getElementById('sizeInput');
+            var speedInput = document.getElementById('speedInput');
+            var rotationToggle = document.getElementById('rotationToggle');
+            var animStyleInput = document.getElementById('animStyleInput');
+            var angleValue = document.getElementById('angleValue');
+            var pointsValue = document.getElementById('pointsValue');
+            var spacingValue = document.getElementById('spacingValue');
+            var sizeValue = document.getElementById('sizeValue');
+            var speedValue = document.getElementById('speedValue');
+            var resetButton = document.getElementById('resetButton');
+            var animateButton = document.getElementById('animateButton');
+            var colorOptions = document.querySelectorAll('.color-option');
+            
+            // Function to draw the pattern
+            function drawPattern() {
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Center of canvas
+                var centerX = canvas.width / 2;
+                var centerY = canvas.height / 2;
+                
+                // Draw points
+                for (var i = 0; i < numPoints; i++) {
+                    // Calculate position
+                    var r = spacing * Math.sqrt(i);
+                    var theta = i * (angle * (Math.PI / 180)) + rotation;
+                    
+                    var x = centerX + r * Math.cos(theta);
+                    var y = centerY + r * Math.sin(theta);
+                    
+                    // Get color based on position
+                    var color = getColor(i / numPoints);
+                    
+                    // Draw point
+                    ctx.beginPath();
+                    ctx.arc(x, y, pointSize, 0, 2 * Math.PI);
+                    ctx.fillStyle = color;
+                    ctx.fill();
+                }
+            }
+            
+            // Function to get color based on index and scheme
+            function getColor(index) {
+                switch (colorScheme) {
+                    case 'rainbow':
+                        return 'hsl(' + (index * 360) + ', 100%, 50%)';
+                    case 'sunset':
+                        return 'rgb(' + Math.floor(255 - index * 65) + ',' + 
+                               Math.floor(50 + index * 74) + ',' + 
+                               Math.floor(index * 95) + ')';
+                    case 'ocean':
+                        return 'rgb(' + Math.floor(index * 33) + ',' + 
+                               Math.floor(150 + index * 70) + ',' + 
+                               Math.floor(200 + index * 55) + ')';
+                    case 'forest':
+                        return 'rgb(' + Math.floor(20 + index * 50) + ',' + 
+                               Math.floor(100 + index * 78) + ',' + 
+                               Math.floor(index * 90) + ')';
+                    case 'monochrome':
+                        var val = Math.floor(255 - index * 200);
+                        return 'rgb(' + val + ',' + val + ',' + val + ')';
+                    default:
+                        return 'hsl(' + (index * 360) + ', 100%, 50%)';
+                }
+            }
+            
+            // Variables for animation
+            var animationTime = 0;
+            var maxScale = 1.2;
+            var minScale = 0.8;
+            
+            // Function to animate the pattern
+            function animate() {
+                if (isAnimating) {
+                    // Increment animation time based on speed
+                    animationTime += 0.01 * animationSpeed;
+                    
+                    // Apply rotation if enabled
+                    if (rotationEnabled) {
+                        rotation += rotationSpeed * animationSpeed;
+                    }
+                    
+                    var originalSpacing = spacing;
+                    var originalPointSize = pointSize;
+                    
+                    switch(animationStyle) {
+                        case 'pulse':
+                            // Create a breathing/pulsing effect
+                            var scaleFactor = minScale + (Math.sin(animationTime) + 1) * (maxScale - minScale) / 2;
+                            spacing = originalSpacing * scaleFactor;
+                            drawPattern();
+                            break;
+                            
+                        case 'wave':
+                            // Clear the canvas for wave animation
+                            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                            
+                            // Draw fading trails first (older trails underneath)
+                            for (var t = 0; t < waveTrails.length; t++) {
+                                var trail = waveTrails[t];
+                                trail.age++;
+                                
+                                // Remove old trails
+                                if (trail.age >= trailLifespan) {
+                                    waveTrails.splice(t, 1);
+                                    t--;
+                                    continue;
+                                }
+                                
+                                // Calculate opacity based on age (fading out)
+                                var opacity = 1 - (trail.age / trailLifespan);
+                                
+                                // Draw each point in the trail with reduced opacity
+                                for (var p = 0; p < trail.points.length; p++) {
+                                    var point = trail.points[p];
+                                    ctx.beginPath();
+                                    ctx.arc(point.x, point.y, point.size * 0.8, 0, 2 * Math.PI);
+                                    
+                                    // Modify the color to include opacity
+                                    var color = point.color;
+                                    if (color.startsWith('hsl')) {
+                                        color = color.replace('hsl', 'hsla').replace(')', ', ' + opacity + ')');
+                                    } else if (color.startsWith('rgb')) {
+                                        color = color.replace('rgb', 'rgba').replace(')', ', ' + opacity + ')');
+                                    }
+                                    
+                                    ctx.fillStyle = color;
+                                    ctx.fill();
+                                }
+                            }
+                            
+                            // Create array to store current points for a new trail
+                            var currentPoints = [];
+                            
+                            // Draw new points for the current frame
+                            for (var i = 0; i < numPoints; i++) {
+                                var r = spacing * Math.sqrt(i);
+                                var theta = i * (angle * (Math.PI / 180)) + rotation;
+                                var x = canvas.width / 2 + r * Math.cos(theta);
+                                var y = canvas.height / 2 + r * Math.sin(theta);
+                                
+                                // Distance from center
+                                var dist = Math.sqrt(i);
+                                
+                                // Wave effect: points move in and out based on distance and time
+                                var waveOffset = Math.sin(dist * 0.3 - animationTime * 2) * 8;
+                                
+                                // Current position with wave applied
+                                var currentX = x;
+                                var currentY = y + waveOffset;
+                                
+                                // Store current point data for trail
+                                currentPoints.push({
+                                    x: currentX,
+                                    y: currentY,
+                                    size: pointSize,
+                                    color: getColor(i / numPoints)
+                                });
+                                
+                                // Draw current point (full opacity)
+                                ctx.beginPath();
+                                ctx.arc(currentX, currentY, pointSize, 0, 2 * Math.PI);
+                                ctx.fillStyle = getColor(i / numPoints);
+                                ctx.fill();
+                            }
+                            
+                            // Add current points as a new trail
+                            waveTrails.push({
+                                points: currentPoints,
+                                age: 0
+                            });
+                            
+                            break;
+                            
+                        case 'bloom':
+                            // Create a blooming effect - points grow from center outward
+                            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                            var bloomProgress = (Math.sin(animationTime) + 1) / 2; // 0 to 1
+                            
+                            for (var i = 0; i < numPoints; i++) {
+                                var normalizedIndex = i / numPoints;
+                                // Only show points up to current bloom progress
+                                if (normalizedIndex <= bloomProgress) {
+                                    var r = spacing * Math.sqrt(i);
+                                    var theta = i * (angle * (Math.PI / 180)) + rotation;
+                                    var x = canvas.width / 2 + r * Math.cos(theta);
+                                    var y = canvas.height / 2 + r * Math.sin(theta);
+                                    
+                                    // Points appear with a fade-in effect
+                                    var fadeFactor = 1;
+                                    // Points near the edge of the bloom are more transparent
+                                    if (normalizedIndex > bloomProgress - 0.1) {
+                                        fadeFactor = (bloomProgress - normalizedIndex) / 0.1;
+                                    }
+                                    
+                                    // Varying point size based on position
+                                    var sizeFactor = 1 + Math.sin(normalizedIndex * Math.PI) * 0.5;
+                                    
+                                    // Draw point
+                                    ctx.beginPath();
+                                    ctx.arc(x, y, pointSize * sizeFactor, 0, 2 * Math.PI);
+                                    var color = getColor(normalizedIndex);
+                                    
+                                    // Add transparency
+                                    color = color.replace('rgb', 'rgba').replace(')', ', ' + fadeFactor + ')');
+                                    color = color.replace('hsl', 'hsla').replace(')', ', ' + fadeFactor + ')');
+                                    
+                                    ctx.fillStyle = color;
+                                    ctx.fill();
+                                }
+                            }
+                            break;
+                            
+                        default:
+                            // Default animation
+                            var scaleFactor = minScale + (Math.sin(animationTime) + 1) * (maxScale - minScale) / 2;
+                            spacing = originalSpacing * scaleFactor;
+                            drawPattern();
+                    }
+                    
+                    // Restore original parameters
+                    spacing = originalSpacing;
+                    pointSize = originalPointSize;
+                    
+                    animationFrame = requestAnimationFrame(animate);
+                }
+            }
+            
+            // Event listeners for UI elements
+            angleInput.oninput = function() {
+                angle = parseFloat(this.value);
+                angleValue.textContent = angle.toFixed(1) + '°';
+                drawPattern();
+            };
+            
+            pointsInput.oninput = function() {
+                numPoints = parseInt(this.value);
+                pointsValue.textContent = numPoints;
+                drawPattern();
+            };
+            
+            spacingInput.oninput = function() {
+                spacing = parseFloat(this.value);
+                spacingValue.textContent = spacing.toFixed(1);
+                drawPattern();
+            };
+            
+            sizeInput.oninput = function() {
+                pointSize = parseFloat(this.value);
+                sizeValue.textContent = pointSize.toFixed(1);
+                drawPattern();
+            };
+            
+            // Color scheme selection
+            colorOptions.forEach(function(option) {
+                option.onclick = function() {
+                    // Remove active class from all options
+                    colorOptions.forEach(function(opt) {
+                        opt.classList.remove('active');
+                    });
+                    
+                    // Add active class to selected option
+                    this.classList.add('active');
+                    
+                    // Set color scheme
+                    colorScheme = this.id;
+                    
+                    // Redraw
+                    drawPattern();
+                };
+            });
+            
+            // Rotation toggle
+            rotationToggle.onchange = function() {
+                rotationEnabled = this.checked;
+            };
+            
+            // Animation speed control
+            speedInput.oninput = function() {
+                animationSpeed = parseFloat(this.value);
+                speedValue.textContent = animationSpeed.toFixed(1);
+            };
+            
+            // Animation style dropdown
+            animStyleInput.onchange = function() {
+                animationStyle = this.value;
+                // If currently animating, no need to redraw as it will update in the next frame
+                if (!isAnimating) {
+                    drawPattern();
+                }
+            };
+            
+            // Reset button
+            resetButton.onclick = function() {
+                // Reset values
+                angle = 137.5;
+                numPoints = 500;
+                spacing = 4;
+                pointSize = 4;
+                colorScheme = 'rainbow';
+                animationStyle = 'pulse';
+                animationSpeed = 1.0;
+                rotationEnabled = false;
+                rotation = 0;
+                waveTrails = [];
+                
+                // Update UI
+                angleInput.value = angle;
+                pointsInput.value = numPoints;
+                spacingInput.value = spacing;
+                sizeInput.value = pointSize;
+                speedInput.value = animationSpeed;
+                animStyleInput.value = animationStyle;
+                rotationToggle.checked = rotationEnabled;
+                
+                angleValue.textContent = angle.toFixed(1) + '°';
+                pointsValue.textContent = numPoints;
+                spacingValue.textContent = spacing.toFixed(1);
+                sizeValue.textContent = pointSize.toFixed(1);
+                speedValue.textContent = animationSpeed.toFixed(1);
+                
+                // Reset color scheme
+                colorOptions.forEach(function(opt) {
+                    opt.classList.remove('active');
+                });
+                document.getElementById('rainbow').classList.add('active');
+                
+                // Redraw
+                drawPattern();
+            };
+            
+            // Animation button
+            animateButton.onclick = function() {
+                isAnimating = !isAnimating;
+                
+                if (isAnimating) {
+                    this.textContent = 'Stop Animation';
+                    animate();
+                } else {
+                    this.textContent = 'Start Animation';
+                    cancelAnimationFrame(animationFrame);
+                }
+            };
+            
+            // Initial draw
+            drawPattern();
+        };
+    </script>
+</body>
+</html>

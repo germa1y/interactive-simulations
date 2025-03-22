@@ -1,0 +1,1623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stellar Life Cycle Simulator</title>
+    <style>
+        :root {
+            --primary: #0a2342;
+            --secondary: #2ca58d;
+            --accent: #84bc9c;
+            --background: #0f1a2d;
+            --text: #f0f2f5;
+            --light-text: #bbc5d5;
+            --panel: rgba(20, 40, 80, 0.8);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            max-width: 100vw;
+            min-height: 100vh;
+        }
+        
+        header {
+            background-color: var(--primary);
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+        }
+        
+        h1 {
+            color: var(--accent);
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .main-content {
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        @media (min-width: 768px) {
+            .main-content {
+                flex-direction: row;
+            }
+        }
+        
+        .controls {
+            background-color: var(--panel);
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            width: 100%;
+            z-index: 5;
+        }
+        
+        @media (min-width: 768px) {
+            .controls {
+                width: 300px;
+                overflow-y: auto;
+                max-height: calc(100vh - 70px);
+            }
+        }
+        
+        .control-group {
+            background-color: rgba(10, 20, 40, 0.5);
+            border-radius: 8px;
+            padding: 1rem;
+            border: 1px solid var(--secondary);
+        }
+        
+        .control-group h3 {
+            margin-bottom: 0.8rem;
+            color: var(--accent);
+            font-size: 1.1rem;
+            border-bottom: 1px solid var(--secondary);
+            padding-bottom: 0.5rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--light-text);
+            font-size: 0.9rem;
+        }
+        
+        select, button, input[type="range"] {
+            width: 100%;
+            padding: 0.5rem;
+            background-color: var(--primary);
+            color: var(--text);
+            border: 1px solid var(--secondary);
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        button {
+            cursor: pointer;
+            background-color: var(--secondary);
+            color: var(--primary);
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            background-color: var(--accent);
+        }
+        
+        .range-value {
+            display: inline-block;
+            width: 100%;
+            text-align: center;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--accent);
+        }
+        
+        .simulation-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        canvas {
+            background-color: #000;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        .info-panel {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--panel);
+            padding: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            transform: translateY(0);
+            z-index: 2;
+        }
+        
+        .info-panel.hidden {
+            transform: translateY(100%);
+        }
+        
+        .info-panel h3 {
+            margin-bottom: 0.5rem;
+            color: var(--accent);
+        }
+        
+        .info-content {
+            font-size: 0.9rem;
+            color: var(--light-text);
+        }
+        
+        .toggle-info {
+            position: absolute;
+            top: -30px;
+            right: 10px;
+            background-color: var(--secondary);
+            color: var(--primary);
+            border: none;
+            border-radius: 4px 4px 0 0;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            width: auto;
+        }
+        
+        .legend {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: var(--panel);
+            padding: 0.8rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            z-index: 2;
+            max-width: 200px;
+        }
+        
+        .legend h4 {
+            margin-bottom: 0.5rem;
+            color: var(--accent);
+            font-size: 0.9rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.3rem;
+        }
+        
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            margin-right: 10px;
+            border-radius: 50%;
+        }
+        
+        .fusion-diagram {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--panel);
+            padding: 1.5rem;
+            border-radius: 8px;
+            z-index: 10;
+            max-width: 80%;
+            max-height: 80%;
+            overflow-y: auto;
+            border: 1px solid var(--secondary);
+        }
+        
+        .fusion-diagram h3 {
+            color: var(--accent);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .fusion-diagram p {
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+        
+        .fusion-diagram-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .fusion-steps {
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        .fusion-step {
+            margin-bottom: 1rem;
+            padding: 0.8rem;
+            background-color: rgba(10, 20, 40, 0.5);
+            border-radius: 8px;
+            border-left: 3px solid var(--secondary);
+        }
+        
+        .fusion-step h4 {
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+        }
+        
+        .close-fusion {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: var(--secondary);
+            color: var(--primary);
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .stages-timeline {
+            position: absolute;
+            left: 10px;
+            top: 10px;
+            background-color: var(--panel);
+            padding: 0.8rem;
+            border-radius: 8px;
+            z-index: 2;
+            max-width: 200px;
+        }
+        
+        .stages-timeline h4 {
+            margin-bottom: 0.5rem;
+            color: var(--accent);
+            font-size: 0.9rem;
+        }
+        
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.3rem;
+            position: relative;
+            padding-left: 25px;
+        }
+        
+        .timeline-marker {
+            position: absolute;
+            left: 0;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            border: 2px solid var(--text);
+        }
+        
+        .timeline-marker.active {
+            background-color: var(--accent);
+        }
+        
+        .timeline-marker:before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 20px;
+            width: 2px;
+            background-color: var(--text);
+        }
+        
+        .timeline-item:last-child .timeline-marker:before {
+            display: none;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: var(--accent);
+            font-size: 1.5rem;
+        }
+        
+        .loading .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--accent);
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .tooltip {
+            position: absolute;
+            background-color: var(--panel);
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            z-index: 20;
+            pointer-events: none;
+            max-width: 200px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--secondary);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Interactive Stellar Life Cycle Simulator</h1>
+            <p>Explore the birth, life, and death of stars of various masses</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="controls">
+                <div class="control-group">
+                    <h3>Star Properties</h3>
+                    <div class="form-group">
+                        <label for="star-class">Star Classification:</label>
+                        <select id="star-class">
+                            <option value="low-mass">Low Mass (0.08-0.8 M☉)</option>
+                            <option value="sun-like" selected>Sun-like (0.8-2 M☉)</option>
+                            <option value="medium-mass">Medium Mass (2-8 M☉)</option>
+                            <option value="high-mass">High Mass (8+ M☉)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="mass-slider">Mass (Solar Masses):</label>
+                        <input type="range" id="mass-slider" min="0.08" max="30" step="0.01" value="1">
+                        <span class="range-value" id="mass-value">1.00 M☉</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="metallicity">Metallicity:</label>
+                        <select id="metallicity">
+                            <option value="low">Low (Population II)</option>
+                            <option value="medium" selected>Medium (Solar)</option>
+                            <option value="high">High (Population I)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>Simulation Controls</h3>
+                    <div class="form-group">
+                        <label for="lifecycle-stage">Life Cycle Stage:</label>
+                        <select id="lifecycle-stage">
+                            <option value="protostar">Protostar</option>
+                            <option value="main-sequence" selected>Main Sequence</option>
+                            <option value="red-giant">Red Giant / Subgiant</option>
+                            <option value="horizontal-branch">Horizontal Branch</option>
+                            <option value="asymptotic-giant">Asymptotic Giant Branch</option>
+                            <option value="planetary-nebula">Planetary Nebula / Supernova</option>
+                            <option value="white-dwarf">White Dwarf / Neutron Star / Black Hole</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="auto-evolve">Auto Evolution Speed:</label>
+                        <input type="range" id="auto-evolve" min="0" max="10" step="1" value="0">
+                        <span class="range-value" id="evolve-value">Off</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button id="next-stage">Next Stage</button>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button id="reset">Reset Simulation</button>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>Display Options</h3>
+                    <div class="form-group">
+                        <label for="show-habitable">Show Habitable Zone:</label>
+                        <select id="show-habitable">
+                            <option value="yes" selected>Yes</option>
+                            <option value="no">No</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="show-planets">Show Example Planets:</label>
+                        <select id="show-planets">
+                            <option value="yes" selected>Yes</option>
+                            <option value="no">No</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button id="view-fusion">View Fusion Cycle</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="simulation-container">
+                <canvas id="simulation-canvas"></canvas>
+                
+                <div class="legend">
+                    <h4>Legend</h4>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #8cff8c;"></div>
+                        <span>Habitable Zone</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #3498db;"></div>
+                        <span>Example Planet</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #e74c3c;"></div>
+                        <span>Current Fusion</span>
+                    </div>
+                </div>
+                
+                <div class="stages-timeline">
+                    <h4>Life Cycle Stages</h4>
+                    <div class="timeline-item">
+                        <div class="timeline-marker active" data-stage="protostar"></div>
+                        <span>Protostar</span>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker" data-stage="main-sequence"></div>
+                        <span>Main Sequence</span>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker" data-stage="red-giant"></div>
+                        <span>Red Giant</span>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker" data-stage="end-state"></div>
+                        <span>Final State</span>
+                    </div>
+                </div>
+                
+                <div class="info-panel">
+                    <button class="toggle-info">Toggle Info</button>
+                    <h3 id="info-title">Main Sequence Star</h3>
+                    <div class="info-content" id="info-content">
+                        <p>Main sequence stars like our Sun are in a stable period of hydrogen fusion in their cores. This stage typically lasts for billions of years depending on the mass of the star.</p>
+                        <p>The Sun is about halfway through its expected 10-billion-year main sequence lifetime.</p>
+                    </div>
+                </div>
+                
+                <div class="fusion-diagram" id="fusion-diagram">
+                    <button class="close-fusion">&times;</button>
+                    <h3>Nuclear Fusion Processes</h3>
+                    <div class="fusion-diagram-content">
+                        <p>Stars generate energy through nuclear fusion processes that convert lighter elements into heavier ones.</p>
+                        
+                        <div class="fusion-steps">
+                            <div class="fusion-step">
+                                <h4>Hydrogen Fusion (Proton-Proton Chain)</h4>
+                                <p>4 ¹H → ⁴He + 2e⁺ + 2νₑ + Energy</p>
+                                <p>Core temperature: ~15 million K</p>
+                                <p>Main energy source for Sun-like and lower mass stars.</p>
+                            </div>
+                            
+                            <div class="fusion-step">
+                                <h4>Hydrogen Fusion (CNO Cycle)</h4>
+                                <p>4 ¹H + ¹²C → ⁴He + ¹²C + 2e⁺ + 2νₑ + Energy</p>
+                                <p>Core temperature: >17 million K</p>
+                                <p>Dominant in higher mass stars.</p>
+                            </div>
+                            
+                            <div class="fusion-step">
+                                <h4>Helium Fusion (Triple-Alpha Process)</h4>
+                                <p>3 ⁴He → ¹²C + Energy</p>
+                                <p>Core temperature: ~100 million K</p>
+                                <p>Occurs in red giants and more massive stars.</p>
+                            </div>
+                            
+                            <div class="fusion-step">
+                                <h4>Carbon Fusion</h4>
+                                <p>¹²C + ¹²C → ²⁰Ne/²³Na + n/p + Energy</p>
+                                <p>Core temperature: ~500 million K</p>
+                                <p>Only in stars >8 solar masses.</p>
+                            </div>
+                            
+                            <div class="fusion-step">
+                                <h4>Oxygen, Silicon and Other Heavy Element Fusion</h4>
+                                <p>Increasingly hotter temperatures required</p>
+                                <p>Core temperature: >1 billion K</p>
+                                <p>Only in massive stars just before supernova.</p>
+                            </div>
+                            
+                            <div class="fusion-step">
+                                <h4>Iron: Fusion Endpoint</h4>
+                                <p>Iron-56 has the highest binding energy per nucleon</p>
+                                <p>Fusion beyond iron absorbs energy rather than releasing it</p>
+                                <p>Leads to core collapse in massive stars</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tooltip" id="tooltip"></div>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <span>Initializing Simulator...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Constants and Configuration
+        const STAR_COLORS = {
+            'O': '#9bb0ff', // Blue
+            'B': '#aabfff', // Blue-white
+            'A': '#cad7ff', // White
+            'F': '#f8f7ff', // Yellow-white
+            'G': '#fff4ea', // Yellow (Sun)
+            'K': '#ffd2a1', // Orange
+            'M': '#ffcc6f', // Red
+            'protostar': '#ff9d00', // Orange-ish
+            'red-giant': '#ff7b55', // Orange-red
+            'horizontal-branch': '#ffdb9e', // Yellow-white
+            'agb': '#ff5500', // Bright orange-red
+            'planetary-nebula': '#66ccff', // Bluish
+            'supernova': '#ffffff', // Brilliant white
+            'white-dwarf': '#eee9e9', // Whitish
+            'neutron-star': '#abf8ff', // Pale blue
+            'black-hole': '#000000', // Black (but will be rendered with effects)
+        };
+        
+        // Main Simulator Class
+        class StellarSimulator {
+            constructor() {
+                this.canvas = document.getElementById('simulation-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.tooltip = document.getElementById('tooltip');
+                
+                // Star properties
+                this.starClass = 'sun-like';
+                this.starMass = 1.0; // In solar masses
+                this.starMetallicity = 'medium';
+                this.lifecycleStage = 'main-sequence';
+                this.autoEvolveSpeed = 0;
+                
+                // Display options
+                this.showHabitable = true;
+                this.showPlanets = true;
+                
+                // Animation properties
+                this.animationId = null;
+                this.startTime = Date.now();
+                this.starRadius = 50; // Base radius in pixels
+                this.starColor = STAR_COLORS['G']; // Sun-like default
+                this.starPulseAmount = 0.05; // Pulsation factor
+                this.zoomLevel = 1;
+                this.universeTime = 0; // Simulation time in "billion years"
+                
+                // Canvas dimensions
+                this.width = 0;
+                this.height = 0;
+                
+                // Star life cycle data
+                this.lifeExpectancy = this.calculateLifeExpectancy();
+                this.currentFusionProcess = 'hydrogen';
+                
+                // Planets (simplified for visualization)
+                this.planets = [
+                    { name: 'Planet 1', distance: 150, radius: 5, color: '#3498db', orbitalPeriod: 1.0 },
+                    { name: 'Planet 2', distance: 250, radius: 7, color: '#27ae60', orbitalPeriod: 2.0 },
+                    { name: 'Planet 3', distance: 400, radius: 6, color: '#e74c3c', orbitalPeriod: 4.0 }
+                ];
+                
+                // Particle systems
+                this.particles = [];
+                this.nebulaeParticles = [];
+                
+                // Initialize
+                this.initEventListeners();
+                this.updateStarProperties();
+                this.resizeCanvas();
+                window.addEventListener('resize', () => this.resizeCanvas());
+                
+                // Hide loading screen after a short delay
+                setTimeout(() => {
+                    document.getElementById('loading').style.display = 'none';
+                    this.startAnimation();
+                }, 1000);
+            }
+            
+            resizeCanvas() {
+                const container = this.canvas.parentElement;
+                this.width = container.clientWidth;
+                this.height = container.clientHeight;
+                this.canvas.width = this.width;
+                this.canvas.height = this.height;
+                
+                // Recalculate center
+                this.centerX = this.width / 2;
+                this.centerY = this.height / 2;
+            }
+            
+            initEventListeners() {
+                // Star class selection
+                document.getElementById('star-class').addEventListener('change', (e) => {
+                    this.starClass = e.target.value;
+                    this.updateMassRange();
+                    this.updateStarProperties();
+                });
+                
+                // Mass slider
+                document.getElementById('mass-slider').addEventListener('input', (e) => {
+                    this.starMass = parseFloat(e.target.value);
+                    document.getElementById('mass-value').textContent = this.starMass.toFixed(2) + ' M☉';
+                    this.updateStarProperties();
+                });
+                
+                // Metallicity
+                document.getElementById('metallicity').addEventListener('change', (e) => {
+                    this.starMetallicity = e.target.value;
+                    this.updateStarProperties();
+                });
+                
+                // Lifecycle stage
+                document.getElementById('lifecycle-stage').addEventListener('change', (e) => {
+                    this.setLifecycleStage(e.target.value);
+                });
+                
+                // Auto evolution
+                document.getElementById('auto-evolve').addEventListener('input', (e) => {
+                    this.autoEvolveSpeed = parseInt(e.target.value);
+                    const value = this.autoEvolveSpeed === 0 ? 'Off' : `${this.autoEvolveSpeed}x`;
+                    document.getElementById('evolve-value').textContent = value;
+                });
+                
+                // Next stage button
+                document.getElementById('next-stage').addEventListener('click', () => {
+                    this.progressToNextStage();
+                });
+                
+                // Reset button
+                document.getElementById('reset').addEventListener('click', () => {
+                    this.resetSimulation();
+                });
+                
+                // Display options
+                document.getElementById('show-habitable').addEventListener('change', (e) => {
+                    this.showHabitable = e.target.value === 'yes';
+                });
+                
+                document.getElementById('show-planets').addEventListener('change', (e) => {
+                    this.showPlanets = e.target.value === 'yes';
+                });
+                
+                // View fusion cycle
+                document.getElementById('view-fusion').addEventListener('click', () => {
+                    document.getElementById('fusion-diagram').style.display = 'block';
+                });
+                
+                // Close fusion diagram
+                document.querySelector('.close-fusion').addEventListener('click', () => {
+                    document.getElementById('fusion-diagram').style.display = 'none';
+                });
+                
+                // Toggle info panel
+                document.querySelector('.toggle-info').addEventListener('click', () => {
+                    const infoPanel = document.querySelector('.info-panel');
+                    infoPanel.classList.toggle('hidden');
+                });
+                
+                // Timeline markers
+                document.querySelectorAll('.timeline-marker').forEach(marker => {
+                    marker.addEventListener('click', () => {
+                        const stage = marker.dataset.stage;
+                        if (stage === 'protostar') {
+                            this.setLifecycleStage('protostar');
+                        } else if (stage === 'main-sequence') {
+                            this.setLifecycleStage('main-sequence');
+                        } else if (stage === 'red-giant') {
+                            this.setLifecycleStage('red-giant');
+                        } else if (stage === 'end-state') {
+                            // Choose appropriate end state based on mass
+                            if (this.starMass < 8) {
+                                this.setLifecycleStage('white-dwarf');
+                            } else if (this.starMass < 20) {
+                                this.setLifecycleStage('neutron-star');
+                            } else {
+                                this.setLifecycleStage('black-hole');
+                            }
+                        }
+                    });
+                });
+                
+                // Canvas interactions
+                this.canvas.addEventListener('mousemove', (e) => {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    // Check if mouse is over the star
+                    const dx = x - this.centerX;
+                    const dy = y - this.centerY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance <= this.getScaledStarRadius()) {
+                        this.showTooltip(e.clientX, e.clientY, this.getStarTooltip());
+                    } else {
+                        // Check planets
+                        let overPlanet = false;
+                        if (this.showPlanets) {
+                            for (const planet of this.planets) {
+                                const angle = (this.universeTime * Math.PI * 2 / planet.orbitalPeriod) % (Math.PI * 2);
+                                const planetX = this.centerX + planet.distance * Math.cos(angle);
+                                const planetY = this.centerY + planet.distance * Math.sin(angle);
+                                
+                                const planetDx = x - planetX;
+                                const planetDy = y - planetY;
+                                const planetDistance = Math.sqrt(planetDx * planetDx + planetDy * planetDy);
+                                
+                                if (planetDistance <= planet.radius * 2) {
+                                    this.showTooltip(e.clientX, e.clientY, `${planet.name}<br>Distance: ${(planet.distance / 100).toFixed(1)} AU`);
+                                    overPlanet = true;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (!overPlanet) {
+                            this.hideTooltip();
+                        }
+                    }
+                });
+                
+                this.canvas.addEventListener('mouseout', () => {
+                    this.hideTooltip();
+                });
+                
+                // Double click to zoom
+                this.canvas.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+                    this.zoomLevel *= zoomFactor;
+                    this.zoomLevel = Math.max(0.5, Math.min(2.5, this.zoomLevel));
+                });
+            }
+            
+            updateMassRange() {
+                const massSlider = document.getElementById('mass-slider');
+                const massValue = document.getElementById('mass-value');
+                
+                switch (this.starClass) {
+                    case 'low-mass':
+                        massSlider.min = 0.08;
+                        massSlider.max = 0.8;
+                        massSlider.value = 0.3;
+                        break;
+                    case 'sun-like':
+                        massSlider.min = 0.8;
+                        massSlider.max = 2;
+                        massSlider.value = 1.0;
+                        break;
+                    case 'medium-mass':
+                        massSlider.min = 2;
+                        massSlider.max = 8;
+                        massSlider.value = 4.0;
+                        break;
+                    case 'high-mass':
+                        massSlider.min = 8;
+                        massSlider.max = 50;
+                        massSlider.value = 15.0;
+                        break;
+                }
+                
+                this.starMass = parseFloat(massSlider.value);
+                massValue.textContent = this.starMass.toFixed(2) + ' M☉';
+            }
+            
+            updateStarProperties() {
+                // Calculate star type based on mass
+                this.spectralType = this.calculateSpectralType();
+                
+                // Update star color based on spectral type
+                if (this.lifecycleStage === 'main-sequence') {
+                    this.starColor = STAR_COLORS[this.spectralType];
+                } else {
+                    this.starColor = STAR_COLORS[this.lifecycleStage];
+                }
+                
+                // Calculate life expectancy based on mass
+                this.lifeExpectancy = this.calculateLifeExpectancy();
+                
+                // Calculate habitable zone
+                this.habitableZoneInner = this.calculateHabitableZone().inner;
+                this.habitableZoneOuter = this.calculateHabitableZone().outer;
+                
+                // Update info panel
+                this.updateInfoPanel();
+                
+                // Update timeline markers
+                this.updateTimelineMarkers();
+            }
+            
+            calculateSpectralType() {
+                if (this.starMass >= 16) return 'O';
+                if (this.starMass >= 2.1) return 'B';
+                if (this.starMass >= 1.4) return 'A';
+                if (this.starMass >= 1.04) return 'F';
+                if (this.starMass >= 0.8) return 'G';
+                if (this.starMass >= 0.45) return 'K';
+                return 'M';
+            }
+            
+            calculateLifeExpectancy() {
+                // Approximate relation between mass and main sequence lifetime in billions of years
+                // Based on L ∝ M^3.5 and lifetime ∝ M/L
+                return 10 * (1 / Math.pow(this.starMass, 2.5));
+            }
+            
+            calculateHabitableZone() {
+                // Simplified habitable zone calculation
+                // Based on stellar luminosity which scales with mass^3.5
+                const luminosity = Math.pow(this.starMass, 3.5);
+                
+                // Scale the habitable zone with luminosity
+                let inner = 100 * Math.sqrt(luminosity) * 0.75;
+                let outer = 100 * Math.sqrt(luminosity) * 1.5;
+                
+                // Adjust based on lifecycle stage
+                if (this.lifecycleStage === 'red-giant' || this.lifecycleStage === 'asymptotic-giant') {
+                    inner *= 3;
+                    outer *= 3;
+                }
+                
+                return { inner, outer };
+            }
+            
+            getScaledStarRadius() {
+                let baseRadius = this.starRadius;
+                
+                // Scale radius based on mass
+                baseRadius *= Math.pow(this.starMass, 0.8);
+                
+                // Adjust radius based on lifecycle stage
+                switch (this.lifecycleStage) {
+                    case 'protostar':
+                        baseRadius *= 1.5;
+                        break;
+                    case 'main-sequence':
+                        // Already scaled with mass
+                        break;
+                    case 'red-giant':
+                        baseRadius *= 10;
+                        break;
+                    case 'horizontal-branch':
+                        baseRadius *= 5;
+                        break;
+                    case 'asymptotic-giant':
+                        baseRadius *= 15;
+                        break;
+                    case 'planetary-nebula':
+                        baseRadius *= 0.5; // Core only
+                        break;
+                    case 'supernova':
+                        baseRadius *= 0.5; // Core only
+                        break;
+                    case 'white-dwarf':
+                        baseRadius *= 0.1;
+                        break;
+                    case 'neutron-star':
+                        baseRadius *= 0.05;
+                        break;
+                    case 'black-hole':
+                        baseRadius *= 0.2; // Event horizon visualization
+                        break;
+                }
+                
+                // Apply zoom
+                baseRadius *= this.zoomLevel;
+                
+                return baseRadius;
+            }
+            
+            setLifecycleStage(stage) {
+                this.lifecycleStage = stage;
+                
+                // Update dropdown to match
+                document.getElementById('lifecycle-stage').value = stage;
+                
+                // Reset animation variables
+                this.particles = [];
+                this.nebulaeParticles = [];
+                
+                // Update fusion process based on stage
+                this.updateFusionProcess();
+                
+                // Update star properties to reflect new stage
+                this.updateStarProperties();
+                
+                // Create special effects for certain stages
+                if (stage === 'supernova') {
+                    this.createSupernova();
+                } else if (stage === 'planetary-nebula') {
+                    this.createPlanetaryNebula();
+                }
+            }
+            
+            updateFusionProcess() {
+                switch (this.lifecycleStage) {
+                    case 'protostar':
+                        this.currentFusionProcess = 'gravitational-contraction';
+                        break;
+                    case 'main-sequence':
+                        this.currentFusionProcess = 'hydrogen';
+                        break;
+                    case 'red-giant':
+                    case 'horizontal-branch':
+                        this.currentFusionProcess = 'helium';
+                        break;
+                    case 'asymptotic-giant':
+                        this.currentFusionProcess = 'carbon-oxygen';
+                        break;
+                    case 'planetary-nebula':
+                    case 'supernova':
+                        this.currentFusionProcess = 'none';
+                        break;
+                    case 'white-dwarf':
+                    case 'neutron-star':
+                    case 'black-hole':
+                        this.currentFusionProcess = 'none';
+                        break;
+                    default:
+                        this.currentFusionProcess = 'hydrogen';
+                }
+            }
+            
+            progressToNextStage() {
+                const stages = [
+                    'protostar',
+                    'main-sequence',
+                    'red-giant',
+                    'horizontal-branch',
+                    'asymptotic-giant'
+                ];
+                
+                // Final stages depend on star mass
+                if (this.starMass < 8) {
+                    stages.push('planetary-nebula');
+                    stages.push('white-dwarf');
+                } else {
+                    stages.push('supernova');
+                    if (this.starMass < 20) {
+                        stages.push('neutron-star');
+                    } else {
+                        stages.push('black-hole');
+                    }
+                }
+                
+                const currentIndex = stages.indexOf(this.lifecycleStage);
+                if (currentIndex < stages.length - 1) {
+                    this.setLifecycleStage(stages[currentIndex + 1]);
+                }
+            }
+            
+            resetSimulation() {
+                this.setLifecycleStage('protostar');
+                this.universeTime = 0;
+                this.particles = [];
+                this.nebulaeParticles = [];
+                
+                // Reset timeline markers
+                document.querySelectorAll('.timeline-marker').forEach(marker => {
+                    marker.classList.remove('active');
+                });
+                document.querySelector('[data-stage="protostar"]').classList.add('active');
+            }
+            
+            updateInfoPanel() {
+                const infoTitle = document.getElementById('info-title');
+                const infoContent = document.getElementById('info-content');
+                
+                let title, content;
+                
+                switch (this.lifecycleStage) {
+                    case 'protostar':
+                        title = 'Protostar Phase';
+                        content = `
+                            <p>A protostar is a very young star that is still gathering mass from its parent molecular cloud. This phase lasts about 100,000 years for a Sun-like star.</p>
+                            <p>Current fusion: None (Gravitational collapse provides energy)</p>
+                            <p>Estimated duration: ~0.1 million years</p>
+                        `;
+                        break;
+                    case 'main-sequence':
+                        title = `Main Sequence Star (${this.spectralType}-type)`;
+                        content = `
+                            <p>Main sequence stars fuse hydrogen into helium in their cores. For a ${this.starMass.toFixed(1)} solar mass star, this phase lasts approximately ${this.lifeExpectancy.toFixed(1)} billion years.</p>
+                            <p>Current fusion: Hydrogen → Helium (${this.starMass > 1.3 ? 'CNO Cycle dominant' : 'Proton-Proton Chain dominant'})</p>
+                            <p>Core temperature: ~${Math.round(15 * Math.pow(this.starMass, 0.5))} million K</p>
+                        `;
+                        break;
+                    case 'red-giant':
+                        title = 'Red Giant Phase';
+                        content = `
+                            <p>As hydrogen fuel in the core is exhausted, the star expands and cools at the surface. The inert helium core contracts and heats up while hydrogen fusion continues in a shell around the core.</p>
+                            <p>Current fusion: Hydrogen shell burning (core inert)</p>
+                            <p>Shell temperature: ~20 million K</p>
+                            <p>Radius: ~${Math.round(100 * Math.pow(this.starMass, 0.5))} times original</p>
+                        `;
+                        break;
+                    case 'horizontal-branch':
+                        title = 'Horizontal Branch';
+                        content = `
+                            <p>The core reaches temperatures of ~100 million K, igniting helium fusion (triple-alpha process). The star shrinks and heats up temporarily.</p>
+                            <p>Current fusion: Helium → Carbon (core), Hydrogen → Helium (shell)</p>
+                            <p>Core temperature: ~100 million K</p>
+                        `;
+                        break;
+                    case 'asymptotic-giant':
+                        title = 'Asymptotic Giant Branch';
+                        content = `
+                            <p>After helium in the core is exhausted, the star expands again with helium shell burning. For stars >8 solar masses, further fusion occurs (C, O, Ne, etc.).</p>
+                            <p>Current fusion: ${this.starMass > 8 ? 'Multiple shell burning (C, O)' : 'Helium shell burning'}</p>
+                            <p>Core: ${this.starMass > 8 ? 'Carbon/Oxygen fusion active' : 'Inert carbon/oxygen core'}</p>
+                        `;
+                        break;
+                    case 'planetary-nebula':
+                        title = 'Planetary Nebula';
+                        content = `
+                            <p>Low/medium mass stars (<8 M☉) eject their outer layers, forming a beautiful, colorful nebula. The core remains as a hot, dense remnant.</p>
+                            <p>Current fusion: None</p>
+                            <p>Nebula expansion rate: ~20-30 km/s</p>
+                            <p>Duration: ~10,000 years</p>
+                        `;
+                        break;
+                    case 'supernova':
+                        title = 'Supernova';
+                        content = `
+                            <p>Massive stars (>8 M☉) end their lives in spectacular explosions when their cores collapse. The explosion seeds the universe with heavy elements.</p>
+                            <p>Current fusion: None (Core collapse)</p>
+                            <p>Energy released: ~10^44 joules</p>
+                            <p>Elements created: All natural elements heavier than iron</p>
+                        `;
+                        break;
+                    case 'white-dwarf':
+                        title = 'White Dwarf';
+                        content = `
+                            <p>The remnant core of a low/medium mass star after the planetary nebula phase. It's very hot but gradually cools over billions of years.</p>
+                            <p>Composition: Carbon and Oxygen</p>
+                            <p>Size: About Earth-sized</p>
+                            <p>Density: ~1 ton per cubic centimeter</p>
+                            <p>No active fusion (supported by electron degeneracy pressure)</p>
+                        `;
+                        break;
+                    case 'neutron-star':
+                        title = 'Neutron Star';
+                        content = `
+                            <p>The collapsed core of a massive star after a supernova. Matter is compressed so tightly that electrons combine with protons to form neutrons.</p>
+                            <p>Size: ~20 km diameter</p>
+                            <p>Density: ~100 trillion tons per cubic centimeter</p>
+                            <p>Rotation: Up to several hundred times per second</p>
+                            <p>No active fusion (supported by neutron degeneracy pressure)</p>
+                        `;
+                        break;
+                    case 'black-hole':
+                        title = 'Black Hole';
+                        content = `
+                            <p>For the most massive stars (>20 M☉), gravitational collapse overcomes all pressure, creating a singularity from which nothing, not even light, can escape.</p>
+                            <p>Event Horizon Radius: ~${(2.9 * this.starMass / 10).toFixed(1)} km</p>
+                            <p>This is a stellar-mass black hole, much smaller than the supermassive black holes found in galaxy centers.</p>
+                        `;
+                        break;
+                }
+                
+                infoTitle.textContent = title;
+                infoContent.innerHTML = content;
+            }
+            
+            updateTimelineMarkers() {
+                // Reset all markers
+                document.querySelectorAll('.timeline-marker').forEach(marker => {
+                    marker.classList.remove('active');
+                });
+                
+                // Set active marker based on current stage
+                let activeMarker;
+                
+                if (this.lifecycleStage === 'protostar') {
+                    activeMarker = document.querySelector('[data-stage="protostar"]');
+                } else if (this.lifecycleStage === 'main-sequence') {
+                    activeMarker = document.querySelector('[data-stage="main-sequence"]');
+                } else if (['red-giant', 'horizontal-branch', 'asymptotic-giant'].includes(this.lifecycleStage)) {
+                    activeMarker = document.querySelector('[data-stage="red-giant"]');
+                } else {
+                    activeMarker = document.querySelector('[data-stage="end-state"]');
+                }
+                
+                if (activeMarker) {
+                    activeMarker.classList.add('active');
+                }
+            }
+            
+            getStarTooltip() {
+                let info = '';
+                
+                // Basic star info
+                info += `${this.lifecycleStage.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}<br>`;
+                info += `Mass: ${this.starMass.toFixed(2)} M☉<br>`;
+                
+                if (this.lifecycleStage === 'main-sequence') {
+                    info += `Spectral Type: ${this.spectralType}<br>`;
+                    info += `Lifetime: ${this.lifeExpectancy.toFixed(1)} billion years<br>`;
+                }
+                
+                if (this.currentFusionProcess !== 'none') {
+                    info += `Fusion: ${this.currentFusionProcess.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}<br>`;
+                }
+                
+                return info;
+            }
+            
+            showTooltip(x, y, text) {
+                this.tooltip.style.left = (x + 10) + 'px';
+                this.tooltip.style.top = (y + 10) + 'px';
+                this.tooltip.innerHTML = text;
+                this.tooltip.style.opacity = '1';
+            }
+            
+            hideTooltip() {
+                this.tooltip.style.opacity = '0';
+            }
+            
+            createPlanetaryNebula() {
+                const particleCount = 200;
+                const centerX = this.centerX;
+                const centerY = this.centerY;
+                const colors = ['#66ccff', '#33aaff', '#3377ff', '#ff66aa', '#ffaa66'];
+                
+                for (let i = 0; i < particleCount; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = 50 + Math.random() * 200;
+                    const speed = 0.2 + Math.random() * 0.3;
+                    const size = 1 + Math.random() * 3;
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    const alpha = 0.5 + Math.random() * 0.5;
+                    
+                    this.nebulaeParticles.push({
+                        x: centerX + Math.cos(angle) * distance,
+                        y: centerY + Math.sin(angle) * distance,
+                        angle,
+                        distance,
+                        speed,
+                        size,
+                        color,
+                        alpha
+                    });
+                }
+            }
+            
+            createSupernova() {
+                const particleCount = 500;
+                const centerX = this.centerX;
+                const centerY = this.centerY;
+                const colors = ['#ffffff', '#ffcc00', '#ff7700', '#ff3300', '#3377ff'];
+                
+                for (let i = 0; i < particleCount; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = Math.random() * 50;
+                    const speed = 1 + Math.random() * 5;
+                    const size = 1 + Math.random() * 4;
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    
+                    this.particles.push({
+                        x: centerX + Math.cos(angle) * distance,
+                        y: centerY + Math.sin(angle) * distance,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        size,
+                        color,
+                        alpha: 1.0,
+                        fade: 0.005 + Math.random() * 0.01
+                    });
+                }
+            }
+            
+            createFusionParticle() {
+                if (this.currentFusionProcess === 'none') return;
+                
+                const angle = Math.random() * Math.PI * 2;
+                const distance = this.getScaledStarRadius() * (0.2 + Math.random() * 0.5);
+                const speed = 0.2 + Math.random() * 0.5;
+                const size = 1 + Math.random() * 2;
+                
+                let color;
+                switch (this.currentFusionProcess) {
+                    case 'hydrogen':
+                        color = '#ff3300';
+                        break;
+                    case 'helium':
+                        color = '#ffcc00';
+                        break;
+                    case 'carbon-oxygen':
+                        color = '#3377ff';
+                        break;
+                    default:
+                        color = '#ffffff';
+                }
+                
+                this.particles.push({
+                    x: this.centerX + Math.cos(angle) * distance,
+                    y: this.centerY + Math.sin(angle) * distance,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    size,
+                    color,
+                    alpha: 0.7,
+                    fade: 0.03 + Math.random() * 0.02
+                });
+            }
+            
+            updateParticles() {
+                // Regular particles
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    const particle = this.particles[i];
+                    
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+                    particle.alpha -= particle.fade;
+                    
+                    if (particle.alpha <= 0) {
+                        this.particles.splice(i, 1);
+                    }
+                }
+                
+                // Nebulae particles
+                for (let i = 0; i < this.nebulaeParticles.length; i++) {
+                    const particle = this.nebulaeParticles[i];
+                    
+                    particle.distance += particle.speed;
+                    particle.x = this.centerX + Math.cos(particle.angle) * particle.distance;
+                    particle.y = this.centerY + Math.sin(particle.angle) * particle.distance;
+                    
+                    // Reset particles that go too far
+                    if (particle.distance > 500) {
+                        particle.distance = 50;
+                        particle.angle = Math.random() * Math.PI * 2;
+                    }
+                }
+            }
+            
+            drawParticles() {
+                // Draw nebulae particles behind everything
+                for (const particle of this.nebulaeParticles) {
+                    this.ctx.globalAlpha = particle.alpha;
+                    this.ctx.fillStyle = particle.color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+                
+                // Reset alpha
+                this.ctx.globalAlpha = 1.0;
+                
+                // Draw regular particles on top
+                for (const particle of this.particles) {
+                    this.ctx.globalAlpha = particle.alpha;
+                    this.ctx.fillStyle = particle.color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+                
+                // Reset alpha
+                this.ctx.globalAlpha = 1.0;
+            }
+            
+            startAnimation() {
+                this.animate();
+            }
+            
+            animate() {
+                this.animationId = requestAnimationFrame(() => this.animate());
+                
+                // Clear canvas
+                this.ctx.clearRect(0, 0, this.width, this.height);
+                
+                // Auto-evolution if enabled
+                if (this.autoEvolveSpeed > 0) {
+                    this.universeTime += 0.001 * this.autoEvolveSpeed;
+                    
+                    // Progress through lifecycle based on mass
+                    if (this.lifecycleStage === 'main-sequence' && this.universeTime >= this.lifeExpectancy) {
+                        this.setLifecycleStage('red-giant');
+                    } else if (this.lifecycleStage === 'red-giant' && this.universeTime >= this.lifeExpectancy * 1.1) {
+                        this.setLifecycleStage('horizontal-branch');
+                    } else if (this.lifecycleStage === 'horizontal-branch' && this.universeTime >= this.lifeExpectancy * 1.15) {
+                        this.setLifecycleStage('asymptotic-giant');
+                    } else if (this.lifecycleStage === 'asymptotic-giant' && this.universeTime >= this.lifeExpectancy * 1.2) {
+                        // Final stage based on mass
+                        if (this.starMass < 8) {
+                            this.setLifecycleStage('planetary-nebula');
+                        } else {
+                            this.setLifecycleStage('supernova');
+                        }
+                    } else if (this.lifecycleStage === 'planetary-nebula' && this.universeTime >= this.lifeExpectancy * 1.21) {
+                        this.setLifecycleStage('white-dwarf');
+                    } else if (this.lifecycleStage === 'supernova' && this.universeTime >= this.lifeExpectancy * 1.21) {
+                        if (this.starMass < 20) {
+                            this.setLifecycleStage('neutron-star');
+                        } else {
+                            this.setLifecycleStage('black-hole');
+                        }
+                    }
+                }
+                
+                // Draw habitable zone
+                if (this.showHabitable && ['protostar', 'main-sequence', 'red-giant', 'horizontal-branch'].includes(this.lifecycleStage)) {
+                    this.drawHabitableZone();
+                }
+                
+                // Draw star
+                this.drawStar();
+                
+                // Draw planets
+                if (this.showPlanets) {
+                    this.drawPlanets();
+                }
+                
+                // Create fusion particles
+                if (Math.random() < 0.2 && this.currentFusionProcess !== 'none' && this.currentFusionProcess !== 'gravitational-contraction') {
+                    this.createFusionParticle();
+                }
+                
+                // Update and draw particles
+                this.updateParticles();
+                this.drawParticles();
+            }
+            
+            drawHabitableZone() {
+                const ctx = this.ctx;
+                
+                ctx.globalAlpha = 0.2;
+                ctx.fillStyle = '#8cff8c';
+                ctx.beginPath();
+                ctx.arc(this.centerX, this.centerY, this.habitableZoneOuter, 0, Math.PI * 2);
+                ctx.arc(this.centerX, this.centerY, this.habitableZoneInner, 0, Math.PI * 2, true);
+                ctx.fill();
+                
+                ctx.globalAlpha = 1;
+                ctx.strokeStyle = '#8cff8c';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(this.centerX, this.centerY, this.habitableZoneInner, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.arc(this.centerX, this.centerY, this.habitableZoneOuter, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            drawStar() {
+                const ctx = this.ctx;
+                const now = Date.now();
+                const timeSinceStart = (now - this.startTime) / 1000;
+                const radius = this.getScaledStarRadius();
+                
+                // Add pulsation for certain star types/stages
+                let pulsate = 0;
+                if (['red-giant', 'asymptotic-giant'].includes(this.lifecycleStage)) {
+                    pulsate = Math.sin(timeSinceStart * 2) * this.starPulseAmount;
+                } else if (this.lifecycleStage === 'protostar') {
+                    pulsate = Math.sin(timeSinceStart * 5) * this.starPulseAmount * 2;
+                }
+                
+                const adjustedRadius = radius * (1 + pulsate);
+                
+                // Draw star with gradient
+                const gradient = ctx.createRadialGradient(
+                    this.centerX, this.centerY, 0,
+                    this.centerX, this.centerY, adjustedRadius
+                );
+                
+                // Set gradient colors based on star type/stage
+                if (this.lifecycleStage === 'black-hole') {
+                    // Special case for black hole
+                    gradient.addColorStop(0, 'rgba(20, 20, 20, 1)');
+                    gradient.addColorStop(0.7, 'rgba(0, 0, 0, 1)');
+                    
+                    // Draw accretion disk
+                    const diskGradient = ctx.createRadialGradient(
+                        this.centerX, this.centerY, adjustedRadius,
+                        this.centerX, this.centerY, adjustedRadius * 3
+                    );
+                    
+                    diskGradient.addColorStop(0, 'rgba(255, 100, 0, 0.7)');
+                    diskGradient.addColorStop(0.3, 'rgba(255, 200, 50, 0.5)');
+                    diskGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    
+                    ctx.fillStyle = diskGradient;
+                    ctx.beginPath();
+                    ctx.ellipse(this.centerX, this.centerY, adjustedRadius * 3, adjustedRadius, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (this.lifecycleStage === 'neutron-star') {
+                    // Special case for neutron star
+                    gradient.addColorStop(0, '#ffffff');
+                    gradient.addColorStop(0.4, '#abf8ff');
+                    gradient.addColorStop(1, '#68d1e8');
+                    
+                    // Draw magnetic field lines
+                    ctx.strokeStyle = 'rgba(100, 200, 255, 0.3)';
+                    ctx.lineWidth = 1;
+                    
+                    for (let i = 0; i < 8; i++) {
+                        const angle = (i / 8) * Math.PI * 2;
+                        const curveAmount = 50 + Math.sin(timeSinceStart * 3) * 20;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(
+                            this.centerX + Math.cos(angle) * adjustedRadius,
+                            this.centerY + Math.sin(angle) * adjustedRadius
+                        );
+                        
+                        const cp1x = this.centerX + Math.cos(angle + 0.5) * curveAmount;
+                        const cp1y = this.centerY + Math.sin(angle + 0.5) * curveAmount;
+                        const cp2x = this.centerX + Math.cos(angle + 1) * curveAmount;
+                        const cp2y = this.centerY + Math.sin(angle + 1) * curveAmount;
+                        const endX = this.centerX + Math.cos(angle + 1.5) * adjustedRadius;
+                        const endY = this.centerY + Math.sin(angle + 1.5) * adjustedRadius;
+                        
+                        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, endX, endY);
+                        ctx.stroke();
+                    }
+                } else if (this.lifecycleStage === 'white-dwarf') {
+                    // Special case for white dwarf
+                    gradient.addColorStop(0, '#ffffff');
+                    gradient.addColorStop(0.7, '#eee9e9');
+                    gradient.addColorStop(1, '#c8c8c8');
+                } else if (this.lifecycleStage === 'planetary-nebula' || this.lifecycleStage === 'supernova') {
+                    // Special case for planetary nebula core or supernova remnant
+                    gradient.addColorStop(0, '#ffffff');
+                    gradient.addColorStop(0.6, this.starColor);
+                    gradient.addColorStop(1, darkenColor(this.starColor, 0.7));
+                } else {
+                    // Normal star gradient
+                    gradient.addColorStop(0, lightenColor(this.starColor, 0.3));
+                    gradient.addColorStop(0.7, this.starColor);
+                    gradient.addColorStop(1, darkenColor(this.starColor, 0.7));
+                }
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.centerX, this.centerY, adjustedRadius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Add bloom effect for bright stars
+                if (['main-sequence', 'protostar', 'white-dwarf', 'neutron-star'].includes(this.lifecycleStage)) {
+                    const bloomSize = this.lifecycleStage === 'white-dwarf' || this.lifecycleStage === 'neutron-star' ? 3 : 1.5;
+                    
+                    ctx.globalAlpha = 0.3;
+                    const bloomGradient = ctx.createRadialGradient(
+                        this.centerX, this.centerY, adjustedRadius,
+                        this.centerX, this.centerY, adjustedRadius * bloomSize
+                    );
+                    
+                    bloomGradient.addColorStop(0, this.starColor);
+                    bloomGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    
+                    ctx.fillStyle = bloomGradient;
+                    ctx.beginPath();
+                    ctx.arc(this.centerX, this.centerY, adjustedRadius * bloomSize, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
+            }
+            
+            drawPlanets() {
+                const ctx = this.ctx;
+                
+                for (const planet of this.planets) {
+                    // Skip planets that would have been engulfed by red giants
+                    if ((this.lifecycleStage === 'red-giant' || this.lifecycleStage === 'asymptotic-giant') && planet.distance < this.getScaledStarRadius() * 1.2) {
+                        continue;
+                    }
+                    
+                    // Calculate planet position based on orbit
+                    const angle = (this.universeTime * Math.PI * 2 / planet.orbitalPeriod) % (Math.PI * 2);
+                    const x = this.centerX + planet.distance * Math.cos(angle);
+                    const y = this.centerY + planet.distance * Math.sin(angle);
+                    
+                    // Draw orbit
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.arc(this.centerX, this.centerY, planet.distance, 0, Math.PI * 2);
+                    ctx.stroke();
+                    
+                    // Draw planet
+                    ctx.fillStyle = planet.color;
+                    ctx.beginPath();
+                    ctx.arc(x, y, planet.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+        
+        // Utility functions for color manipulation
+        function lightenColor(color, factor) {
+            const r = parseInt(color.substr(1, 2), 16);
+            const g = parseInt(color.substr(3, 2), 16);
+            const b = parseInt(color.substr(5, 2), 16);
+            
+            const newR = Math.min(255, Math.round(r + (255 - r) * factor));
+            const newG = Math.min(255, Math.round(g + (255 - g) * factor));
+            const newB = Math.min(255, Math.round(b + (255 - b) * factor));
+            
+            return `rgb(${newR}, ${newG}, ${newB})`;
+        }
+        
+        function darkenColor(color, factor) {
+            const r = parseInt(color.substr(1, 2), 16);
+            const g = parseInt(color.substr(3, 2), 16);
+            const b = parseInt(color.substr(5, 2), 16);
+            
+            const newR = Math.max(0, Math.round(r * factor));
+            const newG = Math.max(0, Math.round(g * factor));
+            const newB = Math.max(0, Math.round(b * factor));
+            
+            return `rgb(${newR}, ${newG}, ${newB})`;
+        }
+        
+        // Initialize simulator when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            const simulator = new StellarSimulator();
+        });
+    </script>
+</body>
+</html>

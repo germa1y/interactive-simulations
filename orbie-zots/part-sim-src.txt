@@ -1,0 +1,3082 @@
+<!DOCTYPE html>
+<html lang="en">
+    <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XDCHJQ15WZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XDCHJQ15WZ');
+</script>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Particle Swarm Simulation</title>
+    <style>
+        :root {
+            --control-panel-width: 18rem;
+            --primary-color: #4CAF50;
+            --bg-color: #111;
+            --panel-bg: rgba(0, 0, 0, 0.7);
+            --border-radius: 0.3rem;
+        }
+        
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        canvas {
+            display: block;
+            will-change: transform; /* Hardware acceleration for the main animation canvas */
+        }
+        
+        /* Touch ripple effect styles */
+        .touch-ripple {
+            position: absolute;
+            border-radius: 50%;
+            transform: scale(0);
+            background-color: rgba(255, 255, 255, 0.3);
+            pointer-events: none;
+            z-index: 1000;
+            animation: ripple-animation 0.4s linear;
+        }
+        
+        /* Attract mode ripple */
+        .touch-ripple-attract {
+            background-color: rgba(100, 149, 237, 0.4); /* Cornflower blue */
+        }
+        
+        /* Repel mode ripple */
+        .touch-ripple-repel {
+            background-color: rgba(255, 165, 0, 0.4); /* Orange */
+        }
+        
+        @keyframes ripple-animation {
+            0% {
+                transform: scale(0);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(3);
+                opacity: 0;
+            }
+        }
+        
+        /* Touch drag ripple - smaller and faster than initial touch */
+        .touch-drag-ripple {
+            position: absolute;
+            border-radius: 50%;
+            transform: scale(0);
+            background-color: rgba(255, 255, 255, 0.25);
+            pointer-events: none;
+            z-index: 1000;
+            animation: drag-ripple-animation 0.3s linear;
+        }
+        
+        /* Attract mode drag ripple */
+        .touch-drag-ripple-attract {
+            background-color: rgba(100, 149, 237, 0.35); /* Cornflower blue */
+        }
+        
+        /* Repel mode drag ripple */
+        .touch-drag-ripple-repel {
+            background-color: rgba(255, 165, 0, 0.35); /* Orange */
+        }
+        
+        @keyframes drag-ripple-animation {
+            0% {
+                transform: scale(0);
+                opacity: 0.4;
+            }
+            100% {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+        
+        /* Updated menu toggle style to be completely independent */
+        .menu-toggle {
+            position: fixed;
+            z-index: 2000;
+            top: 1rem;
+            right: 1rem;
+            background-color: rgba(40, 40, 40, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 3rem;
+            height: 3rem;
+            font-size: 1.8rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: block !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            /* Properties for centering the triangle icon */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+            line-height: 1;
+            padding-right: 0.2rem;
+            padding-bottom: 0.1rem;
+        }
+        
+        .controls {
+            position: absolute;
+            top: 0.6rem;
+            left: 0.6rem;
+            background-color: var(--panel-bg);
+            padding: 0.7rem;
+            border-radius: var(--border-radius);
+            user-select: none;
+            transition: width 0.2s ease-out, padding 0.2s ease-out, opacity 0.3s ease;
+            width: var(--control-panel-width);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        
+        /* Updated collapsed controls to fully hide */
+        .controls.collapsed {
+            width: 0;
+            height: 0;
+            padding: 0;
+            border: none;
+            overflow: hidden;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease, width 0.3s ease, height 0.3s ease;
+        }
+        
+        .controls h1 {
+            margin-top: 0;
+            font-size: 1.1rem;
+            margin-bottom: 0.6rem;
+        }
+        .control-group {
+            margin-bottom: 0.2rem;
+            position: relative;
+        }
+        label {
+            display: inline-block;
+            width: 100%;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        input[type="range"] {
+            width: 100%;
+            vertical-align: middle;
+            margin-top: 0.2rem;
+            margin-bottom: 0.2rem;
+        }
+        .value-display {
+            display: inline-block;
+            min-width: 2rem;
+            font-size: 0.9rem;
+            padding-left: 0.2rem;
+        }
+        button {
+            margin-top: 0.4rem;
+            padding: 0.4rem 0.75rem;
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: var(--border-radius);
+            color: white;
+            cursor: pointer;
+            margin-right: 0.5rem;
+            font-size: 0.9rem;
+        }
+        button:hover {
+            background-color: #3e8e41;
+        }
+        .fps {
+            position: absolute;
+            bottom: 0.6rem;
+            right: 0.6rem;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 0.3rem;
+            border-radius: 0.2rem;
+            font-size: 0.8rem;
+        }
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            z-index: 100;
+            font-size: 0.875rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s ease-out;
+            max-width: 12.5rem;
+            left: 21rem;
+            top: 0;
+        }
+        /* Specific styling for color theme tooltips */
+        .color-presets-container .tooltip {
+            left: 21rem;  /* Position outside the menu */
+            text-align: left;
+            min-width: 7.5rem;  /* Ensure consistent width */
+            font-weight: bold;
+        }
+        .buttons-container {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 0.4rem;
+        }
+        .preset-selector {
+            margin-bottom: 0.5rem;
+            position: relative;
+        }
+        select {
+            padding: 0.3rem;
+            border-radius: var(--border-radius);
+            background-color: #222;
+            color: white;
+            border: 1px solid #444;
+            width: 100%;
+            font-size: 0.9rem;
+            height: 2rem;
+        }
+        select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        .section-divider {
+            border-top: 1px solid #444;
+            margin: 0.6rem 0;
+        }
+        .section-title {
+            font-size: 0.85rem;
+            margin: 0.4rem 0;
+            color: #aaa;
+        }
+        .color-preset {
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 0.5rem;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.15s ease-out;
+        }
+        .color-preset:hover {
+            transform: scale(1.1);
+        }
+        .color-preset.active {
+            border-color: white;
+        }
+        .color-presets-container {
+            display: flex;
+            margin-bottom: 0.9rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.4rem; /* Reduced from 0.9rem */
+            position: relative;
+            justify-content: space-between; /* Distribute items evenly */
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 3.25rem; /* Reduced from 3.75rem */
+            height: 1.5rem; /* Reduced from 1.75rem */
+            margin-left: 0.3rem; /* Reduced from 0.6rem */
+            margin-right: 0.3rem; /* Added to balance spacing */
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #444;
+            transition: background-color 0.2s ease-out;
+            border-radius: 1.7rem;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 1.1rem; /* Reduced from 1.25rem */
+            width: 1.1rem; /* Reduced from 1.25rem */
+            left: 0.2rem; /* Reduced from 0.25rem */
+            bottom: 0.2rem; /* Reduced from 0.25rem */
+            background-color: white;
+            transition: transform 0.2s ease-out;
+            border-radius: 50%;
+        }
+        input:checked + .toggle-slider {
+            background-color: var(--primary-color);
+        }
+        input:checked + .toggle-slider:before {
+            transform: translateX(1.75rem); /* Adjusted for narrower width */
+        }
+        .toggle-label {
+            margin: 0 0.3rem; /* Reduced from 0.5rem */
+            font-size: 0.8rem; /* Reduced from 0.875rem */
+        }
+        .mode-toggle-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.2rem; /* Reduced from 0.3rem */
+            margin-bottom: 0; /* Already removed margin */
+        }
+        .mode-button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #444;
+            border: none;
+            border-radius: var(--border-radius);
+            color: white;
+            cursor: pointer;
+            min-height: 2.2rem;
+            padding: 0.2rem 0.1rem;
+            transition: background-color 0.2s;
+            font-size: 0.9rem;
+            margin-right: 0;
+        }
+        .mode-button.active {
+            background-color: var(--primary-color);
+        }
+        .mode-icon {
+            font-size: 1.1rem; /* Reduced from 1.2rem */
+            margin-bottom: 0.05rem; /* Reduced from 0.1rem */
+        }
+        .mode-text {
+            font-size: 0.7rem;
+        }
+        .secondary-button {
+            background-color: #555;
+            padding: 0.25rem 0.5rem; /* Reduced from 0.3rem 0.75rem */
+            border-radius: var(--border-radius);
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 0.2rem;
+            margin-bottom: 0.3rem;
+            height: 1.8rem; /* Explicit height */
+        }
+        .secondary-button:hover {
+            background-color: #666;
+        }
+        .wall-controls {
+            margin-top: 0.9rem;
+        }
+        .menu-toggle {
+            position: absolute;
+            top: -0.3rem;
+            right: 0;
+            background-color: transparent;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.2s ease-out;
+            z-index: 10;
+            outline: none; /* Remove default focus outline */
+            -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+            user-select: none; /* Prevent text selection */
+            touch-action: manipulation; /* Optimize for touch */
+        }
+        .menu-toggle:hover {
+            color: var(--primary-color);
+        }
+        /* Explicitly reset focus styles */
+        .menu-toggle:focus {
+            outline: none;
+            box-shadow: none;
+            color: white; /* Reset to default color when focused */
+        }
+        .menu-toggle:focus-visible {
+            outline: none;
+        }
+        .controls.collapsed {
+            width: 2.5rem;
+            height: 2.5rem;
+            padding: 0.6rem;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+        .controls.collapsed .menu-toggle {
+            position: absolute;
+            top: -0.125rem;
+            right: 0.15rem;
+        }
+        .controls.collapsed h1, 
+        .controls.collapsed .mode-toggle-container,
+        .controls.collapsed .wall-controls,
+        .controls.collapsed .section-divider,
+        .controls.collapsed .section-title,
+        .controls.collapsed .color-presets-container,
+        .controls.collapsed .toggle-container,
+        .controls.collapsed .control-group,
+        .controls.collapsed .preset-selector,
+        .controls.collapsed .buttons-container {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        /* Media queries for responsive design */
+        @media (max-width: 768px) {
+            :root {
+                --control-panel-width: 16rem;
+            }
+            
+            .controls {
+                max-height: 80vh;
+            }
+            
+            .controls h1 {
+                font-size: 1rem;
+            }
+            
+            /* Enhanced tooltip on mobile */
+            .help-icon {
+                display: inline-block;
+            }
+            
+            .tooltip {
+                display: none; /* Hide desktop tooltips on mobile */
+            }
+            
+            /* Make hit areas larger for mobile */
+            label {
+                width: 100%;
+                font-size: 0.85rem;
+                padding: 0.3rem 0;
+            }
+            
+            input[type="range"] {
+                width: 100%;
+                height: 3rem; /* Doubled height for easier touch interaction */
+                margin: 0.6rem 0;
+                padding: 0.8rem 0; /* Add padding to increase touch area */
+                -webkit-appearance: none; /* Override default appearance */
+                background-color: transparent; /* Make background transparent for custom styling */
+            }
+            
+            /* Custom styling for slider thumb on touch devices */
+            input[type="range"]::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                width: 2.4rem; /* Doubled size */
+                height: 2.4rem; /* Doubled size */
+                background: var(--primary-color);
+                border-radius: 50%;
+                cursor: pointer;
+                border: 2px solid white;
+                margin-top: -1rem; /* Center the thumb on the track */
+                box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            }
+            
+            input[type="range"]::-moz-range-thumb {
+                width: 2.4rem; /* Doubled size */
+                height: 2.4rem; /* Doubled size */
+                background: var(--primary-color);
+                border-radius: 50%;
+                cursor: pointer;
+                border: 2px solid white;
+                box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            }
+            
+            /* Custom styling for slider track on touch devices */
+            input[type="range"]::-webkit-slider-runnable-track {
+                width: 100%;
+                height: 0.5rem;
+                background: #444;
+                border-radius: 0.25rem;
+            }
+            
+            input[type="range"]::-moz-range-track {
+                width: 100%;
+                height: 0.5rem;
+                background: #444;
+                border-radius: 0.25rem;
+            }
+            
+            button {
+                padding: 0.8rem 1rem; /* Much larger touch target */
+                font-size: 0.9rem;
+                margin-bottom: 0.7rem;
+                min-height: 2.8rem;
+            }
+            
+            .mode-button {
+                padding: 0.6rem 0.7rem; /* Larger touch target */
+                margin-bottom: 0.5rem;
+                font-size: 0.85rem;
+            }
+            
+        }
+        
+        @media (max-width: 480px) {
+            :root {
+                --control-panel-width: 14rem;
+            }
+            
+            .controls {
+                max-height: 75vh;
+                top: 0.4rem;
+                left: 0.4rem;
+                padding: 0.7rem;
+            }
+            
+            .mode-toggle-container {
+                display: flex;
+                flex-wrap: wrap;
+            }
+            
+            .mode-button {
+                flex: 1 0 40%;
+                font-size: 0.8rem;
+                padding: 0.7rem 0.3rem;
+                margin-right: 0.2rem;
+                margin-bottom: 0.4rem;
+                text-align: center;
+            }
+            
+            .buttons-container button {
+                flex: 1 0 45%;
+                font-size: 0.8rem;
+                padding: 0.7rem 0.4rem;
+            }
+            
+            .toggle-switch {
+                width: 2.75rem; /* Reduced from 3rem */
+                height: 1.35rem; /* Reduced from 1.5rem */
+            }
+            
+            .toggle-switch .toggle-slider:before {
+                height: 0.9rem; /* Reduced from 1rem */
+                width: 0.9rem; /* Reduced from 1rem */
+            }
+            
+            input:checked + .toggle-slider:before {
+                transform: translateX(1.35rem); /* Adjusted for narrower width */
+            }
+            
+            .color-preset {
+                width: 1.3rem;
+                height: 1.3rem;
+                margin-right: 0.3rem;
+            }
+            
+            .section-title {
+                font-size: 0.8rem;
+            }
+            
+            /* Compact mobile controls */
+            .control-group {
+                margin-bottom: 0.5rem;
+            }
+            
+            label {
+                font-size: 0.8rem;
+            }
+            
+            .value-display {
+                font-size: 0.8rem;
+            }
+            
+            input[type="range"] {
+                height: 0.8rem;
+                margin-top: 0.1rem;
+                margin-bottom: 0.1rem;
+            }
+        }
+        
+        /* Add prefers-reduced-motion media query */
+        @media (prefers-reduced-motion: reduce) {
+            .controls,
+            .tooltip,
+            .color-preset,
+            .toggle-slider,
+            .toggle-slider:before,
+            .menu-toggle {
+                transition: none;
+            }
+            
+            .color-preset:hover {
+                transform: none;
+            }
+        }
+        
+        /* Mobile tooltip implementation */
+        .help-icon {
+            display: none; /* Hidden on desktop */
+            font-size: 1rem;
+            margin-left: 0.3rem;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            vertical-align: middle;
+        }
+        
+        .mobile-tooltip {
+            display: none;
+            padding: 0.6rem;
+            margin-top: -3.5rem; /* Negative margin to position above instead of below */
+            margin-bottom: 1rem; /* Add some space between tooltip and the element */
+            border-radius: var(--border-radius);
+            background-color: rgba(0, 0, 0, 0.8);
+            border-left: 3px solid var(--primary-color);
+            font-size: 0.9rem;
+            color: white;
+            max-width: 100%;
+            position: absolute; /* Make tooltip absolutely positioned */
+            bottom: 100%; /* Position at the bottom of the parent element */
+            left: 0; /* Align with the left edge of the parent */
+            z-index: 10; /* Ensure tooltip appears above other elements */
+            animation: tooltipFadeIn 0.2s ease-out;
+        }
+        
+        /* Add a little arrow at the bottom of the tooltip pointing to the element */
+        .mobile-tooltip:after {
+            content: '';
+            position: absolute;
+            bottom: -0.5rem;
+            left: 1rem;
+            border-width: 0.5rem 0.5rem 0;
+            border-style: solid;
+            border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+        }
+        
+        /* Adjust animation to fade in from below instead of above */
+        @keyframes tooltipFadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 768px) {
+            :root {
+                --control-panel-width: 16rem;
+            }
+            
+            .controls {
+                max-height: 80vh;
+            }
+            
+            .controls h1 {
+                font-size: 1rem;
+            }
+            
+            /* Enhanced tooltip on mobile */
+            .help-icon {
+                display: inline-block;
+            }
+            
+            .tooltip {
+                display: none; /* Hide desktop tooltips on mobile */
+            }
+            
+            /* Make hit areas larger for mobile */
+            label {
+                width: 100%;
+                font-size: 0.85rem;
+                padding: 0.3rem 0;
+            }
+            
+            input[type="range"] {
+                width: 100%;
+                height: 3rem; /* Doubled height for easier touch interaction */
+                margin: 0.6rem 0;
+                padding: 0.8rem 0; /* Add padding to increase touch area */
+                -webkit-appearance: none; /* Override default appearance */
+                background-color: transparent; /* Make background transparent for custom styling */
+            }
+            
+            /* Custom styling for slider thumb on touch devices */
+            input[type="range"]::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                width: 2.4rem; /* Doubled size */
+                height: 2.4rem; /* Doubled size */
+                background: var(--primary-color);
+                border-radius: 50%;
+                cursor: pointer;
+                border: 2px solid white;
+                margin-top: -1rem; /* Center the thumb on the track */
+                box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            }
+            
+            input[type="range"]::-moz-range-thumb {
+                width: 2.4rem; /* Doubled size */
+                height: 2.4rem; /* Doubled size */
+                background: var(--primary-color);
+                border-radius: 50%;
+                cursor: pointer;
+                border: 2px solid white;
+                box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            }
+            
+            /* Custom styling for slider track on touch devices */
+            input[type="range"]::-webkit-slider-runnable-track {
+                width: 100%;
+                height: 0.5rem;
+                background: #444;
+                border-radius: 0.25rem;
+            }
+            
+            input[type="range"]::-moz-range-track {
+                width: 100%;
+                height: 0.5rem;
+                background: #444;
+                border-radius: 0.25rem;
+            }
+            
+            button {
+                padding: 0.8rem 1rem; /* Much larger touch target */
+                font-size: 0.9rem;
+                margin-bottom: 0.7rem;
+                min-height: 2.8rem;
+            }
+            
+            .mode-button {
+                padding: 0.8rem 0.7rem; /* Larger touch target */
+                margin-bottom: 0.7rem;
+                font-size: 0.85rem;
+                min-height: 2.8rem;
+            }
+            
+            /* Larger toggle switch for touch */
+            .toggle-switch {
+                width: 4rem;
+                height: 1rem; /* Reduced by 50% from 2rem */
+            }
+            
+            .toggle-slider:before {
+                height: 0.75rem; /* Reduced by 50% from 1.5rem */
+                width: 0.75rem; /* Reduced by 50% from 1.5rem */
+                left: 0.125rem; /* Adjusted for smaller size */
+                bottom: auto; /* Remove bottom positioning */
+                top: 50%; /* Position from the top edge */
+                transform: translateY(-50%); /* Center vertically using transform */
+            }
+            
+            input:checked + .toggle-slider:before {
+                transform: translateX(3rem) translateY(-50%); /* Maintain vertical centering when toggled */
+            }
+            
+            /* Larger color presets for touch */
+            .color-preset {
+                width: 2rem;
+                height: 2rem;
+                margin-right: 0.5rem;
+                margin-bottom: 0.5rem;
+            }
+            
+            /* Space out the control groups more for touch */
+            .control-group, .toggle-container, .buttons-container {
+                margin-bottom: 1rem;
+                padding: 0.3rem 0;
+            }
+            
+            select {
+                height: 2.5rem;
+                font-size: 1rem;
+            }
+        }
+
+        /* New styles for consolidated touch controls */
+        .touch-interaction-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem; /* Reduced from 0.3rem */
+            margin-bottom: 0.5rem; /* Reduced from 0.8rem */
+        }
+
+        /* Tooltip active state styling */
+        .tooltip-active {
+            position: relative;
+            z-index: 5;
+        }
+        
+        /* Styles for disabled toggle */
+        .toggle-container.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        
+        .toggle-container.disabled .toggle-switch {
+            cursor: not-allowed;
+        }
+        
+        .toggle-container.disabled .toggle-slider {
+            background-color: #666;
+        }
+
+        /* Add CSS for the slider overlay label/value container */
+        .slider-overlay-container {
+            position: relative;
+            margin-bottom: -2.0rem; /* Reduced from 0.9rem */
+        }
+
+        .slider-overlay-label {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            left: 0.6rem;
+            color: white;
+            font-size: 0.75rem; /* Reduced from 0.8rem */
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .slider-overlay-value {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            right: 0.6rem;
+            color: white;
+            font-size: 0.75rem; /* Reduced from 0.8rem */
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* Custom styling for the slider with label overlay */
+        .slider-with-overlay {
+            width: 100%;
+            height: 2.2rem !important; /* Reduced from 2.5rem */
+            background-color: transparent !important; /* Change to transparent to remove the frame */
+            border-radius: var(--border-radius);
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        @media (max-width: 768px) {
+            .slider-overlay-label, .slider-overlay-value {
+                font-size: 0.75rem;
+            }
+            
+            .slider-with-overlay {
+                height: 2.6rem !important; /* Reduced but still touch-friendly */
+            }
+        }
+
+        /* Increase track bar thickness by 75% and ensure proper thumb centering */
+        .slider-with-overlay::-webkit-slider-runnable-track {
+            height: 0.875rem !important; /* 0.5rem * 1.75 = 0.875rem (75% increase) */
+            background: #444;
+            border-radius: 0.25rem;
+        }
+
+        .slider-with-overlay::-moz-range-track {
+            height: 0.875rem !important; /* 0.5rem * 1.75 = 0.875rem (75% increase) */
+            background: #444;
+            border-radius: 0.25rem;
+        }
+
+        /* Ensure thumb is vertically centered on the track */
+        .slider-with-overlay::-webkit-slider-thumb {
+            margin-top: -0.75rem !important; /* Adjust to center vertically */
+        }
+
+        /* For Firefox, adjust vertical position */
+        .slider-with-overlay::-moz-range-thumb {
+            transform: translateY(0) !important; /* Reset any transform */
+        }
+
+        /* Adjust the overall container height to accommodate thicker track */
+        .slider-with-overlay {
+            height: 3rem !important;
+        }
+
+        @media (max-width: 768px) {
+            .slider-with-overlay {
+                height: 3.5rem !important;
+            }
+            
+            .slider-with-overlay::-webkit-slider-runnable-track {
+                height: 1rem !important; /* Slightly larger for mobile */
+            }
+            
+            .slider-with-overlay::-moz-range-track {
+                height: 1rem !important; /* Slightly larger for mobile */
+            }
+        }
+
+        /* Media query for small screens */
+        @media (max-width: 480px) {
+            .mode-button {
+                padding: 0.2rem 0.1rem;
+                min-height: 2.2rem;
+            }
+            
+            .mode-icon {
+                font-size: 1rem;
+            }
+            
+            .mode-text {
+                font-size: 0.65rem;
+            }
+        }
+
+        /* For very small screens, hide the text and show only icons */
+        @media (max-width: 350px) {
+            .mode-text {
+                display: none;
+            }
+            
+            .mode-button {
+                min-height: 2rem;
+            }
+            
+            .mode-icon {
+                font-size: 1.1rem;
+                margin-bottom: 0;
+            }
+        }
+
+        /* Buttons in buttons container */
+        .buttons-container button {
+            padding: 0.3rem 0.5rem;
+            min-height: 2rem;
+            margin-top: 0.3rem;
+            margin-bottom: 0.3rem;
+        }
+
+        /* Continuous pulsing touch effect */
+        .touch-pulse {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1000;
+            width: 30px;
+            height: 30px;
+            margin-left: -15px;
+            margin-top: -15px;
+            background-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+        
+        /* Attract mode pulse */
+        .touch-pulse-attract {
+            background-color: rgba(100, 149, 237, 0.25); /* Cornflower blue */
+            box-shadow: 0 0 20px rgba(100, 149, 237, 0.6);
+        }
+        
+        /* Repel mode pulse */
+        .touch-pulse-repel {
+            background-color: rgba(255, 165, 0, 0.25); /* Orange */
+            box-shadow: 0 0 20px rgba(255, 165, 0, 0.6);
+        }
+        
+        /* We'll now use this only as a template, as we'll set custom animation dynamically */
+        @keyframes pulse-animation {
+            0% {
+                transform: scale(0.8);
+                opacity: 0.7;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(0.8);
+                opacity: 0.7;
+            }
+        }
+
+        /* Mode change ripple - larger and more prominent */
+        .mode-change-ripple {
+            animation: mode-change-animation 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+        
+        @keyframes mode-change-animation {
+            0% {
+                transform: scale(0);
+                opacity: 0.7;
+            }
+            50% {
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <!-- Move menu toggle button outside the controls div -->
+    <button id="menuToggle" class="menu-toggle">≡</button>
+    
+    <div class="controls">
+        <h1 id="controlsTitle">Mouse/Touch Controls</h1>
+        
+        <!-- Consolidated touch controls -->
+        <div class="touch-interaction-container">
+            <!-- Mode buttons in a more compact layout -->
+            <div class="mode-toggle-container">
+                <button id="interactMode" class="mode-button active">
+                    <span class="mode-icon">🖐️</span>
+                    <span class="mode-text">Interact</span>
+                </button>
+                <button id="drawWallsMode" class="mode-button">
+                    <span class="mode-icon">📏</span>
+                    <span class="mode-text">Draw</span>
+                </button>
+                <button id="freeDrawMode" class="mode-button">
+                    <span class="mode-icon">✏️</span>
+                    <span class="mode-text">Free</span>
+                </button>
+                <button id="eraserMode" class="mode-button">
+                    <span class="mode-icon">🧹</span>
+                    <span class="mode-text">Erase</span>
+                </button>
+                <div class="tooltip"></div>
+            </div>
+            
+            <!-- Clear walls button integrated with modes -->
+            <button id="clearWalls" class="secondary-button">Clear All</button>
+            
+            <!-- Wall Force slider moved here to group with wall controls -->
+            <div class="control-group" data-tooltip="How strongly particles avoid walls">
+                <div class="slider-overlay-container">
+                    <span class="slider-overlay-label">Wall Force</span>
+                    <input type="range" id="wallForce" class="slider-with-overlay" min="0" max="10" step="0.1" value="1.0">
+                    <span class="slider-overlay-value" id="wallForceValue">1.0</span>
+                </div>
+                <div class="tooltip"></div>
+            </div>
+            
+            <!-- Added section divider between wall controls and interaction controls -->
+            <div class="section-divider"></div>
+            
+            <!-- Existing toggle moved up into this section -->
+            <div class="toggle-container">
+                <span class="toggle-label">Repel</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="mouseMode">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="toggle-label">Attract</span>
+                <div class="tooltip"></div>
+            </div>
+            
+            <!-- Existing force slider -->
+            <div class="control-group" data-tooltip="Strength of touch interaction with particles" style="margin-top: -2rem;">
+                <div class="slider-overlay-container">
+                    <span class="slider-overlay-label" id="forceLabel">Touch Force</span>
+                    <input type="range" id="mouse" class="slider-with-overlay" min="0" max="10" step="0.1" value="3">
+                    <span class="slider-overlay-value" id="mouseValue">3.0</span>
+                </div>
+                <div class="tooltip"></div>
+            </div>
+        </div>
+
+        <div class="section-divider"></div>
+        <div class="section-title">Color Themes</div>
+
+        <div class="color-presets-container" data-tooltip="Select a color theme for particles">
+            <div class="color-preset active" data-theme="rainbow" data-tooltip="Rainbow" style="background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);"></div>
+            <div class="color-preset" data-theme="blue" data-tooltip="Twilight" style="background: linear-gradient(to right, #041c41, #abd6f9);"></div>
+            <div class="color-preset" data-theme="green" data-tooltip="Forest" style="background: linear-gradient(to right, #012804, #a3ffa8);"></div>
+            <div class="color-preset" data-theme="fire" data-tooltip="Fire" style="background: linear-gradient(to right, #b71c1c, #ffdd98);"></div>
+            <div class="color-preset" data-theme="neon" data-tooltip="Neon" style="background: linear-gradient(to right, #ff00ff, #00ffff);"></div>
+            <div class="color-preset" data-theme="gold" data-tooltip="Gold" style="background: linear-gradient(to right, #ffd700, #ffa500);"></div>
+            <div class="color-preset" data-theme="mono" data-tooltip="Sparkle" style="background: linear-gradient(to right, #333333, #ffffff);"></div>
+            <div class="color-preset" data-theme="colorblind" data-tooltip="Colorblind-friendly" style="background: linear-gradient(to right, #0072B2, #F0E442, #009E73, #E69F00, #9e008e);"></div>
+        </div>
+
+        <div class="section-divider"></div>
+        <div class="section-title">Simulation Settings</div>
+        
+        <div class="preset-selector" data-tooltip="Select a predefined behavior pattern">
+            <label for="presets">Presets:</label>
+            <select id="presets">
+                <option value="default">Default</option>
+                <option value="murmuration">Bird Murmuration</option>
+                <option value="chaos">Chaotic Motion</option>
+                <option value="ordered">Lava Lamp</option>
+                <option value="school">Cooking Oil</option>
+                <option value="insects">Jelly Orbs</option>
+                <option value="atomic">Atomic Neucleation</option>
+                <option value="plasmaDrift">Plasma Drift</option>
+            </select>
+            <div class="tooltip"></div>
+        </div>
+        
+        <!-- Convert all remaining sliders to use the overlay pattern -->
+
+        <!-- Example for Particles slider -->
+        <div class="control-group" data-tooltip="Number of particles in the simulation">
+            <div class="slider-overlay-container">
+                <span class="slider-overlay-label">Particles</span>
+                <input type="range" id="particles" class="slider-with-overlay" min="50" max="3000" step="100" value="500">
+                <span class="slider-overlay-value" id="particlesValue">500</span>
+            </div>
+            <div class="tooltip"></div>
+        </div>
+        
+        <!-- Example for Speed slider -->
+        <div class="control-group" data-tooltip="Movement speed multiplier of all particles">
+            <div class="slider-overlay-container">
+                <span class="slider-overlay-label">Speed</span>
+                <input type="range" id="speed" class="slider-with-overlay" min="0.1" max="3" step="0.1" value="1">
+                <span class="slider-overlay-value" id="speedValue">1.0</span>
+        </div>
+            <div class="tooltip"></div>
+        </div>
+        
+        <!-- Continue this pattern for all remaining sliders: -->
+        <!-- Separation, Alignment, Cohesion, Perception, Trail Length, Wall Force -->
+        <!-- Replace each slider's HTML structure with the overlay version -->
+        
+        <div class="control-group" data-tooltip="How strongly particles avoid each other">
+            <div class="slider-overlay-container">
+                <span class="slider-overlay-label">Separation</span>
+                <input type="range" id="separation" class="slider-with-overlay" min="0" max="5" step="0.1" value="1.5">
+                <span class="slider-overlay-value" id="separationValue">1.5</span>
+            </div>
+            <div class="tooltip"></div>
+        </div>
+        
+        <div class="control-group" data-tooltip="How strongly particles match velocity with neighbors">
+            <div class="slider-overlay-container">
+                <span class="slider-overlay-label">Alignment</span>
+                <input type="range" id="alignment" class="slider-with-overlay" min="0" max="5" step="0.1" value="1.0">
+                <span class="slider-overlay-value" id="alignmentValue">1.0</span>
+            </div>
+            <div class="tooltip"></div>
+        </div>
+        
+        <div class="control-group" data-tooltip="How strongly particles are attracted to the center of their local group">
+            <div class="slider-overlay-container">
+                <span class="slider-overlay-label">Cohesion</span>
+                <input type="range" id="cohesion" class="slider-with-overlay" min="0" max="5" step="0.1" value="1.0">
+                <span class="slider-overlay-value" id="cohesionValue">1.0</span>
+            </div>
+            <div class="tooltip"></div>
+        </div>
+        
+        <div class="control-group" data-tooltip="How far particles can sense other particles (in pixels)">
+            <div class="slider-overlay-container">
+                <span class="slider-overlay-label">Perception</span>
+                <input type="range" id="perception" class="slider-with-overlay" min="20" max="200" step="5" value="50">
+                <span class="slider-overlay-value" id="perceptionValue">50</span>
+            </div>
+            <div class="tooltip"></div>
+        </div>
+        
+        <div class="control-group" data-tooltip="Length of particle movement trails (0 to disable)">
+            <div class="slider-overlay-container">
+                <span class="slider-overlay-label">Trail Length</span>
+                <input type="range" id="trailLength" class="slider-with-overlay" min="0" max="20" step="1" value="15">
+                <span class="slider-overlay-value" id="trailLengthValue">15</span>
+            </div>
+            <div class="tooltip"></div>
+        </div>
+        
+        <div class="buttons-container">
+            <button id="reset" data-tooltip="Reset all particles to random positions">Reset Particles</button>
+            <button id="randomize" data-tooltip="Randomize all simulation settings">Randomize</button>
+        </div>
+    </div>
+    
+    <div class="fps" id="fps">FPS: 0</div>
+    
+    <script>
+        // Helper function to ensure menu toggle icon is correctly displayed
+        function updateMenuToggleIcon() {
+            const controls = document.querySelector('.controls');
+            const menuToggle = document.getElementById('menuToggle');
+            if (controls && menuToggle) {
+                // Update the icon text based on the menu state
+                const isCollapsed = controls.classList.contains('collapsed');
+                menuToggle.textContent = isCollapsed ? '≡' : '◀';
+                menuToggle.setAttribute('aria-label', isCollapsed ? 'Open menu' : 'Close menu');
+            }
+        }
+        
+        // Function to toggle menu state in one place
+        function toggleMenu() {
+            const controls = document.querySelector('.controls');
+            if (controls) {
+                controls.classList.toggle('collapsed');
+                updateMenuToggleIcon();
+            }
+            
+            // Ensure the menu toggle is always visible
+            const menuToggle = document.getElementById('menuToggle');
+            if (menuToggle) {
+                menuToggle.style.display = 'block';
+            }
+        }
+        
+        // Canvas setup
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', {alpha: false}); // Disable alpha for better performance
+        
+        // Device detection
+        const isMobile = true; // Always treat as mobile device
+        
+        // Handle device pixel ratio and canvas sizing
+        let dpr = window.devicePixelRatio || 1;
+        let displayWidth = window.innerWidth;
+        let displayHeight = window.innerHeight;
+        
+        // Mobile-optimized settings
+        let resolutionScale = 0.6;
+        
+        // For throttling animations on lower-end devices
+        let animationFrameId;
+        let lastAnimationTime = 0;
+        let minFrameTime = 1000/30; // Cap at 30fps for touch devices
+
+        // Performance metrics
+        let lastRenderTime = 0;
+        let averageRenderTime = 0;
+        let renderTimeHistory = [];
+        const MAX_HISTORY_SIZE = 30;
+        let autoPerformanceAdjustEnabled = true;
+        
+        // For double touch detection
+        let lastTouchTime = 0;
+        let doubleTouchTimeout = null;
+        
+        // Throttling and debouncing utils
+        function throttle(func, limit) {
+            let inThrottle;
+            return function(...args) {
+                if (!inThrottle) {
+                    func.apply(this, args);
+                    inThrottle = true;
+                    setTimeout(() => inThrottle = false, limit);
+                }
+            };
+        }
+        
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+        
+        function resizeCanvas() {
+            displayWidth = window.innerWidth;
+            displayHeight = window.innerHeight;
+            
+            // Set the canvas size accounting for DPR and resolution scale
+            canvas.width = displayWidth * dpr * resolutionScale;
+            canvas.height = displayHeight * dpr * resolutionScale;
+            
+            // Set display size (CSS)
+            canvas.style.width = displayWidth + 'px';
+            canvas.style.height = displayHeight + 'px';
+            
+            // Scale the context to account for DPR and resolution scale
+            ctx.scale(dpr * resolutionScale, dpr * resolutionScale);
+        }
+        
+        // Initial sizing
+        resizeCanvas();
+        
+        // FPS counter
+        let frameCount = 0;
+        let lastTime = performance.now();
+        const fpsDisplay = document.getElementById('fps');
+        
+        // Mouse position and state
+        const mouse = {
+            x: 0,
+            y: 0,
+            active: false,
+            touchActive: false,
+            drawing: false,
+            startX: undefined,
+            startY: undefined,
+            attract: false
+        };
+        
+        // Persistent pulse element reference
+        let touchPulseElement = null;
+        
+        // Interaction modes
+        let currentMode = 'interact'; // 'interact', 'drawWalls', 'freeDraw', or 'eraser'
+        
+        // Walls data structure
+        let walls = [];
+        let currentPath = []; // For storing points in free draw mode
+        
+        // Color themes
+        const colorThemes = {
+            rainbow: () => `hsl(${Math.random() * 360}, 70%, 60%)`,
+            blue: () => {
+                // Widen the range of blues with more variation in saturation and lightness
+                const hue = 200 + Math.random() * 60; // Range from 200-260 (blues to purples)
+                const saturation = 50 + Math.random() * 50; // 50-100% saturation
+                const lightness = 30 + Math.random() * 50; // 30-80% lightness
+                return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+            },
+            green: () => {
+                // Widen the range of greens with more variation
+                const hue = 80 + Math.random() * 80; // Range from 80-160 (yellowy greens to blue-greens)
+                const saturation = 50 + Math.random() * 50; // 50-100% saturation
+                const lightness = 30 + Math.random() * 50; // 30-80% lightness
+                return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+            },
+            fire: () => `hsl(${Math.random() * 40}, ${70 + Math.random() * 20}%, ${50 + Math.random() * 20}%)`,
+            neon: () => {
+                const hues = [320, 280, 180, 140]; // magenta, purple, cyan, green
+                return `hsl(${hues[Math.floor(Math.random() * hues.length)]}, 100%, 60%)`;
+            },
+            gold: () => {
+                // Gold and yellow hues
+                const hue = 40 + Math.random() * 20; // Range from 40-60 (gold to yellow)
+                const saturation = 70 + Math.random() * 30; // 70-100% saturation
+                const lightness = 40 + Math.random() * 30; // 40-70% lightness
+                return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+            },
+            mono: () => {
+                // Create a sparkling effect with subtle variations
+                const baseHue = Math.random() < 0.1 ? 210 : 0; // Occasional subtle blue tint (10% chance)
+                const saturation = Math.random() < 0.15 ? 10 + Math.random() * 15 : 0; // Occasional low saturation (15% chance)
+                const lightness = Math.random() < 0.2 ? 
+                    80 + Math.random() * 20 : // Bright sparkle (20% chance)
+                    20 + Math.random() * 60;  // Normal range (80% chance)
+                return `hsl(${baseHue}, ${saturation}%, ${lightness}%)`;
+            },
+            colorblind: () => {
+                // Colors chosen for deuteranopia and protanopia visibility
+                const colorblindSafe = [
+                    '211, 100%, 50%',  // Blue
+                    '60, 100%, 50%',   // Yellow
+                    '180, 100%, 30%',  // Teal
+                    '27, 100%, 50%',   // Orange
+                    '270, 100%, 60%'   // Purple
+                ];
+                return `hsl(${colorblindSafe[Math.floor(Math.random() * colorblindSafe.length)]})`;
+            }
+        };
+        
+        // Current theme
+        let currentColorTheme = 'rainbow';
+        
+        // Settings
+        let settings = {
+            particleCount: 500,
+            speed: 1,
+            separation: 1.5,
+            alignment: 1.0,
+            cohesion: 1.0,
+            perception: 50,
+            mouseForce: 3,
+            trailLength: 15,
+            wallForce: 1.0
+        };
+        
+        // Preset configurations
+        const presets = {
+            default: {
+                particleCount: 500,
+                speed: 1,
+                separation: 1.5,
+                alignment: 1.0,
+                cohesion: 1.0,
+                perception: 50,
+                mouseForce: 3,
+                trailLength: 15,
+                wallForce: 1.0
+            },
+            murmuration: {
+                particleCount: 1250,
+                speed: 3,
+                separation: 0.1,
+                alignment: 2,
+                cohesion: 5,
+                perception: 200,
+                mouseForce: 10,
+                trailLength: 0,
+                wallForce: 1.0
+            },
+            chaos: {
+                particleCount: 300,
+                speed: 2.0,
+                separation: 4.0,
+                alignment: 0.2,
+                cohesion: 0.1,
+                perception: 30,
+                mouseForce: 7,
+                trailLength: 10,
+                wallForce: 1.0
+            },
+            ordered: {
+                particleCount: 2000,
+                speed: 2,
+                separation: 0.1,
+                alignment: 0.5,
+                cohesion: 5,
+                perception: 20,
+                mouseForce: 5,
+                trailLength: 0,
+                wallForce: 1.0
+            },
+            school: {
+                particleCount: 1000,
+                speed: 2.5,
+                separation: 0.2,
+                alignment: 0.1,
+                cohesion: 3,
+                perception: 50,
+                mouseForce: 5,
+                trailLength: 0,
+                wallForce: 1.0
+            },
+            insects: {
+                particleCount: 1000,
+                speed: 3,
+                separation: 0.1,
+                alignment: 0.1,
+                cohesion: 5,
+                perception: 100,
+                mouseForce: 10,
+                trailLength: 0,
+                wallForce: 1.0
+            },
+            atomic: {
+                particleCount: 650,
+                speed: 3,
+                separation: 0.1,
+                alignment: 0.1,
+                cohesion: 5,
+                perception: 200,
+                mouseForce: 10,
+                trailLength: 0,
+                wallForce: 1.0
+            },
+            plasmaDrift: {
+                particleCount: 750,
+                speed: 2,
+                separation: 0.1,
+                alignment: 0,
+                cohesion: 3.5,
+                perception: 50,
+                mouseForce: 10,
+                trailLength: 0,
+                wallForce: 1.0
+            }
+        };
+        
+        // Apply preset function
+        function applyPreset(presetName) {
+            const preset = presets[presetName];
+            if (!preset) return;
+            
+            // Update settings object
+            Object.assign(settings, preset);
+            
+            // Update UI sliders
+            document.getElementById('particles').value = preset.particleCount;
+            document.getElementById('speed').value = preset.speed;
+            document.getElementById('separation').value = preset.separation;
+            document.getElementById('alignment').value = preset.alignment;
+            document.getElementById('cohesion').value = preset.cohesion;
+            document.getElementById('perception').value = preset.perception;
+            document.getElementById('mouse').value = preset.mouseForce;
+            document.getElementById('trailLength').value = preset.trailLength;
+            document.getElementById('wallForce').value = preset.wallForce;
+            
+            // Update value displays
+            document.getElementById('particlesValue').textContent = preset.particleCount;
+            document.getElementById('speedValue').textContent = preset.speed.toFixed(1);
+            document.getElementById('separationValue').textContent = preset.separation.toFixed(1);
+            document.getElementById('alignmentValue').textContent = preset.alignment.toFixed(1);
+            document.getElementById('cohesionValue').textContent = preset.cohesion.toFixed(1);
+            document.getElementById('perceptionValue').textContent = preset.perception;
+            document.getElementById('mouseValue').textContent = preset.mouseForce.toFixed(1);
+            document.getElementById('trailLengthValue').textContent = preset.trailLength;
+            document.getElementById('wallForceValue').textContent = preset.wallForce.toFixed(1);
+            
+            // Set mouseMode based on preset
+            const mouseModeToggle = document.getElementById('mouseMode');
+            if (presetName === 'atomic') {
+                mouse.attract = true;
+                mouseModeToggle.checked = true;
+            } else {
+                mouse.attract = false;
+                mouseModeToggle.checked = false;
+            }
+            
+            // Set color theme based on preset
+            if (presetName === 'atomic') {
+                changeColorTheme('neon');
+            } else if (presetName === 'school') {
+                changeColorTheme('gold');
+            } else if (presetName === 'insects') {
+                changeColorTheme('green');
+            } else if (presetName === 'ordered') {
+                changeColorTheme('fire');
+            } else if (presetName === 'plasmaDrift') {
+                changeColorTheme('blue');
+            } else if (presetName === 'murmuration' || presetName === 'default' || presetName === 'chaos') {
+                changeColorTheme('rainbow');
+            }
+            
+            // Reset particles with new settings
+            initParticles();
+        }
+        
+        // Initialize particles
+        let particles = [];
+        
+        function initParticles() {
+            particles = [];
+            
+            for (let i = 0; i < settings.particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() * 2 - 1) * 2,
+                    vy: (Math.random() * 2 - 1) * 2,
+                    color: colorThemes[currentColorTheme](),
+                    size: Math.random() * 2 + 2,
+                    history: []
+                });
+            }
+        }
+        
+        // Change color theme of particles
+        function changeColorTheme(themeName) {
+            if (colorThemes[themeName]) {
+                currentColorTheme = themeName;
+                
+                // Update colors of existing particles
+                for (let i = 0; i < particles.length; i++) {
+                    particles[i].color = colorThemes[currentColorTheme]();
+                }
+                
+                // Update UI
+                document.querySelectorAll('.color-preset').forEach(preset => {
+                    preset.classList.remove('active');
+                    if (preset.getAttribute('data-theme') === themeName) {
+                        preset.classList.add('active');
+                    }
+                });
+            }
+        }
+        
+        // Calculate distance from point to line segment
+        function distToSegment(px, py, x1, y1, x2, y2) {
+            const A = px - x1;
+            const B = py - y1;
+            const C = x2 - x1;
+            const D = y2 - y1;
+            
+            const dot = A * C + B * D;
+            const len_sq = C * C + D * D;
+            let param = -1;
+            
+            if (len_sq !== 0) {
+                param = dot / len_sq;
+            }
+            
+            let xx, yy;
+            
+            if (param < 0) {
+                xx = x1;
+                yy = y1;
+            } else if (param > 1) {
+                xx = x2;
+                yy = y2;
+            } else {
+                xx = x1 + param * C;
+                yy = y1 + param * D;
+            }
+            
+            const dx = px - xx;
+            const dy = py - yy;
+            
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+        
+        // Calculate normal vector to a line segment
+        function normalToSegment(px, py, x1, y1, x2, y2) {
+            const A = px - x1;
+            const B = py - y1;
+            const C = x2 - x1;
+            const D = y2 - y1;
+            
+            const dot = A * C + B * D;
+            const len_sq = C * C + D * D;
+            let param = -1;
+            
+            if (len_sq !== 0) {
+                param = dot / len_sq;
+            }
+            
+            let xx, yy;
+            
+            if (param < 0) {
+                xx = x1;
+                yy = y1;
+            } else if (param > 1) {
+                xx = x2;
+                yy = y2;
+            } else {
+                xx = x1 + param * C;
+                yy = y1 + param * D;
+            }
+            
+            // Vector from closest point to particle
+            const dx = px - xx;
+            const dy = py - yy;
+            
+            // Normalize
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist === 0) return { x: 0, y: 0 };
+            
+            return { x: dx / dist, y: dy / dist };
+        }
+        
+        // Update particle position and behavior
+        function updateParticles() {
+            // On mobile, we can process fewer flocking calculations
+            const flockingStep = isMobile ? 2 : 1; // Skip every other particle on mobile
+            
+            // Adaptive simulation - adjust flockingStep if performance is poor
+            if (autoPerformanceAdjustEnabled && averageRenderTime > 16 && flockingStep < 3) {
+                // If rendering is taking too long, increase the flocking step
+                const newFlockingStep = flockingStep + 1;
+                console.log(`Performance adjustment: Increasing flocking step to ${newFlockingStep}`);
+            }
+            
+            // Dynamically update colors for sparkling effect in monochrome theme
+            if (currentColorTheme === 'mono') {
+                // Randomly update a small percentage of particles to create sparkle effect
+                for (let i = 0; i < particles.length; i++) {
+                    // 2% chance to update color each frame for sparkling effect
+                    if (Math.random() < 0.02) {
+                        particles[i].color = colorThemes.mono();
+                    }
+                }
+            }
+            
+            for (let i = 0; i < particles.length; i++) {
+                const particle = particles[i];
+                
+                // Save position history for trail
+                if (settings.trailLength > 0) {
+                    particle.history.push({ x: particle.x, y: particle.y });
+                    if (particle.history.length > settings.trailLength) {
+                        particle.history.shift();
+                    }
+                } else {
+                    particle.history = [];
+                }
+                
+                // Flocking behavior
+                let separationX = 0;
+                let separationY = 0;
+                let alignmentX = 0;
+                let alignmentY = 0;
+                let cohesionX = 0;
+                let cohesionY = 0;
+                let neighborCount = 0;
+                
+                // Calculate flocking forces - optimize by sampling fewer particles on mobile
+                for (let j = 0; j < particles.length; j += flockingStep) {
+                    if (i !== j) {
+                        const other = particles[j];
+                        const dx = particle.x - other.x;
+                        const dy = particle.y - other.y;
+                        // Fast distance approximation for performance - use Manhattan distance as pre-check
+                        const manhattanDist = Math.abs(dx) + Math.abs(dy);
+                        
+                        // Only do the more expensive sqrt calculation if the Manhattan distance suggests they're close
+                        if (manhattanDist < settings.perception * 1.5) {
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            
+                            if (distance < settings.perception) {
+                                // Separation
+                                const force = (settings.perception - distance) / settings.perception;
+                                separationX += dx * force / distance;
+                                separationY += dy * force / distance;
+                                
+                                // Alignment
+                                alignmentX += other.vx;
+                                alignmentY += other.vy;
+                                
+                                // Cohesion
+                                cohesionX += other.x;
+                                cohesionY += other.y;
+                                
+                                neighborCount++;
+                            }
+                        }
+                    }
+                }
+                
+                // Apply flocking forces
+                if (neighborCount > 0) {
+                    // Normalize and apply separation
+                    separationX *= settings.separation;
+                    separationY *= settings.separation;
+                    
+                    // Normalize and apply alignment
+                    alignmentX = (alignmentX / neighborCount - particle.vx) * settings.alignment;
+                    alignmentY = (alignmentY / neighborCount - particle.vy) * settings.alignment;
+                    
+                    // Normalize and apply cohesion
+                    cohesionX = (cohesionX / neighborCount - particle.x) * settings.cohesion * 0.01;
+                    cohesionY = (cohesionY / neighborCount - particle.y) * settings.cohesion * 0.01;
+                    
+                    // Apply forces
+                    particle.vx += separationX + alignmentX + cohesionX;
+                    particle.vy += separationY + alignmentY + cohesionY;
+                }
+                
+                // Wall avoidance - optimize by checking fewer walls on mobile
+                if (walls.length > 0 && settings.wallForce > 0) {
+                    // On mobile, we can process fewer walls for performance
+                    const wallStep = isMobile && walls.length > 20 ? 2 : 1;
+                    const wallPerception = 30; // How close a particle needs to be to "see" a wall
+                    
+                    // Check each wall for proximity
+                    for (let w = 0; w < walls.length; w += wallStep) {
+                        const wall = walls[w];
+                        const dist = distToSegment(particle.x, particle.y, wall.x1, wall.y1, wall.x2, wall.y2);
+                        
+                        if (dist < wallPerception) {
+                            // Get normal vector pointing away from wall
+                            const normal = normalToSegment(particle.x, particle.y, wall.x1, wall.y1, wall.x2, wall.y2);
+                            
+                            // Apply force inversely proportional to distance
+                            const force = (wallPerception - dist) / wallPerception * settings.wallForce;
+                            
+                            particle.vx += normal.x * force;
+                            particle.vy += normal.y * force;
+                        }
+                    }
+                }
+                
+                // Apply mouse force if active
+                if (mouse.active && currentMode === 'interact') {
+                    const dx = particle.x - mouse.x;
+                    const dy = particle.y - mouse.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const maxDistance = 150;
+                    
+                    if (distance < maxDistance) {
+                        const force = ((maxDistance - distance) / maxDistance) * settings.mouseForce;
+                        
+                        // Apply force in correct direction based on mouse mode
+                        if (mouse.attract) {
+                            // Attract - move toward mouse
+                            particle.vx -= (dx / distance) * force;
+                            particle.vy -= (dy / distance) * force;
+                        } else {
+                            // Repel - move away from mouse
+                            particle.vx += (dx / distance) * force;
+                            particle.vy += (dy / distance) * force;
+                        }
+                    }
+                }
+                
+                // Limit velocity
+                const speed = Math.sqrt(particle.vx * particle.vx + particle.vy * particle.vy);
+                const maxSpeed = 2 * settings.speed;
+                if (speed > maxSpeed) {
+                    particle.vx = (particle.vx / speed) * maxSpeed;
+                    particle.vy = (particle.vy / speed) * maxSpeed;
+                }
+                
+                // Update position
+                particle.x += particle.vx;
+                particle.y += particle.vy;
+                
+                // Check if particle would cross through a wall after position update
+                if (walls.length > 0 && settings.wallForce > 0) {
+                    for (let w = 0; w < walls.length; w++) {
+                        const wall = walls[w];
+                        
+                        // Calculate the previous position
+                        const prevX = particle.x - particle.vx;
+                        const prevY = particle.y - particle.vy;
+                        
+                        // Check if the particle has crossed a wall by seeing if it was on one side before and now on other
+                        // Use line intersection test
+                        if (lineSegmentsIntersect(
+                            prevX, prevY, particle.x, particle.y,
+                            wall.x1, wall.y1, wall.x2, wall.y2
+                        )) {
+                            // If intersection detected, reflect the velocity off the wall
+                            const normal = normalToSegment(particle.x, particle.y, wall.x1, wall.y1, wall.x2, wall.y2);
+                            
+                            // Calculate reflection (effective "bounce")
+                            const dot = particle.vx * normal.x + particle.vy * normal.y;
+                            particle.vx -= 2 * dot * normal.x;
+                            particle.vy -= 2 * dot * normal.y;
+                            
+                            // Place the particle slightly away from the wall to prevent getting stuck
+                            particle.x = prevX + particle.vx * 0.5;
+                            particle.y = prevY + particle.vy * 0.5;
+                            
+                            // Apply some velocity damping to simulate energy loss
+                            particle.vx *= 0.8;
+                            particle.vy *= 0.8;
+                            
+                            break; // Only handle one wall collision per frame
+                        }
+                    }
+                }
+                
+                // Wrap around edges
+                if (particle.x < 0) particle.x = canvas.width;
+                if (particle.x > canvas.width) particle.x = 0;
+                if (particle.y < 0) particle.y = canvas.height;
+                if (particle.y > canvas.height) particle.y = 0;
+            }
+        }
+        
+        // Function to detect if two line segments intersect
+        function lineSegmentsIntersect(x1, y1, x2, y2, x3, y3, x4, y4) {
+            // Calculate the direction vectors
+            const ux = x2 - x1;
+            const uy = y2 - y1;
+            const vx = x4 - x3;
+            const vy = y4 - y3;
+            
+            // Calculate the cross products
+            const cross1 = ux * (y3 - y1) - uy * (x3 - x1);
+            const cross2 = ux * (y4 - y1) - uy * (x4 - x1);
+            const cross3 = vx * (y1 - y3) - vy * (x1 - x3);
+            const cross4 = vx * (y2 - y3) - vy * (x2 - x3);
+            
+            // Check if the line segments intersect
+            return (cross1 * cross2 <= 0) && (cross3 * cross4 <= 0);
+        }
+        
+        // Draw particles and walls with optimized rendering
+        function drawParticles() {
+            const renderStart = performance.now();
+            
+            // Use offscreen canvas for better performance if supported
+            // This reduces the number of draw operations to the main canvas
+            const useOffscreen = window.OffscreenCanvas && !isMobile;
+            const renderCtx = useOffscreen ? 
+                new OffscreenCanvas(canvas.width, canvas.height).getContext('2d', {alpha: false}) : 
+                ctx;
+            
+            // Clear with fillRect instead of clearRect for better performance
+            renderCtx.fillStyle = 'rgba(17, 17, 17, 1)';
+            renderCtx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Set wall drawing style before any wall operations
+            renderCtx.strokeStyle = '#ffffff';
+            renderCtx.lineWidth = 3;
+            renderCtx.lineCap = 'round';
+            
+            // Draw walls all at once to reduce state changes
+            if (walls.length > 0) {
+                renderCtx.beginPath();
+                
+                // Group wall drawing to minimize state changes
+                for (let i = 0; i < walls.length; i++) {
+                    const wall = walls[i];
+                    renderCtx.moveTo(wall.x1, wall.y1);
+                    renderCtx.lineTo(wall.x2, wall.y2);
+                }
+                
+                renderCtx.stroke();
+            }
+            
+            // If currently drawing a wall, show the preview
+            if (currentMode === 'drawWalls' && mouse.drawing) {
+                // Ensure stroke style is set to white for wall preview
+                renderCtx.strokeStyle = '#ffffff';
+                renderCtx.beginPath();
+                renderCtx.moveTo(mouse.startX, mouse.startY);
+                renderCtx.lineTo(mouse.x, mouse.y);
+                renderCtx.stroke();
+            } else if (currentMode === 'freeDraw' && mouse.drawing && currentPath.length > 1) {
+                // Ensure stroke style is set to white for free draw path
+                renderCtx.strokeStyle = '#ffffff';
+                renderCtx.beginPath();
+                renderCtx.moveTo(currentPath[0].x, currentPath[0].y);
+                for (let i = 1; i < currentPath.length; i++) {
+                    renderCtx.lineTo(currentPath[i].x, currentPath[i].y);
+                }
+                renderCtx.stroke();
+            } else if (currentMode === 'eraser') {
+                // Show visual indicator for eraser area
+                const closestWall = findClosestWall(mouse.x, mouse.y);
+                if (closestWall) {
+                    const wall = walls[closestWall.index];
+                    // Highlight the wall that would be erased
+                    renderCtx.strokeStyle = '#ff5555';
+                    renderCtx.lineWidth = 5;
+                    renderCtx.beginPath();
+                    renderCtx.moveTo(wall.x1, wall.y1);
+                    renderCtx.lineTo(wall.x2, wall.y2);
+                    renderCtx.stroke();
+                    
+                    // Reset for other walls
+                    renderCtx.strokeStyle = '#ffffff';
+                    renderCtx.lineWidth = 3;
+                }
+                
+                const eraserRadius = 10;
+                
+                // Show the eraser circle - different logic for mobile vs desktop
+                if (!isMobile || (isMobile && mouse.touchActive)) {
+                    // Draw eraser circle
+                    renderCtx.beginPath();
+                    renderCtx.arc(mouse.x, mouse.y, eraserRadius, 0, Math.PI * 2);
+                    renderCtx.strokeStyle = '#ff5555';
+                    renderCtx.stroke();
+                }
+                
+                // Draw animated pulsating glow when touch is active in eraser mode
+                if (mouse.touchActive) {
+                    // Calculate pulse animation based on time
+                    const pulseTime = Date.now() * 0.003; // Adjust speed of pulse
+                    const pulseScale = 1 + 0.2 * Math.sin(pulseTime); // 20% size pulsation
+                    
+                    // Draw large glowing circle (5x size)
+                    const glowRadius = eraserRadius * 5 * pulseScale;
+                    
+                    // Create glow effect with multiple layers
+                    for (let i = 5; i > 0; i--) {
+                        const alpha = 0.2 - (0.2 / i); // Fade from 0.16 to 0
+                        const layerRadius = glowRadius - (i * 2);
+                        
+                        renderCtx.beginPath();
+                        renderCtx.arc(mouse.x, mouse.y, layerRadius, 0, Math.PI * 2);
+                        renderCtx.strokeStyle = `rgba(255, 85, 85, ${alpha})`;
+                        renderCtx.lineWidth = i * 2;
+                        renderCtx.stroke();
+                    }
+                    
+                    // Draw outer glowing ring that pulsates
+                    renderCtx.beginPath();
+                    renderCtx.arc(mouse.x, mouse.y, glowRadius, 0, Math.PI * 2);
+                    renderCtx.strokeStyle = 'rgba(255, 85, 85, 0.6)';
+                    renderCtx.lineWidth = 2;
+                    renderCtx.stroke();
+                }
+            }
+            
+            // Optimized particle rendering - reduce trail opacity on mobile
+            const trailAlphaMultiplier = isMobile ? 0.28 : 0.42; // Increased by 40% from 0.2/0.3
+            
+            // Skip drawing trails for some particles on mobile
+            const skipTrailFactor = isMobile ? 2 : 1; // Draw trails for every other particle on mobile
+
+            // Batch similar particles together to reduce state changes
+            const particlesByColor = {};
+            
+            // Group particles by color
+            for (let i = 0; i < particles.length; i++) {
+                const particle = particles[i];
+                if (!particlesByColor[particle.color]) {
+                    particlesByColor[particle.color] = [];
+                }
+                particlesByColor[particle.color].push(particle);
+            }
+            
+            // Draw particles by color batches
+            Object.keys(particlesByColor).forEach(color => {
+                const colorParticles = particlesByColor[color];
+                renderCtx.fillStyle = color;
+                
+                // Draw trails
+                if (settings.trailLength > 0) {
+                    for (let i = 0; i < colorParticles.length; i++) {
+                        const particle = colorParticles[i];
+                        
+                        // Skip some trails on mobile
+                        if (particle.history.length > 1 && (i % skipTrailFactor === 0 || !isMobile)) {
+                            // On mobile, draw fewer history points
+                            const step = isMobile ? 2 : 1;
+                            
+                            for (let j = 0; j < particle.history.length; j += step) {
+                                const point = particle.history[j];
+                                const alpha = j / particle.history.length * trailAlphaMultiplier;
+                                const size = particle.size * (j / particle.history.length * 0.8);
+                                
+                                renderCtx.beginPath();
+                                renderCtx.arc(point.x, point.y, size, 0, Math.PI * 2);
+                                renderCtx.globalAlpha = alpha;
+                                renderCtx.fill();
+                            }
+                        }
+                    }
+                }
+                
+                // Draw particles in batches by color
+                renderCtx.globalAlpha = 1;
+                for (let i = 0; i < colorParticles.length; i++) {
+                    const particle = colorParticles[i];
+                    renderCtx.beginPath();
+                    renderCtx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                    renderCtx.fill();
+                }
+            });
+            
+            // If using offscreen canvas, copy the result to the main canvas
+            if (useOffscreen) {
+                ctx.drawImage(renderCtx.canvas, 0, 0);
+            }
+            
+            // Track render time for adaptive performance
+            const renderTime = performance.now() - renderStart;
+            trackRenderTime(renderTime);
+        }
+        
+        // Track render time for adaptive performance adjustments
+        function trackRenderTime(renderTime) {
+            renderTimeHistory.push(renderTime);
+            if (renderTimeHistory.length > MAX_HISTORY_SIZE) {
+                renderTimeHistory.shift();
+            }
+            
+            // Calculate average render time
+            averageRenderTime = renderTimeHistory.reduce((sum, time) => sum + time, 0) / renderTimeHistory.length;
+            
+            // Adaptive performance - adjust settings if needed
+            if (autoPerformanceAdjustEnabled && renderTimeHistory.length > 10) {
+                if (averageRenderTime > 25 && settings.particleCount > 200) {
+                    // If rendering is very slow, reduce particle count
+                    settings.particleCount = Math.floor(settings.particleCount * 0.8);
+                    document.getElementById('particles').value = settings.particleCount;
+                    document.getElementById('particlesValue').textContent = settings.particleCount;
+                    console.log(`Performance adjustment: Reducing particles to ${settings.particleCount}`);
+                    initParticles();
+                    renderTimeHistory = []; // Reset history after adjustment
+                } else if (averageRenderTime > 18 && settings.trailLength > 5) {
+                    // If rendering is somewhat slow, reduce trail length
+                    settings.trailLength = Math.floor(settings.trailLength * 0.7);
+                    document.getElementById('trailLength').value = settings.trailLength;
+                    document.getElementById('trailLengthValue').textContent = settings.trailLength;
+                    console.log(`Performance adjustment: Reducing trail length to ${settings.trailLength}`);
+                    renderTimeHistory = []; // Reset history after adjustment
+                }
+            }
+        }
+        
+        // Animation loop with throttling for better performance on mobile
+        function animate(timestamp) {
+            // Throttle frame rate on mobile devices
+            const elapsed = timestamp - lastAnimationTime;
+            if (elapsed < minFrameTime) {
+                animationFrameId = requestAnimationFrame(animate);
+                return;
+            }
+            
+            lastAnimationTime = timestamp;
+            
+            updateParticles();
+            drawParticles();
+            
+            // Update FPS counter
+            frameCount++;
+            const currentTime = performance.now();
+            const fpsElapsed = currentTime - lastTime;
+            
+            if (fpsElapsed >= 1000) {
+                const fps = Math.round((frameCount * 1000) / fpsElapsed);
+                fpsDisplay.textContent = `FPS: ${fps}`;
+                frameCount = 0;
+                lastTime = currentTime;
+                
+                // Adjust minFrameTime based on FPS for very low-end devices
+                if (autoPerformanceAdjustEnabled && fps < 20 && minFrameTime < 1000/20) {
+                    minFrameTime = 1000/20; // Cap at 20fps for very low-end devices
+                    console.log('Performance adjustment: Reducing target FPS to 20');
+                }
+            }
+            
+            animationFrameId = requestAnimationFrame(animate);
+            
+            // Failsafe: ensure menu toggle is always visible no matter what
+            const menuToggle = document.getElementById('menuToggle');
+            if (menuToggle && getComputedStyle(menuToggle).display === 'none') {
+                menuToggle.style.display = 'block';
+            }
+        }
+        
+        // Set interaction mode
+        function setMode(mode) {
+            currentMode = mode;
+            
+            // Update UI
+            document.getElementById('interactMode').classList.toggle('active', mode === 'interact');
+            document.getElementById('drawWallsMode').classList.toggle('active', mode === 'drawWalls');
+            document.getElementById('freeDrawMode').classList.toggle('active', mode === 'freeDraw');
+            document.getElementById('eraserMode').classList.toggle('active', mode === 'eraser');
+            
+            // Enable/disable the repel/attract toggle based on mode
+            const toggleContainer = document.querySelector('.toggle-container');
+            if (mode === 'interact') {
+                toggleContainer.classList.remove('disabled');
+            } else {
+                toggleContainer.classList.add('disabled');
+            }
+            
+            // Reset mouse state
+            mouse.drawing = false;
+            currentPath = [];
+            
+            // Change cursor based on mode
+            if (mode === 'drawWalls' || mode === 'freeDraw') {
+                canvas.style.cursor = 'crosshair';
+            } else if (mode === 'eraser') {
+                canvas.style.cursor = 'url(data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white"><circle cx="8" cy="8" r="7" stroke="black" stroke-width="1"/><line x1="5" y1="5" x2="11" y2="11" stroke="black" stroke-width="2"/><line x1="11" y1="5" x2="5" y2="11" stroke="black" stroke-width="2"/></svg>) 8 8, auto';
+            } else {
+                canvas.style.cursor = 'default';
+            }
+        }
+        
+        // Function to randomize settings
+        function randomizeSettings() {
+            // Get all sliders
+            const particlesSlider = document.getElementById('particles');
+            const speedSlider = document.getElementById('speed');
+            const separationSlider = document.getElementById('separation');
+            const alignmentSlider = document.getElementById('alignment');
+            const cohesionSlider = document.getElementById('cohesion');
+            const perceptionSlider = document.getElementById('perception');
+            const mouseSlider = document.getElementById('mouse');
+            const trailLengthSlider = document.getElementById('trailLength');
+            const wallForceSlider = document.getElementById('wallForce');
+            
+            // Randomize each slider
+            particlesSlider.value = Math.floor(Math.random() * (3000 - 50) / 100) * 100 + 50;
+            speedSlider.value = (Math.random() * (3 - 0.1) + 0.1).toFixed(1);
+            separationSlider.value = (Math.random() * 5).toFixed(1);
+            alignmentSlider.value = (Math.random() * 5).toFixed(1);
+            cohesionSlider.value = (Math.random() * 5).toFixed(1);
+            perceptionSlider.value = Math.floor(Math.random() * (200 - 20) / 5) * 5 + 20;
+            mouseSlider.value = (Math.random() * 10).toFixed(1);
+            trailLengthSlider.value = Math.floor(Math.random() * 21);
+            wallForceSlider.value = (Math.random() * 10).toFixed(1);
+            
+            // Update settings and displays
+            settings.particleCount = parseInt(particlesSlider.value);
+            settings.speed = parseFloat(speedSlider.value);
+            settings.separation = parseFloat(separationSlider.value);
+            settings.alignment = parseFloat(alignmentSlider.value);
+            settings.cohesion = parseFloat(cohesionSlider.value);
+            settings.perception = parseInt(perceptionSlider.value);
+            settings.mouseForce = parseFloat(mouseSlider.value);
+            settings.trailLength = parseInt(trailLengthSlider.value);
+            settings.wallForce = parseFloat(wallForceSlider.value);
+            
+            // Update value displays
+            document.getElementById('particlesValue').textContent = settings.particleCount;
+            document.getElementById('speedValue').textContent = settings.speed.toFixed(1);
+            document.getElementById('separationValue').textContent = settings.separation.toFixed(1);
+            document.getElementById('alignmentValue').textContent = settings.alignment.toFixed(1);
+            document.getElementById('cohesionValue').textContent = settings.cohesion.toFixed(1);
+            document.getElementById('perceptionValue').textContent = settings.perception;
+            document.getElementById('mouseValue').textContent = settings.mouseForce.toFixed(1);
+            document.getElementById('trailLengthValue').textContent = settings.trailLength;
+            document.getElementById('wallForceValue').textContent = settings.wallForce.toFixed(1);
+            
+            // Reinitialize particles with new count
+            initParticles();
+        }
+        
+        // Tooltip functionality
+        function setupTooltips() {
+            const controlGroups = document.querySelectorAll('.control-group, .preset-selector, .toggle-container, .mode-toggle-container');
+            
+            // Variables for tracking double-tap
+            let lastTapTime = 0;
+            let tapCount = 0;
+            const doubleTapDelay = 300; // ms between taps to count as double-tap
+            
+            controlGroups.forEach(group => {
+                const tooltip = group.querySelector('.tooltip') || document.createElement('div');
+                
+                if (!group.querySelector('.tooltip')) {
+                    tooltip.className = 'tooltip';
+                    group.appendChild(tooltip);
+                }
+                
+                const tooltipText = group.getAttribute('data-tooltip');
+                if (tooltipText) {
+                    // Track taps for double-tap detection
+                    group.addEventListener('touchstart', function(e) {
+                        const currentTime = new Date().getTime();
+                        const tapLength = currentTime - lastTapTime;
+                        
+                        if (tapLength < doubleTapDelay && tapLength > 0) {
+                            // Double tap detected
+                            tapCount = 2;
+                            
+                            // Get the mobile tooltip or create one
+                            let mobileTooltip = group.querySelector('.mobile-tooltip');
+                            if (!mobileTooltip) {
+                                mobileTooltip = document.createElement('div');
+                                mobileTooltip.className = 'mobile-tooltip';
+                                group.appendChild(mobileTooltip);
+                            }
+                            
+                            // Hide all other tooltips first
+                            document.querySelectorAll('.mobile-tooltip').forEach(t => {
+                                if (t !== mobileTooltip) {
+                                    t.style.display = 'none';
+                                }
+                            });
+                            document.querySelectorAll('.control-group, .preset-selector, .color-presets-container, .toggle-container, .mode-toggle-container').forEach(g => {
+                                if (g !== group) {
+                                    g.classList.remove('tooltip-active');
+                                }
+                            });
+                            
+                            // Set tooltip text and show it
+                            mobileTooltip.textContent = tooltipText;
+                            mobileTooltip.style.display = 'block';
+                            group.classList.add('tooltip-active');
+                        } else {
+                            // First tap
+                            tapCount = 1;
+                        }
+                        
+                        lastTapTime = currentTime;
+                    });
+                    
+                    // Hide tooltip immediately on touch end
+                    group.addEventListener('touchend', function() {
+                        // Only hide if we previously showed a tooltip
+                        const mobileTooltip = group.querySelector('.mobile-tooltip');
+                        if (mobileTooltip && mobileTooltip.style.display === 'block') {
+                            mobileTooltip.style.display = 'none';
+                            group.classList.remove('tooltip-active');
+                        }
+                        
+                        // Reset tap count after delay to allow for double-tap detection
+                        setTimeout(() => {
+                            tapCount = 0;
+                        }, doubleTapDelay + 50);
+                    });
+                    
+                    // Clear any touch handlers for move and cancel events
+                    group.addEventListener('touchmove', function(e) {
+                        // No need to track movement with double-tap logic
+                    });
+                    
+                    group.addEventListener('touchcancel', function() {
+                        // Hide tooltip on cancel
+                        const mobileTooltip = group.querySelector('.mobile-tooltip');
+                        if (mobileTooltip) {
+                            mobileTooltip.style.display = 'none';
+                        }
+                        group.classList.remove('tooltip-active');
+                        tapCount = 0;
+                    });
+                }
+            });
+            
+            // Setup color presets tooltip handling
+            const colorPresets = document.querySelectorAll('.color-preset');
+            const colorPresetsContainer = document.querySelector('.color-presets-container');
+            
+            // Create a single tooltip for all color presets if it doesn't exist
+            let themeTooltip = document.createElement('div');
+            themeTooltip.className = 'tooltip';
+            colorPresetsContainer.appendChild(themeTooltip);
+            
+            colorPresets.forEach(preset => {
+                const themeName = preset.getAttribute('data-tooltip');
+                if (themeName) {
+                    preset.setAttribute('aria-label', themeName);
+                    
+                    // Apply the same double-tap logic for color presets
+                    let lastTapTime = 0;
+                    let tapCount = 0;
+                    
+                    preset.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        const now = Date.now();
+                        const tapLength = now - lastTapTime;
+                        lastTapTime = now;
+                        
+                        tapCount++;
+                        
+                        if (tapLength < doubleTapDelay && tapLength > 0) {
+                            // Double tap detected
+                            const theme = preset.getAttribute('data-theme');
+                            const themeName = preset.getAttribute('data-tooltip');
+                            
+                            // Show tooltip with theme name
+                            let mobileTooltip = preset.querySelector('.mobile-tooltip');
+                            if (!mobileTooltip) {
+                                mobileTooltip = document.createElement('div');
+                                mobileTooltip.className = 'mobile-tooltip';
+                                preset.appendChild(mobileTooltip);
+                            }
+                            
+                            // Hide all other tooltips first
+                            document.querySelectorAll('.mobile-tooltip').forEach(t => {
+                                if (t !== mobileTooltip) {
+                                    t.style.display = 'none';
+                                }
+                            });
+                            
+                            // Set tooltip text and show it
+                            mobileTooltip.textContent = themeName;
+                            mobileTooltip.style.display = 'block';
+                            preset.classList.add('tooltip-active');
+                            
+                            // Hide tooltip after a delay
+                            setTimeout(() => {
+                                mobileTooltip.style.display = 'none';
+                                preset.classList.remove('tooltip-active');
+                            }, 1500);
+                            
+                            tapCount = 0;
+                        }
+                        
+                        // Reset tap count after delay
+                        setTimeout(() => {
+                            if (tapCount === 1) {
+                                const theme = preset.getAttribute('data-theme');
+                                changeColorTheme(theme);
+                            }
+                            tapCount = 0;
+                        }, doubleTapDelay + 50);
+                    });
+                    
+                    // Add mouse hover effect for desktop
+                    preset.addEventListener('mouseenter', () => {
+                        const themeName = preset.getAttribute('data-tooltip');
+                        if (themeName) {
+                            themeTooltip.textContent = themeName;
+                            themeTooltip.style.top = `${preset.offsetTop}px`;
+                            themeTooltip.style.opacity = '1';
+                        }
+                    });
+                    
+                    preset.addEventListener('mouseleave', () => {
+                        themeTooltip.style.opacity = '0';
+                    });
+                }
+            });
+        }
+        
+        // Find the closest wall to a point
+        function findClosestWall(x, y, maxDistance = 15) {
+            let closestWall = null;
+            let minDistance = maxDistance;
+            
+            for (let i = 0; i < walls.length; i++) {
+                const wall = walls[i];
+                const dist = distToSegment(x, y, wall.x1, wall.y1, wall.x2, wall.y2);
+                
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    closestWall = { index: i, distance: dist };
+                }
+            }
+            
+            return closestWall;
+        }
+
+        // Mouse event handlers are replaced with touch handlers only
+        function handleTouchStart(e) {
+            e.preventDefault(); // Prevent scrolling when touching the canvas
+            
+            if (e.touches && e.touches[0]) {
+                const touchX = e.touches[0].clientX;
+                const touchY = e.touches[0].clientY;
+                
+                // Handle double-touch detection for attract/repel toggle
+                const currentTime = new Date().getTime();
+                const timeDiff = currentTime - lastTouchTime;
+                
+                // Check if menu is collapsed and in interact mode
+                const controls = document.querySelector('.controls');
+                const isMenuCollapsed = controls && controls.classList.contains('collapsed');
+                
+                if (isMenuCollapsed && currentMode === 'interact' && timeDiff < 300) {
+                    // Double touch detected, toggle attract/repel
+                    mouse.attract = !mouse.attract;
+                    
+                    // Update the toggle in UI if it exists
+                    const mouseModeToggle = document.getElementById('mouseMode');
+                    if (mouseModeToggle) {
+                        mouseModeToggle.checked = mouse.attract;
+                    }
+                    
+                    // Clear any existing double touch timeout
+                    if (doubleTouchTimeout) {
+                        clearTimeout(doubleTouchTimeout);
+                        doubleTouchTimeout = null;
+                    }
+                    
+                    // Create a special "mode changed" ripple effect
+                    createModeChangedEffect(touchX, touchY);
+                } else {
+                    // Set timeout for potential second tap
+                    if (doubleTouchTimeout) {
+                        clearTimeout(doubleTouchTimeout);
+                    }
+                    
+                    lastTouchTime = currentTime;
+                    
+                    // Create touch ripple effect
+                    createTouchRipple(touchX, touchY);
+                    
+                    // Create persistent pulse effect
+                    createTouchPulse(touchX, touchY);
+                }
+                
+                mouse.x = touchX;
+                mouse.y = touchY;
+                mouse.active = true;
+                mouse.touchActive = true; // Set touch active flag
+                
+                if (currentMode === 'drawWalls') {
+                    mouse.drawing = true;
+                    mouse.startX = touchX;
+                    mouse.startY = touchY;
+                } else if (currentMode === 'freeDraw') {
+                    mouse.drawing = true;
+                    currentPath = [{ x: touchX, y: touchY }];
+                } else if (currentMode === 'eraser') {
+                    mouse.drawing = true;
+                    const closestWall = findClosestWall(touchX, touchY);
+                    if (closestWall) {
+                        walls.splice(closestWall.index, 1);
+                    }
+                }
+            }
+        }
+
+        // Function to create a touch ripple effect
+        function createTouchRipple(x, y) {
+            const ripple = document.createElement('div');
+            ripple.className = 'touch-ripple';
+            
+            // Add appropriate class based on attract/repel mode
+            if (currentMode === 'interact') {
+                if (mouse.attract) {
+                    ripple.classList.add('touch-ripple-attract');
+                } else {
+                    ripple.classList.add('touch-ripple-repel');
+                }
+            }
+            
+            const rippleWidth = 20;
+            const rippleHeight = 20;
+            
+            // Center the ripple on the touch point
+            ripple.style.left = `${x - rippleWidth/2}px`;
+            ripple.style.top = `${y - rippleHeight/2}px`;
+            ripple.style.width = `${rippleWidth}px`;
+            ripple.style.height = `${rippleHeight}px`;
+            
+            document.body.appendChild(ripple);
+            
+            // Remove ripple element after animation completes
+            setTimeout(() => {
+                ripple.remove();
+            }, 400);
+        }
+
+        function handleTouchEnd(e) {
+            e.preventDefault();
+            
+            // Remove the pulse element
+            removeTouchPulse();
+            
+            if (currentMode === 'drawWalls' && mouse.drawing) {
+                // Only add wall if it has a minimum length
+                if (mouse.startX !== undefined && mouse.startY !== undefined) {
+                    const dx = mouse.x - mouse.startX;
+                    const dy = mouse.y - mouse.startY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance > 10) { // Minimum length to add a wall
+                        walls.push({
+                            x1: mouse.startX,
+                            y1: mouse.startY,
+                            x2: mouse.x,
+                            y2: mouse.y
+                        });
+                    }
+                }
+            } else if (currentMode === 'freeDraw' && mouse.drawing) {
+                // Convert the free-draw path into wall segments
+                if (currentPath.length > 2) {
+                    for (let i = 1; i < currentPath.length; i++) {
+                        walls.push({
+                            x1: currentPath[i-1].x,
+                            y1: currentPath[i-1].y,
+                            x2: currentPath[i].x,
+                            y2: currentPath[i].y
+                        });
+                    }
+                }
+                currentPath = [];
+            }
+            
+            // Reset mouse state properly
+            mouse.drawing = false;
+            mouse.active = false;
+            mouse.touchActive = false;
+            
+            // Handle menu collapse when touching outside
+            const controls = document.querySelector('.controls');
+            // Check if we clicked/touched outside the menu and menu is expanded
+            if (controls && !controls.classList.contains('collapsed') && !controls.contains(e.target) && 
+                e.target.id !== 'menuToggle') {
+                // Toggle the menu using our centralized function
+                toggleMenu();
+            }
+        }
+
+        const handleTouchMove = throttle(function(e) {
+            e.preventDefault(); // Prevent scrolling
+            
+            if (e.touches && e.touches[0]) {
+                const touchX = e.touches[0].clientX;
+                const touchY = e.touches[0].clientY;
+                
+                // Update position of continuous pulse
+                updateTouchPulse(touchX, touchY);
+                
+                // We'll keep the individual ripples for additional effect
+                createTouchDragRipple(touchX, touchY);
+                
+                mouse.x = touchX;
+                mouse.y = touchY;
+                
+                // In free-draw mode, add point to current path
+                if (currentMode === 'freeDraw' && mouse.drawing) {
+                    // Only add a point if it's at least a few pixels away from the last one
+                    if (currentPath.length > 0) {
+                        const lastPoint = currentPath[currentPath.length - 1];
+                        const dx = touchX - lastPoint.x;
+                        const dy = touchY - lastPoint.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance > 5) { // Minimum distance between points to avoid too many segments
+                            currentPath.push({ x: touchX, y: touchY });
+                        }
+                    }
+                } else if (currentMode === 'eraser' && mouse.drawing) {
+                    // When eraser is dragged, continuously erase walls
+                    const closestWall = findClosestWall(touchX, touchY);
+                    if (closestWall) {
+                        walls.splice(closestWall.index, 1);
+                    }
+                }
+            }
+        }, 16); // Throttle to ~60fps
+
+        function handleTouchCancel(e) {
+            e.preventDefault();
+            
+            // Remove the pulse element
+            removeTouchPulse();
+            
+            mouse.drawing = false;
+            mouse.active = false;
+            
+            setTimeout(() => {
+                mouse.touchActive = false; // Remove eraser indicator after delay
+            }, 300);
+            
+            // Also handle the case of current path
+            if (currentMode === 'freeDraw') {
+                currentPath = [];
+            }
+            
+            mouse.touchActive = false;
+        }
+
+        // Function for smaller ripples during drag movement
+        function createTouchDragRipple(x, y) {
+            const ripple = document.createElement('div');
+            ripple.className = 'touch-drag-ripple';
+            
+            // Add appropriate class based on attract/repel mode
+            if (currentMode === 'interact') {
+                if (mouse.attract) {
+                    ripple.classList.add('touch-drag-ripple-attract');
+                } else {
+                    ripple.classList.add('touch-drag-ripple-repel');
+                }
+            }
+            
+            const rippleWidth = 15;
+            const rippleHeight = 15;
+            
+            // Center the ripple on the touch point
+            ripple.style.left = `${x - rippleWidth/2}px`;
+            ripple.style.top = `${y - rippleHeight/2}px`;
+            ripple.style.width = `${rippleWidth}px`;
+            ripple.style.height = `${rippleHeight}px`;
+            
+            document.body.appendChild(ripple);
+            
+            // Remove ripple element after animation completes
+            setTimeout(() => {
+                ripple.remove();
+            }, 300);
+        }
+
+        // Initialize and start animation
+        function init() {
+            // Set mobile-optimized values
+            settings.particleCount = 200;
+            settings.trailLength = Math.min(settings.trailLength, 8);
+            
+            document.getElementById('particles').value = settings.particleCount;
+            document.getElementById('particlesValue').textContent = settings.particleCount;
+            document.getElementById('trailLength').value = settings.trailLength;
+            document.getElementById('trailLengthValue').textContent = settings.trailLength;
+            
+            // Update labels for touch devices
+            document.getElementById('controlsTitle').textContent = "Touch Controls";
+            document.getElementById('forceLabel').textContent = "Touch Force";
+            
+            // Update tooltips to mention touch instead of mouse
+            const forceGroup = document.querySelector('.control-group[data-tooltip]');
+            if (forceGroup) {
+                forceGroup.setAttribute('data-tooltip', 'Strength of touch interaction with particles');
+            }
+            
+            const mouseLabel = document.querySelector('label[for="mouseMode"]');
+            if (mouseLabel) {
+                mouseLabel.textContent = "Attract Particles";
+            }
+            
+            // Set initial mode and state for the repel/attract toggle
+            // Default mode is 'interact', so ensure toggle is enabled
+            const toggleContainer = document.querySelector('.toggle-container');
+            if (toggleContainer && currentMode === 'interact') {
+                toggleContainer.classList.remove('disabled');
+            } else if (toggleContainer) {
+                toggleContainer.classList.add('disabled');
+            }
+            
+            // Detect low-end devices based on initial render times
+            setTimeout(() => {
+                if (averageRenderTime > 25) {
+                    console.log("Low-end device detected, enabling performance optimizations");
+                    settings.particleCount = Math.min(settings.particleCount, 150);
+                    settings.trailLength = Math.min(settings.trailLength, 5);
+                    
+                    document.getElementById('particles').value = settings.particleCount;
+                    document.getElementById('particlesValue').textContent = settings.particleCount;
+                    document.getElementById('trailLength').value = settings.trailLength;
+                    document.getElementById('trailLengthValue').textContent = settings.trailLength;
+                    
+                    initParticles();
+                }
+            }, 2000); // Check after 2 seconds of running
+            
+            initParticles();
+            lastAnimationTime = performance.now();
+            animationFrameId = requestAnimationFrame(animate);
+            setupTooltips();
+            
+            // Initialize menu as expanded by default
+            const controls = document.querySelector('.controls');
+            // controls.classList.add('collapsed'); - removed to keep menu expanded by default
+            const menuToggle = document.getElementById('menuToggle');
+            menuToggle.textContent = '◀'; // Set collapse arrow icon for expanded menu
+            
+            // UI controls
+            const particlesSlider = document.getElementById('particles');
+            const speedSlider = document.getElementById('speed');
+            const separationSlider = document.getElementById('separation');
+            const alignmentSlider = document.getElementById('alignment');
+            const cohesionSlider = document.getElementById('cohesion');
+            const perceptionSlider = document.getElementById('perception');
+            const mouseSlider = document.getElementById('mouse');
+            const trailLengthSlider = document.getElementById('trailLength');
+            const wallForceSlider = document.getElementById('wallForce');
+            const resetButton = document.getElementById('reset');
+            const randomizeButton = document.getElementById('randomize');
+            const presetsDropdown = document.getElementById('presets');
+            const colorPresets = document.querySelectorAll('.color-preset');
+            const mouseModeToggle = document.getElementById('mouseMode');
+            const interactModeButton = document.getElementById('interactMode');
+            const drawWallsModeButton = document.getElementById('drawWallsMode');
+            const freeDrawModeButton = document.getElementById('freeDrawMode');
+            const eraserModeButton = document.getElementById('eraserMode');
+            const clearWallsButton = document.getElementById('clearWalls');
+            
+            // Update displays
+            const particlesValue = document.getElementById('particlesValue');
+            const speedValue = document.getElementById('speedValue');
+            const separationValue = document.getElementById('separationValue');
+            const alignmentValue = document.getElementById('alignmentValue');
+            const cohesionValue = document.getElementById('cohesionValue');
+            const perceptionValue = document.getElementById('perceptionValue');
+            const mouseValue = document.getElementById('mouseValue');
+            const trailLengthValue = document.getElementById('trailLengthValue');
+            const wallForceValue = document.getElementById('wallForceValue');
+            
+            // Add event listener to close menu when clicking/touching outside
+            const closeMenuOutside = function(e) {
+                // If the menu is expanded and click/touch is outside the controls
+                if (!controls.classList.contains('collapsed') && !controls.contains(e.target)) {
+                    controls.classList.add('collapsed');
+                    updateMenuToggleIcon(); // Use the helper function to ensure correct icon
+                }
+            };
+            
+            // Add touch event listener for closing the menu
+            document.addEventListener('touchstart', closeMenuOutside, { passive: false });
+            
+            // Event listeners for mode buttons
+            interactModeButton.addEventListener('click', () => setMode('interact'));
+            drawWallsModeButton.addEventListener('click', () => setMode('drawWalls'));
+            freeDrawModeButton.addEventListener('click', () => setMode('freeDraw'));
+            eraserModeButton.addEventListener('click', () => setMode('eraser'));
+            clearWallsButton.addEventListener('click', () => walls = []);
+            
+            // Add touch event listeners only
+            canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+            canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+            canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+            canvas.addEventListener('touchcancel', handleTouchCancel, { passive: false });
+            
+            // Event listeners for other controls
+            particlesSlider.addEventListener('input', () => {
+                settings.particleCount = parseInt(particlesSlider.value);
+                particlesValue.textContent = settings.particleCount;
+                initParticles();
+            });
+            
+            speedSlider.addEventListener('input', () => {
+                settings.speed = parseFloat(speedSlider.value);
+                speedValue.textContent = settings.speed.toFixed(1);
+            });
+            
+            separationSlider.addEventListener('input', () => {
+                settings.separation = parseFloat(separationSlider.value);
+                separationValue.textContent = settings.separation.toFixed(1);
+            });
+            
+            alignmentSlider.addEventListener('input', () => {
+                settings.alignment = parseFloat(alignmentSlider.value);
+                alignmentValue.textContent = settings.alignment.toFixed(1);
+            });
+            
+            cohesionSlider.addEventListener('input', () => {
+                settings.cohesion = parseFloat(cohesionSlider.value);
+                cohesionValue.textContent = settings.cohesion.toFixed(1);
+            });
+            
+            perceptionSlider.addEventListener('input', () => {
+                settings.perception = parseInt(perceptionSlider.value);
+                perceptionValue.textContent = settings.perception;
+            });
+            
+            mouseSlider.addEventListener('input', () => {
+                settings.mouseForce = parseFloat(mouseSlider.value);
+                mouseValue.textContent = settings.mouseForce.toFixed(1);
+            });
+            
+            trailLengthSlider.addEventListener('input', () => {
+                settings.trailLength = parseInt(trailLengthSlider.value);
+                trailLengthValue.textContent = settings.trailLength;
+                
+                // Clear history if trail is disabled
+                if (settings.trailLength === 0) {
+                    for (let i = 0; i < particles.length; i++) {
+                        particles[i].history = [];
+                    }
+                }
+            });
+            
+            wallForceSlider.addEventListener('input', () => {
+                settings.wallForce = parseFloat(wallForceSlider.value);
+                wallForceValue.textContent = settings.wallForce.toFixed(1);
+            });
+            
+            mouseModeToggle.addEventListener('change', () => {
+                mouse.attract = mouseModeToggle.checked;
+            });
+            
+            presetsDropdown.addEventListener('change', () => {
+                applyPreset(presetsDropdown.value);
+            });
+            
+            colorPresets.forEach(preset => {
+                preset.addEventListener('click', () => {
+                    const theme = preset.getAttribute('data-theme');
+                    if (theme) {
+                        changeColorTheme(theme);
+                    }
+                });
+            });
+            
+            resetButton.addEventListener('click', initParticles);
+            randomizeButton.addEventListener('click', randomizeSettings);
+            
+            // Focus on touch interaction
+            canvas.addEventListener('touchstart', () => {
+                // When touch interaction starts, make sure the canvas is active
+                if (!mouse.active) {
+                    mouse.active = true;
+                }
+            });
+            
+            // Handle window resize with debouncing
+            window.addEventListener('resize', debounce(() => {
+                resizeCanvas();
+            }, 250));
+            
+            // Menu toggle functionality
+            menuToggle.addEventListener('click', () => {
+                toggleMenu();
+                // Remove focus from the button after toggling
+                menuToggle.blur();
+            });
+            
+            // Add specific touch event handlers for menu toggle to prevent highlight on mobile
+            menuToggle.addEventListener('touchstart', (e) => {
+                // Prevent the default touch behavior which can cause highlight
+                e.preventDefault();
+                
+                // Toggle the menu using our centralized function
+                toggleMenu();
+                
+                // Ensure no highlight remains
+                menuToggle.blur();
+                
+                // Prevent any click events from firing
+                e.stopPropagation();
+            }, { passive: false });
+            
+            menuToggle.addEventListener('touchend', (e) => {
+                // Prevent the default touch behavior
+                e.preventDefault();
+                
+                // Prevent any click events from firing - don't toggle menu here
+                e.stopPropagation();
+            }, { passive: false });
+            
+            // Add close button for mobile tooltips when clicking anywhere
+            document.addEventListener('touchstart', function(e) {
+                // Check if we clicked outside any tooltip-related element
+                if (!e.target.closest('.tooltip-active') && 
+                    !e.target.closest('.mobile-tooltip') && 
+                    !e.target.closest('.help-icon') &&
+                    !e.target.closest('.menu-toggle')) { // Don't hide tooltips when touching menu toggle
+                    
+                    // Hide all tooltips
+                    document.querySelectorAll('.mobile-tooltip').forEach(tooltip => {
+                        tooltip.style.display = 'none';
+                    });
+                    
+                    // Remove active class from all elements
+                    document.querySelectorAll('.tooltip-active').forEach(element => {
+                        element.classList.remove('tooltip-active');
+                    });
+                }
+            }, { passive: false });
+            
+            // Ensure menu toggle icon is correct
+            updateMenuToggleIcon();
+            
+            // Periodically check menu toggle icon (as fallback)
+            setInterval(updateMenuToggleIcon, 1000);
+            
+            // Add periodic checks for menu toggle visibility
+            setInterval(() => {
+                // Make sure the toggle remains visible
+                const menuToggle = document.getElementById('menuToggle');
+                if (menuToggle) {
+                    menuToggle.style.display = 'block';
+                    updateMenuToggleIcon();
+                }
+            }, 1000);
+        }
+        
+        // Start everything
+        init();
+
+        // Function to create a continuous pulsing effect
+        function createTouchPulse(x, y) {
+            // Remove any existing pulse
+            removeTouchPulse();
+            
+            const pulse = document.createElement('div');
+            pulse.className = 'touch-pulse';
+            
+            // Add appropriate class based on attract/repel mode
+            if (currentMode === 'interact') {
+                if (mouse.attract) {
+                    pulse.classList.add('touch-pulse-attract');
+                } else {
+                    pulse.classList.add('touch-pulse-repel');
+                }
+            }
+            
+            // Set position - pulse is already centered via CSS margin
+            pulse.style.left = `${x}px`;
+            pulse.style.top = `${y}px`;
+            
+            // Apply custom animation based on force value
+            applyForceAnimation(pulse);
+            
+            document.body.appendChild(pulse);
+            touchPulseElement = pulse;
+        }
+        
+        // Function to update the pulse position
+        function updateTouchPulse(x, y) {
+            if (touchPulseElement) {
+                touchPulseElement.style.left = `${x}px`;
+                touchPulseElement.style.top = `${y}px`;
+                
+                // Re-apply force animation if needed (in case force value changed)
+                applyForceAnimation(touchPulseElement);
+            }
+        }
+        
+        // Function to apply custom animation based on touch force
+        function applyForceAnimation(element) {
+            // Base animation duration - inverse to force (faster for stronger force)
+            const duration = Math.max(0.8, 2.0 - (settings.mouseForce * 0.1));
+            
+            // Scale range based on force (larger for stronger force)
+            // Force ranges from 0-10, so we'll map it to reasonable scale values
+            const minScale = 0.8;
+            const forceImpact = settings.mouseForce / 10; // Normalize to 0-1 range
+            const maxScale = 1.2 + (forceImpact * 1.3); // Up to 2.5x for max force
+            
+            // Opacity range (more opaque for stronger force)
+            const minOpacity = 0.5 + (forceImpact * 0.2); // 0.5-0.7
+            const maxOpacity = 0.7 + (forceImpact * 0.3); // 0.7-1.0
+            
+            // Apply both glow intensity and size based on force
+            const glowRadius = 10 + (settings.mouseForce * 2);
+            
+            // Apply glow based on mode
+            if (element.classList.contains('touch-pulse-attract')) {
+                element.style.boxShadow = `0 0 ${glowRadius}px rgba(100, 149, 237, ${0.6 + (forceImpact * 0.4)})`;
+            } else if (element.classList.contains('touch-pulse-repel')) {
+                element.style.boxShadow = `0 0 ${glowRadius}px rgba(255, 165, 0, ${0.6 + (forceImpact * 0.4)})`;
+            } else {
+                element.style.boxShadow = `0 0 ${glowRadius}px rgba(255, 255, 255, ${0.5 + (forceImpact * 0.5)})`;
+            }
+            
+            // Apply the custom animation
+            element.style.animation = `none`; // Reset animation
+            
+            // Force reflow to make sure animation restarts
+            void element.offsetWidth;
+            
+            element.style.animation = `pulse-animation ${duration}s infinite`;
+            
+            // Set custom keyframes dynamically with CSS variables
+            element.style.setProperty('--min-scale', minScale);
+            element.style.setProperty('--max-scale', maxScale);
+            element.style.setProperty('--min-opacity', minOpacity);
+            element.style.setProperty('--max-opacity', maxOpacity);
+            
+            // Create and apply a dynamic animation
+            const styleSheet = document.createElement('style');
+            styleSheet.textContent = `
+                @keyframes pulse-animation {
+                    0% {
+                        transform: scale(${minScale});
+                        opacity: ${maxOpacity};
+                    }
+                    50% {
+                        transform: scale(${maxScale});
+                        opacity: ${minOpacity};
+                    }
+                    100% {
+                        transform: scale(${minScale});
+                        opacity: ${maxOpacity};
+                    }
+                }
+            `;
+            document.head.appendChild(styleSheet);
+            
+            // Store reference to the style element to remove it later
+            element.pulseStyleSheet = styleSheet;
+        }
+        
+        // Function to remove the pulse
+        function removeTouchPulse() {
+            if (touchPulseElement) {
+                // Remove the associated style element if it exists
+                if (touchPulseElement.pulseStyleSheet) {
+                    touchPulseElement.pulseStyleSheet.remove();
+                }
+                
+                touchPulseElement.remove();
+                touchPulseElement = null;
+            }
+        }
+
+        // Function to create a special visual effect when mode is changed via double-touch
+        function createModeChangedEffect(x, y) {
+            // Create a larger, more prominent ripple to indicate mode change
+            const ripple = document.createElement('div');
+            ripple.className = 'touch-ripple mode-change-ripple';
+            
+            // Add appropriate class based on new attract/repel mode
+            if (mouse.attract) {
+                ripple.classList.add('touch-ripple-attract');
+            } else {
+                ripple.classList.add('touch-ripple-repel');
+            }
+            
+            const rippleWidth = 40;
+            const rippleHeight = 40;
+            
+            // Center the ripple on the touch point
+            ripple.style.left = `${x - rippleWidth/2}px`;
+            ripple.style.top = `${y - rippleHeight/2}px`;
+            ripple.style.width = `${rippleWidth}px`;
+            ripple.style.height = `${rippleHeight}px`;
+            ripple.style.zIndex = '2000'; // Higher z-index
+            
+            document.body.appendChild(ripple);
+            
+            // Remove ripple element after animation completes
+            setTimeout(() => {
+                ripple.remove();
+            }, 600); // Longer duration
+            
+            // Also update the pulse effect to reflect the new mode
+            if (touchPulseElement) {
+                touchPulseElement.classList.remove('touch-pulse-attract', 'touch-pulse-repel');
+                if (mouse.attract) {
+                    touchPulseElement.classList.add('touch-pulse-attract');
+                } else {
+                    touchPulseElement.classList.add('touch-pulse-repel');
+                }
+                applyForceAnimation(touchPulseElement);
+            }
+        }
+    </script>
+</body>
+</html>

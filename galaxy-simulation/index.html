@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Interactive Bar Galaxy Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        
+        canvas {
+            display: block;
+            cursor: grab;
+        }
+        
+        canvas:active {
+            cursor: grabbing;
+        }
+        
+        .controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            width: 280px;
+            max-height: 90vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        
+        .controls h2 {
+            margin-top: 0;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        
+        .control-section {
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 10px;
+        }
+        
+        .control-section h3 {
+            margin-top: 0;
+            font-size: 16px;
+            color: #4a5bce;
+            margin-bottom: 10px;
+        }
+        
+        .control-section:last-child {
+            border-bottom: none;
+        }
+        
+        .control-group {
+            margin-bottom: 8px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 3px;
+            font-size: 14px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+        }
+        
+        .value-display {
+            font-size: 12px;
+            margin-top: 2px;
+            text-align: right;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* Tooltip styling */
+        [data-tooltip] {
+            position: relative;
+            cursor: help;
+        }
+        
+        .tooltip {
+            position: fixed;
+            background-color: rgba(40, 40, 40, 0.95);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            max-width: 250px;
+            white-space: normal;
+            z-index: 9999;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+            display: none;
+        }
+        
+        button {
+            background-color: #4a5bce;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 6px;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background-color: #3a4bbf;
+        }
+        
+        .checkbox-control {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .checkbox-control input {
+            margin-right: 8px;
+        }
+        
+        .color-option {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        
+        .color-option.active {
+            border-color: white;
+        }
+        
+        .info-button {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .info-panel {
+            position: absolute;
+            bottom: 50px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            max-width: 350px;
+            display: none;
+        }
+        
+        .info-panel h3 {
+            margin-top: 0;
+            font-size: 16px;
+        }
+        
+        .info-panel p {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .status-indicator {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="galaxyCanvas"></canvas>
+    
+    <div class="controls">
+        <h2>Galaxy Controls</h2>
+        
+        <!-- Core Settings Section -->
+        <div class="control-section">
+            <h3>Core & Visual Settings</h3>
+            
+            <div class="control-group">
+                <label for="particleCount" data-tooltip="Number of stars in the simulation">Particle Count:</label>
+                <input type="range" id="particleCount" min="3000" max="50000" step="1000" value="10000">
+                <div class="value-display"><span id="particleCountValue">10000</span> particles</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="rotationSpeed" data-tooltip="Controls how fast the galaxy rotates">Rotation Speed:</label>
+                <input type="range" id="rotationSpeed" min="0.0001" max="0.006" step="0.0001" value="0.0005">
+                <div class="value-display"><span id="rotationSpeedValue">0.0005</span></div>
+            </div>
+            
+            <div class="control-group">
+                <label for="particleSize" data-tooltip="Change the size of individual stars">Particle Size:</label>
+                <input type="range" id="particleSize" min="0.5" max="3" step="0.1" value="1">
+                <div class="value-display"><span id="particleSizeValue">1</span>x</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="galaxyZoom" data-tooltip="Scale the entire galaxy view">Zoom Level:</label>
+                <input type="range" id="galaxyZoom" min="0.5" max="2" step="0.1" value="1">
+                <div class="value-display"><span id="galaxyZoomValue">1</span>x</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="tiltAngle" data-tooltip="View the galaxy from different angles">3D Tilt Angle:</label>
+                <input type="range" id="tiltAngle" min="0" max="80" step="1" value="0">
+                <div class="value-display"><span id="tiltAngleValue">0</span>°</div>
+            </div>
+            
+            <div class="control-group">
+                <label>Galaxy Colors:</label>
+                <div>
+                    <div class="color-option active" style="background-color: #4169E1" data-color="#4169E1"></div>
+                    <div class="color-option" style="background-color: #FF4500" data-color="#FF4500"></div>
+                    <div class="color-option" style="background-color: #9932CC" data-color="#9932CC"></div>
+                    <div class="color-option" style="background-color: #FFD700" data-color="#FFD700"></div>
+                    <div class="color-option" style="background-color: #32CD32" data-color="#32CD32"></div>
+                    <div class="color-option" style="background-color: #FF69B4" data-color="#FF69B4"></div>
+                    <div class="color-option" style="background-color: #00FFFF" data-color="#00FFFF"></div>
+                </div>
+            </div>
+            
+            <div class="control-group" style="display: flex; flex-wrap: wrap; gap: 6px;">
+                <button id="resetButton" data-tooltip="Restore all settings to default values">Reset</button>
+                <button id="toggleRotation" data-tooltip="Pause or resume galaxy rotation">Pause</button>
+            </div>
+            
+            <div class="control-group">
+                <div style="display: flex; flex-wrap: wrap;">
+                    <div class="checkbox-control" style="width: 50%;">
+                        <input type="checkbox" id="showDustLanes">
+                        <label for="showDustLanes" data-tooltip="Add dark dust lanes between spiral arms">Dust Lanes</label>
+                    </div>
+                    
+                    <div class="checkbox-control" style="width: 50%;">
+                        <input type="checkbox" id="showBackgroundStars">
+                        <label for="showBackgroundStars" data-tooltip="Add distant stars to the background">BG Stars</label>
+                    </div>
+                    
+                    <div class="checkbox-control" style="width: 50%;">
+                        <input type="checkbox" id="trailEffect">
+                        <label for="trailEffect" data-tooltip="Creates motion blur effect as stars move">Motion Trails</label>
+                    </div>
+
+                    <div class="checkbox-control" style="width: 50%;">
+                        <input type="checkbox" id="showBarOverlay">
+                        <label for="showBarOverlay" data-tooltip="Show translucent overlay of the central bar">Bar Overlay</label>
+                    </div>
+                    
+                    <div class="checkbox-control" style="width: 50%;">
+                        <input type="checkbox" id="showArmsOverlay">
+                        <label for="showArmsOverlay" data-tooltip="Show translucent overlay of spiral arms">Arms Overlay</label>
+                    </div>
+                    
+                    <div class="checkbox-control" style="width: 50%;">
+                        <input type="checkbox" id="showBulgeOverlay">
+                        <label for="showBulgeOverlay" data-tooltip="Show translucent overlay of central bulge">Bulge Overlay</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Structural Parameters Section -->
+        <div class="control-section">
+            <h3>Galaxy Structure</h3>
+            
+            <div class="control-group">
+                <label for="barStrength" data-tooltip="Intensity of the central bar structure">Bar Strength:</label>
+                <input type="range" id="barStrength" min="0" max="0.5" step="0.01" value="0.1">
+                <div class="value-display"><span id="barStrengthValue">0.1</span></div>
+            </div>
+            
+            <div class="control-group">
+                <label for="barLength" data-tooltip="Length of the central bar structure">Bar Length:</label>
+                <input type="range" id="barLength" min="0.1" max="0.5" step="0.01" value="0.3">
+                <div class="value-display"><span id="barLengthValue">0.3</span></div>
+            </div>
+            
+            <div class="control-group">
+                <label for="bulgeSize" data-tooltip="Size of the dense central region of the galaxy">Central Bulge Size:</label>
+                <input type="range" id="bulgeSize" min="0.1" max="0.8" step="0.05" value="0.3">
+                <div class="value-display"><span id="bulgeSizeValue">0.3</span></div>
+            </div>
+            
+            <div class="control-group">
+                <label for="galaxyThickness" data-tooltip="Vertical thickness of the galactic disk">Galaxy Thickness:</label>
+                <input type="range" id="galaxyThickness" min="0.01" max="0.3" step="0.01" value="0.1">
+                <div class="value-display"><span id="galaxyThicknessValue">0.1</span></div>
+            </div>
+        </div>
+        
+        <!-- Spiral Arms Section -->
+        <div class="control-section">
+            <h3>Spiral Arms</h3>
+            
+            <div class="control-group">
+                <label for="armCount" data-tooltip="Number of spiral arms in the galaxy">Number of Arms:</label>
+                <input type="range" id="armCount" min="2" max="6" step="1" value="2">
+                <div class="value-display"><span id="armCountValue">2</span></div>
+            </div>
+            
+            <div class="control-group">
+                <label for="spiralTightness" data-tooltip="How tightly wound the spiral arms are">Spiral Arms Tightness:</label>
+                <input type="range" id="spiralTightness" min="0.01" max="1" step="0.01" value="0.25">
+                <div class="value-display"><span id="spiralTightnessValue">0.25</span></div>
+            </div>
+            
+            <div class="control-group">
+                <label for="armStrength" data-tooltip="How strongly stars are pulled into spiral patterns">Arm Strength:</label>
+                <input type="range" id="armStrength" min="0.01" max="0.2" step="0.01" value="0.05">
+                <div class="value-display"><span id="armStrengthValue">0.05</span></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="info-button" id="showInfo" data-tooltip="Learn more about bar galaxies">About Bar Galaxies</div>
+    
+    <div class="info-panel" id="infoPanel">
+        <h3>About Bar Galaxies</h3>
+        <p>Bar galaxies are spiral galaxies with a bar-shaped structure of stars that extends from the central bulge. About two-thirds of all spiral galaxies contain a central bar-like structure.</p>
+        <p>The bar plays an important role in the evolution of galaxies, channeling gas toward the center which fuels star formation and feeds the central black hole.</p>
+        <p>In this simulation, you can control various parameters to see how they affect the shape and dynamics of a barred spiral galaxy.</p>
+        <p><strong>Mouse Controls:</strong> Click and drag to rotate the galaxy. Use mouse wheel to zoom in/out.</p>
+        <button id="closeInfo">Close</button>
+    </div>
+    
+    <div class="status-indicator" id="statusIndicator">FPS: 60 | Particles: 10000</div>
+
+    <script>
+        // Initialize canvas
+        const canvas = document.getElementById('galaxyCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        // Galaxy parameters
+        let particleCount = 10000;
+        let barStrength = 0.1;
+        let rotationSpeed = 0.0005;
+        let spiralTightness = 0.25;
+        let galaxyColor = "#4169E1";
+        let isRotating = true;
+        let bulgeSize = 0.3;
+        let particleSizeMultiplier = 1;
+        let zoomLevel = 1;
+        let tiltAngle = 0;
+        let showDustLanes = false;
+        let showBackgroundStars = false;
+        let trailEffect = false;
+        let armCount = 2;
+        let galaxyThickness = 0.1;
+        let armStrength = 0.05;
+        let barLength = 0.3;
+        let showBarOverlay = false;
+        let showArmsOverlay = false;
+        let showBulgeOverlay = false;
+        
+        // Mouse interaction parameters
+        let isDragging = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let galaxyRotationX = 0;
+        let galaxyRotationY = 0;
+        let viewRotationX = 0;
+        let viewRotationY = 0;
+        
+        // Performance tracking
+        let lastFrameTime = performance.now();
+        let frameCount = 0;
+        let fps = 60;
+        let fpsUpdateInterval = setInterval(updateFPS, 1000);
+        
+        // Background stars
+        let backgroundStars = [];
+        
+        // Add a global rotation angle after the galaxy parameters
+        let galaxyRotationAngle = 0;
+        
+        // Particle class
+        class Particle {
+            constructor() {
+                this.initialize();
+            }
+            
+            initialize() {
+                // Distance from center
+                this.distance = Math.random() * 0.5 + 0.05;
+                if (Math.random() < 0.1) {
+                    this.distance *= bulgeSize; // Central bulge
+                }
+                
+                // Angle from center
+                this.angle = Math.random() * Math.PI * 2;
+                
+                // Initial position
+                this.x = Math.cos(this.angle) * this.distance;
+                this.y = Math.sin(this.angle) * this.distance;
+                
+                // Brightness and size
+                this.brightness = Math.random() * 0.5 + 0.5;
+                this.size = (Math.random() * 1.5 + 0.5) * particleSizeMultiplier;
+                
+                // Determine if particle is part of the bar structure
+                this.isInBar = this.distance < barLength && Math.random() < 0.7;
+                
+                // Calculate rotation speed (inner particles rotate faster)
+                this.rotationSpeed = (1 / (this.distance * 5 + 0.1)) * rotationSpeed;
+                
+                // For spiral arms
+                this.armIndex = Math.floor(Math.random() * armCount);
+                this.armOffset = (Math.PI * 2 / armCount) * this.armIndex;
+                this.spiralFactor = Math.random() * 0.4 + 0.8;
+                
+                // Z-coordinate for 3D effect
+                this.z = (Math.random() - 0.5) * galaxyThickness;
+                
+                // For dust lanes
+                this.isDust = showDustLanes && this.distance > 0.15 && this.distance < 0.45 && Math.random() < 0.2;
+            }
+            
+            update() {
+                if (!isRotating) return;
+                
+                // Update angle
+                this.angle += this.rotationSpeed;
+                
+                // Calculate position based on bar and spiral arm influences
+                let newAngle = this.angle;
+                
+                // Bar effect (stronger near center)
+                if (this.isInBar) {
+                    // Pull towards bar axis (aligned with x-axis)
+                    const barPull = Math.sin(2 * this.angle) * barStrength;
+                    newAngle -= barPull;
+                }
+                
+                // Spiral arm effect (stronger at outer edges)
+                if (this.distance > 0.2) {
+                    const armAngle = this.armOffset + this.distance * (1/spiralTightness) * 10;
+                    const spiralPull = Math.sin(this.angle - armAngle) * armStrength * this.spiralFactor;
+                    newAngle -= spiralPull;
+                }
+                
+                // Calculate new position
+                this.x = Math.cos(newAngle) * this.distance;
+                this.y = Math.sin(newAngle) * this.distance;
+            }
+            
+            draw() {
+                // Apply 3D tilt (convert to radians)
+                const tiltRadians = tiltAngle * Math.PI / 180;
+                const tiltedY = this.y * Math.cos(tiltRadians) + this.z * Math.sin(tiltRadians);
+                const tiltedZ = -this.y * Math.sin(tiltRadians) + this.z * Math.cos(tiltRadians);
+                
+                // Apply view rotation (from mouse dragging)
+                const rotatedX = this.x * Math.cos(viewRotationY) + tiltedZ * Math.sin(viewRotationY);
+                const rotatedZ = -this.x * Math.sin(viewRotationY) + tiltedZ * Math.cos(viewRotationY);
+                
+                const finalX = rotatedX * Math.cos(viewRotationX) - tiltedY * Math.sin(viewRotationX);
+                const finalY = rotatedX * Math.sin(viewRotationX) + tiltedY * Math.cos(viewRotationX);
+                
+                // Scale coordinates to canvas
+                const scale = Math.min(canvas.width, canvas.height) * 0.8 * zoomLevel;
+                const screenX = canvas.width / 2 + finalX * scale;
+                const screenY = canvas.height / 2 + finalY * scale;
+                
+                // Perspective effect from z-coordinate
+                const perspective = 1 + rotatedZ;
+                
+                // Calculate alpha based on distance from center for fade-out effect
+                let alpha = 1 - this.distance * 1.5;
+                alpha = Math.max(0.1, alpha) * this.brightness;
+                
+                // Calculate color with brightness variation
+                const color = hexToRgb(galaxyColor);
+                
+                // Different color for dust lanes
+                if (this.isDust) {
+                    // Draw dust as darker patches
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY, this.size * perspective * 1.5, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(20, 20, 20, ${alpha * 0.8})`;
+                    ctx.fill();
+                } else {
+                    // Regular star color
+                    const r = Math.min(255, color.r + (this.isInBar ? 50 : 0));
+                    const g = Math.min(255, color.g + (this.isInBar ? 50 : 0));
+                    const b = Math.min(255, color.b + (this.isInBar ? 50 : 0));
+                    
+                    // Draw particle
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY, this.size * perspective, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                    ctx.fill();
+                }
+            }
+        }
+        
+        // Create particles
+        let particles = [];
+        
+        function createParticles() {
+            particles = [];
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+        
+        // Create background stars
+        function createBackgroundStars() {
+            backgroundStars = [];
+            const starCount = 300;
+            for (let i = 0; i < starCount; i++) {
+                backgroundStars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 1.5 + 0.5,
+                    brightness: Math.random() * 0.8 + 0.2
+                });
+            }
+        }
+        
+        // Draw background stars
+        function drawBackgroundStars() {
+            if (!showBackgroundStars) return;
+            
+            backgroundStars.forEach(star => {
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${star.brightness * 0.5})`;
+                ctx.fill();
+            });
+        }
+        
+        // Draw structure overlays
+        function drawOverlays() {
+            const scale = Math.min(canvas.width, canvas.height) * 0.8 * zoomLevel;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const tiltRadians = tiltAngle * Math.PI / 180;
+            
+            // Apply transformations in the SAME order as in the particle render code
+            function applyTransformation(x, y, z) {
+                // Apply 3D tilt first (same as in particle draw)
+                const tiltedY = y * Math.cos(tiltRadians) + z * Math.sin(tiltRadians);
+                const tiltedZ = -y * Math.sin(tiltRadians) + z * Math.cos(tiltRadians);
+                
+                // Apply view rotation (from mouse dragging)
+                const rotatedX = x * Math.cos(viewRotationY) + tiltedZ * Math.sin(viewRotationY);
+                const rotatedZ = -x * Math.sin(viewRotationY) + tiltedZ * Math.cos(viewRotationY);
+                
+                const finalX = rotatedX * Math.cos(viewRotationX) - tiltedY * Math.sin(viewRotationX);
+                const finalY = rotatedX * Math.sin(viewRotationX) + tiltedY * Math.cos(viewRotationX);
+                
+                // Scale and return screen coords
+                return {
+                    x: centerX + finalX * scale,
+                    y: centerY + finalY * scale
+                };
+            }
+            
+            // Draw central bulge overlay (always centered)
+            if (showBulgeOverlay) {
+                const bulgeRadius = bulgeSize * 0.15 * scale;
+                
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, bulgeRadius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 200, 100, 0.15)';
+                ctx.fill();
+            }
+            
+            // Draw bar overlay
+            if (showBarOverlay) {
+                ctx.beginPath();
+                
+                // Create points for the bar's ellipse
+                const barWidth = barLength;
+                const barHeight = barLength * 0.2;
+                const numPoints = 36; // more points for smoother ellipse
+                
+                // Initial rotation based on galaxyRotationAngle
+                const baseRotation = galaxyRotationAngle;
+                
+                for (let i = 0; i < numPoints; i++) {
+                    const angle = (i / numPoints) * Math.PI * 2;
+                    // Get coordinates of ellipse point
+                    const rawX = Math.cos(angle) * barWidth;
+                    const rawY = Math.sin(angle) * barHeight;
+                    
+                    // Apply the base rotation to the entire bar
+                    const rotatedX = rawX * Math.cos(baseRotation) - rawY * Math.sin(baseRotation);
+                    const rotatedY = rawX * Math.sin(baseRotation) + rawY * Math.cos(baseRotation);
+                    
+                    const coords = applyTransformation(rotatedX, rotatedY, 0);
+                    
+                    if (i === 0) {
+                        ctx.moveTo(coords.x, coords.y);
+                    } else {
+                        ctx.lineTo(coords.x, coords.y);
+                    }
+                }
+                
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(100, 150, 255, 0.15)';
+                ctx.fill();
+            }
+            
+            // Draw spiral arms overlay
+            if (showArmsOverlay) {
+                for (let arm = 0; arm < armCount; arm++) {
+                    // For 2 arms, anchor them to the ends of the bar
+                    // For more arms, the first two are anchored to the bar, and others are distributed evenly
+                    let armOffset;
+                    
+                    if (armCount === 2) {
+                        // Two arms: position them at 0 and π radians (along the bar axis)
+                        armOffset = arm * Math.PI;
+                    } else if (arm < 2) {
+                        // For more than 2 arms: first two arms still connect to bar ends
+                        armOffset = arm * Math.PI;
+                    } else {
+                        // Remaining arms are distributed evenly around the circle
+                        // avoiding the positions of the first two arms
+                        const remainingArmCount = armCount - 2;
+                        const remainingArmIndex = arm - 2;
+                        armOffset = Math.PI * 2 * remainingArmIndex / remainingArmCount + Math.PI/2;
+                    }
+                    
+                    // Add global rotation
+                    armOffset += galaxyRotationAngle;
+                    
+                    // Create the arm's outer edge
+                    const outerEdge = [];
+                    const innerEdge = [];
+                    
+                    // For anchoring to the bar, start the spiral from the bar end
+                    const startRadius = (armCount <= 2 || arm < 2) ? barLength : 0.1;
+                    
+                    // Generate the spiral points
+                    for (let r = startRadius; r <= 0.5; r += 0.01) {
+                        // Include global rotation angle but with correct spiral direction
+                        // Use negative sign for the spiral angle to match the stars' movement direction
+                        const spiralAngle = -r * (1/spiralTightness) * 10;
+                        const angle = armOffset + spiralAngle;
+                        
+                        // Main spiral line
+                        const x = Math.cos(angle) * r;
+                        const y = Math.sin(angle) * r;
+                        outerEdge.push({x, y});
+                        
+                        // Width direction (perpendicular to spiral)
+                        const perpAngle = angle + Math.PI/2;
+                        const width = 0.03;
+                        
+                        // Add width perpendicular to spiral direction for inner edge
+                        const ix = Math.cos(angle) * r - Math.cos(perpAngle) * width;
+                        const iy = Math.sin(angle) * r - Math.sin(perpAngle) * width;
+                        innerEdge.push({x: ix, y: iy});
+                    }
+                    
+                    // Draw the arm as a filled path
+                    ctx.beginPath();
+                    
+                    // First point
+                    const start = applyTransformation(outerEdge[0].x, outerEdge[0].y, 0);
+                    ctx.moveTo(start.x, start.y);
+                    
+                    // Outer edge (from center outward)
+                    for (let i = 1; i < outerEdge.length; i++) {
+                        const point = applyTransformation(outerEdge[i].x, outerEdge[i].y, 0);
+                        ctx.lineTo(point.x, point.y);
+                    }
+                    
+                    // Inner edge (from outer edge back to center)
+                    for (let i = innerEdge.length - 1; i >= 0; i--) {
+                        const point = applyTransformation(innerEdge[i].x, innerEdge[i].y, 0);
+                        ctx.lineTo(point.x, point.y);
+                    }
+                    
+                    ctx.closePath();
+                    ctx.fillStyle = 'rgba(100, 255, 150, 0.15)';
+                    ctx.fill();
+                }
+            }
+        }
+        
+        // Animation loop
+        function animate() {
+            // Performance tracking
+            const currentTime = performance.now();
+            frameCount++;
+            
+            // Update galaxy rotation angle if rotation is active
+            if (isRotating) {
+                galaxyRotationAngle += rotationSpeed * 0.2;
+            }
+            
+            // Clear canvas with slight persistence for trails
+            if (trailEffect) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            } else {
+                ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+            }
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw background stars
+            drawBackgroundStars();
+            
+            // Draw structure overlays
+            drawOverlays();
+            
+            // Update and draw particles
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+            
+            // Update status indicator
+            document.getElementById('statusIndicator').textContent = `FPS: ${fps} | Particles: ${particleCount}`;
+            
+            requestAnimationFrame(animate);
+        }
+        
+        // Update FPS counter
+        function updateFPS() {
+            const currentTime = performance.now();
+            const elapsedTime = currentTime - lastFrameTime;
+            fps = Math.round((frameCount / elapsedTime) * 1000);
+            frameCount = 0;
+            lastFrameTime = currentTime;
+        }
+        
+        // Helper function to convert hex to RGB
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : {r: 0, g: 0, b: 255};
+        }
+        
+        // Mouse interaction handlers
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+            canvas.style.cursor = 'grabbing';
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const dragX = e.clientX - dragStartX;
+                const dragY = e.clientY - dragStartY;
+                
+                // Convert drag distance to rotation angles
+                viewRotationY += dragX * 0.005;
+                viewRotationX += dragY * 0.005;
+                
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+            }
+        });
+        
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+            canvas.style.cursor = 'grab';
+        });
+        
+        // Zoom with mouse wheel
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            zoomLevel = Math.max(0.5, Math.min(2, zoomLevel + delta));
+            document.getElementById('galaxyZoom').value = zoomLevel;
+            document.getElementById('galaxyZoomValue').textContent = zoomLevel.toFixed(1);
+        });
+        
+        // Initialize and start animation
+        createParticles();
+        createBackgroundStars();
+        animate();
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            createBackgroundStars(); // Recreate background stars for new dimensions
+        });
+        
+        // UI Controls - Core Settings
+        document.getElementById('particleCount').addEventListener('input', function() {
+            particleCount = parseInt(this.value);
+            document.getElementById('particleCountValue').textContent = this.value;
+            createParticles();
+        });
+        
+        document.getElementById('rotationSpeed').addEventListener('input', function() {
+            rotationSpeed = parseFloat(this.value);
+            document.getElementById('rotationSpeedValue').textContent = this.value;
+            // Update rotation speed for all particles
+            particles.forEach(particle => {
+                particle.rotationSpeed = (1 / (particle.distance * 5 + 0.1)) * rotationSpeed;
+            });
+        });
+        
+        document.getElementById('resetButton').addEventListener('click', function() {
+            // Reset controls to default values
+            document.getElementById('particleCount').value = 10000;
+            document.getElementById('barStrength').value = 0.1;
+            document.getElementById('rotationSpeed').value = 0.0005;
+            document.getElementById('spiralTightness').value = 0.25;
+            document.getElementById('bulgeSize').value = 0.3;
+            document.getElementById('particleSize').value = 1;
+            document.getElementById('galaxyZoom').value = 1;
+            document.getElementById('tiltAngle').value = 0;
+            document.getElementById('armCount').value = 2;
+            document.getElementById('galaxyThickness').value = 0.1;
+            document.getElementById('armStrength').value = 0.05;
+            document.getElementById('barLength').value = 0.3;
+            
+            // Reset checkboxes
+            document.getElementById('showDustLanes').checked = false;
+            document.getElementById('showBackgroundStars').checked = false;
+            document.getElementById('trailEffect').checked = false;
+            document.getElementById('showBarOverlay').checked = false;
+            document.getElementById('showArmsOverlay').checked = false;
+            document.getElementById('showBulgeOverlay').checked = false;
+            
+            // Update displayed values
+            document.getElementById('particleCountValue').textContent = 10000;
+            document.getElementById('barStrengthValue').textContent = 0.1;
+            document.getElementById('rotationSpeedValue').textContent = 0.0005;
+            document.getElementById('spiralTightnessValue').textContent = 0.25;
+            document.getElementById('bulgeSizeValue').textContent = 0.3;
+            document.getElementById('particleSizeValue').textContent = 1;
+            document.getElementById('galaxyZoomValue').textContent = 1;
+            document.getElementById('tiltAngleValue').textContent = 0;
+            document.getElementById('armCountValue').textContent = 2;
+            document.getElementById('galaxyThicknessValue').textContent = 0.1;
+            document.getElementById('armStrengthValue').textContent = 0.05;
+            document.getElementById('barLengthValue').textContent = 0.3;
+            
+            // Reset parameters
+            particleCount = 10000;
+            barStrength = 0.1;
+            rotationSpeed = 0.0005;
+            spiralTightness = 0.25;
+            bulgeSize = 0.3;
+            particleSizeMultiplier = 1;
+            zoomLevel = 1;
+            tiltAngle = 0;
+            isRotating = true;
+            showDustLanes = false;
+            showBackgroundStars = false;
+            trailEffect = false;
+            armCount = 2;
+            galaxyThickness = 0.1;
+            armStrength = 0.05;
+            barLength = 0.3;
+            showBarOverlay = false;
+            showArmsOverlay = false;
+            showBulgeOverlay = false;
+            
+            // Reset view rotations
+            viewRotationX = 0;
+            viewRotationY = 0;
+            galaxyRotationAngle = 0;
+            
+            document.getElementById('toggleRotation').textContent = 'Pause Rotation';
+            
+            // Recreate particles and background stars
+            createParticles();
+            createBackgroundStars();
+        });
+        
+        document.getElementById('toggleRotation').addEventListener('click', function() {
+            isRotating = !isRotating;
+            this.textContent = isRotating ? 'Pause Rotation' : 'Resume Rotation';
+        });
+        
+        // UI Controls - Galaxy Structure
+        document.getElementById('barStrength').addEventListener('input', function() {
+            barStrength = parseFloat(this.value);
+            document.getElementById('barStrengthValue').textContent = this.value;
+        });
+        
+        document.getElementById('barLength').addEventListener('input', function() {
+            barLength = parseFloat(this.value);
+            document.getElementById('barLengthValue').textContent = this.value;
+            createParticles(); // Recreate particles for bar length change
+        });
+        
+        document.getElementById('bulgeSize').addEventListener('input', function() {
+            bulgeSize = parseFloat(this.value);
+            document.getElementById('bulgeSizeValue').textContent = this.value;
+            createParticles(); // Recreate particles for bulge size change
+        });
+        
+        document.getElementById('galaxyThickness').addEventListener('input', function() {
+            galaxyThickness = parseFloat(this.value);
+            document.getElementById('galaxyThicknessValue').textContent = this.value;
+            createParticles(); // Recreate particles for thickness change
+        });
+        
+        // UI Controls - Spiral Arms
+        document.getElementById('armCount').addEventListener('input', function() {
+            armCount = parseInt(this.value);
+            document.getElementById('armCountValue').textContent = this.value;
+            createParticles(); // Recreate particles for arm count change
+        });
+        
+        document.getElementById('spiralTightness').addEventListener('input', function() {
+            spiralTightness = parseFloat(this.value);
+            document.getElementById('spiralTightnessValue').textContent = this.value;
+        });
+        
+        document.getElementById('armStrength').addEventListener('input', function() {
+            armStrength = parseFloat(this.value);
+            document.getElementById('armStrengthValue').textContent = this.value;
+        });
+        
+        // UI Controls - Visual Settings
+        document.getElementById('particleSize').addEventListener('input', function() {
+            particleSizeMultiplier = parseFloat(this.value);
+            document.getElementById('particleSizeValue').textContent = this.value;
+            createParticles(); // Recreate particles for size change
+        });
+        
+        document.getElementById('galaxyZoom').addEventListener('input', function() {
+            zoomLevel = parseFloat(this.value);
+            document.getElementById('galaxyZoomValue').textContent = this.value;
+        });
+        
+        document.getElementById('tiltAngle').addEventListener('input', function() {
+            tiltAngle = parseInt(this.value);
+            document.getElementById('tiltAngleValue').textContent = this.value;
+        });
+        
+        document.getElementById('showDustLanes').addEventListener('change', function() {
+            showDustLanes = this.checked;
+            createParticles(); // Recreate particles to add/remove dust lanes
+        });
+        
+        document.getElementById('showBackgroundStars').addEventListener('change', function() {
+            showBackgroundStars = this.checked;
+            if (showBackgroundStars && backgroundStars.length === 0) {
+                createBackgroundStars();
+            }
+        });
+        
+        document.getElementById('trailEffect').addEventListener('change', function() {
+            trailEffect = this.checked;
+        });
+        
+        document.getElementById('showBarOverlay').addEventListener('change', function() {
+            showBarOverlay = this.checked;
+        });
+        
+        document.getElementById('showArmsOverlay').addEventListener('change', function() {
+            showArmsOverlay = this.checked;
+        });
+        
+        document.getElementById('showBulgeOverlay').addEventListener('change', function() {
+            showBulgeOverlay = this.checked;
+        });
+        
+        // Color options
+        document.querySelectorAll('.color-option').forEach(option => {
+            option.addEventListener('click', function() {
+                // Remove active class from all options
+                document.querySelectorAll('.color-option').forEach(opt => {
+                    opt.classList.remove('active');
+                });
+                
+                // Add active class to selected option
+                this.classList.add('active');
+                
+                // Set galaxy color
+                galaxyColor = this.getAttribute('data-color');
+            });
+        });
+        
+        // Info panel
+        document.getElementById('showInfo').addEventListener('click', function() {
+            document.getElementById('infoPanel').style.display = 'block';
+        });
+        
+        document.getElementById('closeInfo').addEventListener('click', function() {
+            document.getElementById('infoPanel').style.display = 'none';
+        });
+        
+        // Create tooltip element
+        const tooltip = document.createElement('div');
+        tooltip.className = 'tooltip';
+        document.body.appendChild(tooltip);
+        
+        // Tooltip handling with delay
+        const tooltipDelay = 300; // 300ms delay
+        let tooltipTimer = null;
+        
+        // Show tooltip after delay
+        document.querySelectorAll('[data-tooltip]').forEach(element => {
+            element.addEventListener('mouseenter', function() {
+                const el = this;
+                const tooltipText = el.getAttribute('data-tooltip');
+                
+                clearTimeout(tooltipTimer);
+                
+                tooltipTimer = setTimeout(function() {
+                    // Position the tooltip at the element's position
+                    const rect = el.getBoundingClientRect();
+                    
+                    tooltip.textContent = tooltipText;
+                    tooltip.style.display = 'block';
+                    tooltip.style.top = (rect.top - tooltip.offsetHeight - 5) + 'px';
+                    tooltip.style.left = (rect.left + rect.width/2 - tooltip.offsetWidth/2) + 'px';
+                }, tooltipDelay);
+            });
+            
+            element.addEventListener('mouseleave', function() {
+                clearTimeout(tooltipTimer);
+                tooltip.style.display = 'none';
+            });
+        });
+        
+        // Hide tooltip when clicking anywhere
+        document.addEventListener('click', function() {
+            clearTimeout(tooltipTimer);
+            tooltip.style.display = 'none';
+        });
+    </script>
+</body>
+</html>
