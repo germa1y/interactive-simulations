@@ -703,6 +703,32 @@ document.addEventListener('DOMContentLoaded', function() {
         // Setup wall SVG dropdown
         const wallSVGSelector = document.getElementById('wallSVG');
         if (wallSVGSelector) {
+            // Manually populate the dropdown with SVG files
+            // Clear existing options
+            wallSVGSelector.innerHTML = '';
+            
+            // Add a placeholder option
+            const placeholderOption = document.createElement('option');
+            placeholderOption.value = '';
+            placeholderOption.textContent = 'Select a wall design...';
+            placeholderOption.selected = true;
+            wallSVGSelector.appendChild(placeholderOption);
+            
+            // Known SVG files in the public directory
+            const svgFiles = [
+                { name: 'Sample Walls', path: './sample-walls.svg' },
+                { name: 'Sample Walls with Curves', path: './sample-walls-curves.svg' },
+                { name: 'Curves Sample', path: './curves-sample.svg' }
+            ];
+            
+            // Add options for each SVG file
+            svgFiles.forEach(file => {
+                const option = document.createElement('option');
+                option.value = file.path;
+                option.textContent = file.name;
+                wallSVGSelector.appendChild(option);
+            });
+            
             wallSVGSelector.addEventListener('change', function() {
                 if (this.value) {
                     // Load the selected SVG file
