@@ -126,6 +126,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 const settings = {};
                 settings[property] = parseFloat(value);
                 WallSystem.updateSettings(settings);
+            },
+            loadWallSVG: function(svgPath) {
+                // Load the selected SVG file
+                fetch(svgPath)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.text();
+                    })
+                    .then(svgText => {
+                        const wallCount = WallSystem.loadFromSVG(svgText);
+                        console.log(`Loaded ${wallCount} wall segments from SVG`);
+                    })
+                    .catch(error => {
+                        console.error('Error loading SVG file:', error);
+                    });
             }
         });
         console.log("MenuSystem initialized");
