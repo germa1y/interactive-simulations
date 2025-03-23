@@ -14,13 +14,8 @@ const TouchHandler = (function() {
         onTouchMove: null,
         onTouchEnd: null,
         onDoubleTap: null,
-        onSwarmPlacement: null,  // New callback for placing swarms
         isAttractMode: null
     };
-    
-    // State for handling swarm placement
-    let placingSwarm = false;
-    let swarmPlacementLetter = null;
     
     // Throttle function for performance optimization
     function throttle(func, limit) {
@@ -45,19 +40,6 @@ const TouchHandler = (function() {
             touchX = x;
             touchY = y;
             touchActive = true;
-            
-            // Check if a swarm placement letter is active
-            if (placingSwarm && swarmPlacementLetter && callbacks.onSwarmPlacement) {
-                // Call the swarm placement callback
-                callbacks.onSwarmPlacement(x, y);
-                
-                // Clear swarm placement state
-                placingSwarm = false;
-                swarmPlacementLetter = null;
-                
-                // Skip other touch processing
-                return;
-            }
             
             // Detect double tap
             const currentTime = new Date().getTime();
@@ -252,33 +234,6 @@ const TouchHandler = (function() {
                 y: touchY,
                 active: touchActive
             };
-        },
-        
-        // Set swarm placement mode
-        setSwarmPlacementMode: function(isActive, letter) {
-            placingSwarm = isActive;
-            swarmPlacementLetter = letter;
-        },
-        
-        // Check if in swarm placement mode
-        isInSwarmPlacementMode: function() {
-            return placingSwarm;
-        },
-        
-        // Create a visual cue for swarm placement
-        createSwarmPlacementCue: function(x, y, letter) {
-            // Create a pulsing effect at the position
-            const cue = document.createElement('div');
-            cue.className = 'swarm-letter';
-            cue.textContent = letter;
-            cue.style.left = `${x}px`;
-            cue.style.top = `${y}px`;
-            document.body.appendChild(cue);
-            
-            // Add pulsing animation
-            cue.style.animation = 'pulse-animation 1s infinite ease-in-out';
-            
-            return cue;
         }
     };
 })();

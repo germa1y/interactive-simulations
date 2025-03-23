@@ -53,7 +53,7 @@ const Presets = {
             trailLength: 0
         },
         fizzyOrb: {
-            name: "Fizzy Orb",
+            name: "Fizzy Pop",
             zotCount: 25,
             speed: 2,
             separation: 0.1,
@@ -173,6 +173,37 @@ const Presets = {
                 const lightness = 20 + Math.random() * 60;
                 return `hsl(0, 0%, ${lightness}%)`;
             }
+        },
+        colorblind: {
+            name: "Colorblind-Friendly",
+            getColor: function() {
+                // Colors chosen for deuteranopia and protanopia visibility
+                const colorblindSafe = [
+                    '211, 100%, 50%',  // Blue
+                    '60, 100%, 50%',   // Yellow 
+                    '180, 100%, 30%',  // Teal
+                    '27, 100%, 50%',   // Orange
+                    '270, 100%, 60%'   // Purple
+                ];
+                return `hsl(${colorblindSafe[Math.floor(Math.random() * colorblindSafe.length)]})`;
+            }
+        },
+        bumble: {
+            name: "Bumble",
+            getColor: function() {
+                // 50% chance for yellow-gold colors, 50% chance for greys
+                if (Math.random() < 0.5) {
+                    // Yellow to gold gradient (hue range 40-55)
+                    const hue = 40 + Math.random() * 15; // Yellow to gold hue range
+                    const saturation = 70 + Math.random() * 30; // High saturation
+                    const lightness = 50 + Math.random() * 40; // Medium to bright
+                    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+                } else {
+                    // Grey to light black (very dark grey)
+                    const lightness = 10 + Math.random() * 40; // Dark to medium greys (10-50%)
+                    return `hsl(0, 0%, ${lightness}%)`;
+                }
+            }
         }
     },
     
@@ -185,7 +216,7 @@ const Presets = {
             speed: 2,
             color: 'rgba(255, 250, 230, 0.9)',
             glowColor: 'rgba(255, 215, 0, 0.6)',
-            glowSize: 3,  // Multiplier of orbie size
+            glowSize: 1.5,  // Multiplier of orbie size
             pulseSpeed: 0.05,
             pulseIntensity: 0.4,
             influenceRadius: 100,

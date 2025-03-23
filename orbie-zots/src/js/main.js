@@ -1,30 +1,4 @@
-// Handle canvas click for swarm placement
-    canvas.addEventListener('click', function(e) {
-        // Only handle if in swarm placement mode
-        if (ParticleSystem.getActiveSwarmPlacement()) {
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            // Confirm placement at click position
-            const config = getSwarmConfigFromUI();
-            const swarmId = ParticleSystem.confirmSwarmPlacement(config);
-            
-            if (swarmId) {
-                // Update the swarm list
-                updateSwarmList();
-                
-                // Reset the Create Swarm button
-                const createButton = document.getElementById('createSwarmButton');
-                if (createButton) {
-                    createButton.textContent = "Create Swarm";
-                }
-                
-                // Reset touch handler
-                TouchHandler.setSwarmPlacementMode(false, null);
-            }
-        }
-    });// main.js - Application initialization
+// main.js - Application initialization
 document.addEventListener('DOMContentLoaded', function() {
     const canvas = document.getElementById('canvas');
     const menuToggle = document.getElementById('menuToggle');
@@ -38,6 +12,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize wall system
     WallSystem.init();
+    
+    // Start demo mode
+    if (typeof DemoMode !== 'undefined') {
+        console.log("Starting zot swarm demo mode...");
+        setTimeout(() => {
+            DemoMode.start();
+        }, 200); // Short delay to ensure all systems are fully initialized
+    } else {
+        console.error("Demo Mode module not available");
+    }
     
     // Add direct event listeners to menu toggle as a backup
     if (menuToggle && controlsPanel) {
@@ -76,22 +60,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // This function allows the TouchHandler to check the current mode
             return ParticleSystem.isAttractMode();
         },
-        onSwarmPlacement: function(x, y) {
-            // Create a swarm at the touch position
-            const config = getSwarmConfigFromUI();
-            const swarmId = ParticleSystem.confirmSwarmPlacement(config);
-            
-            if (swarmId) {
-                // Update the swarm list
-                updateSwarmList();
-                
-                // Reset the Create Swarm button
-                const createButton = document.getElementById('createSwarmButton');
-                if (createButton) {
-                    createButton.textContent = "Create Swarm";
-                }
-            }
-        }
     });
     
     // Initialize menu system with callbacks
@@ -119,7 +87,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 WallSystem.clearWalls();
             },
             changeColorTheme: function(theme) {
-                ColorSystem.setTheme(theme);
+                ColorThemes.setTheme(theme);
             },
             updateWallSettings: function(property, value) {
                 // Update wall settings
@@ -156,42 +124,29 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup wall controls
     setupWallControls();
     
-    // Handle menu toggle
+    // Event handlers for menu interactions
     menuToggle.addEventListener('click', function() {
         controlsPanel.classList.toggle('collapsed');
-        
-        // If closing the menu and there's an active swarm placement, cancel it
-        if (controlsPanel.classList.contains('collapsed') && ParticleSystem.getActiveSwarmPlacement()) {
-            ParticleSystem.cancelSwarmPlacement();
-            TouchHandler.setSwarmPlacementMode(false, null);
-            updateCreateSwarmUI();
-        }
     });
     
     // Properly handle touch behavior on menu toggle button
     menuToggle.addEventListener('touchstart', function(e) {
         e.preventDefault();
         controlsPanel.classList.toggle('collapsed');
-        
-        // If closing the menu and there's an active swarm placement, cancel it
-        if (controlsPanel.classList.contains('collapsed') && ParticleSystem.getActiveSwarmPlacement()) {
-            ParticleSystem.cancelSwarmPlacement();
-            TouchHandler.setSwarmPlacementMode(false, null);
-            updateCreateSwarmUI();
-        }
         e.stopPropagation();
     }, { passive: false });
     
-    // Cancel swarm placement when clicking/touching outside the menu
-    document.addEventListener('click', function(e) {
-        // Only if there's an active swarm placement and click is outside controls
-        if (ParticleSystem.getActiveSwarmPlacement() && 
-            !controlsPanel.contains(e.target) && 
-            e.target !== menuToggle) {
-            
-            ParticleSystem.cancelSwarmPlacement();
-            TouchHandler.setSwarmPlacementMode(false, null);
-            updateCreateSwarmUI();
+    // Close controls panel with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            controlsPanel.classList.add('collapsed');
+        }
+    });
+    
+    // Cancel any active placement if we close the controls panel while in placement mode
+    controlsPanel.addEventListener('transitionend', function(e) {
+        if (e.propertyName === 'right' && 
+            controlsPanel.classList.contains('collapsed')) {
         }
     });
     
@@ -302,12 +257,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup Zot Swarm controls
     function setupZotSwarmControls() {
         // Regular sliders
-        setupRangeInput('newSwarmZotCount', () => updateCreateSwarmUI());
-        setupRangeInput('newSwarmSpeed', () => updateCreateSwarmUI());
-        setupRangeInput('newSwarmSeparation', () => updateCreateSwarmUI());
-        setupRangeInput('newSwarmAlignment', () => updateCreateSwarmUI());
-        setupRangeInput('newSwarmCohesion', () => updateCreateSwarmUI());
-        setupRangeInput('newSwarmPerception', () => updateCreateSwarmUI());
+        setupRangeInput('newSwarmZotCount');
+        setupRangeInput('newSwarmSpeed');
+        setupRangeInput('newSwarmSeparation');
+        setupRangeInput('newSwarmAlignment');
+        setupRangeInput('newSwarmCohesion');
+        setupRangeInput('newSwarmPerception');
         
         // Min/Max size range slider
         setupDualRangeSlider('newSwarmMinSize', 'newSwarmMaxSize');
@@ -316,8 +271,44 @@ document.addEventListener('DOMContentLoaded', function() {
         const presetSelect = document.getElementById('swarmPreset');
         if (presetSelect) {
             presetSelect.addEventListener('change', function() {
-                if (this.value === 'custom') {
-                    // Keep current values
+                if (this.value === 'random') {
+                    // Apply random values to UI but keep count=25 and speed=2
+                    const randomConfig = {
+                        zotCount: 25, // Keep fixed at 25
+                        speed: 2,     // Keep fixed at 2
+                        separation: Math.random() * 4, // Random between 0-4
+                        alignment: Math.random() * 3,  // Random between 0-3
+                        cohesion: Math.random() * 5,   // Random between 0-5
+                        perception: Math.floor(Math.random() * 180) + 20 // Random between 20-200
+                    };
+                    
+                    // Apply to UI
+                    document.getElementById('newSwarmZotCount').value = randomConfig.zotCount;
+                    document.getElementById('newSwarmSpeed').value = randomConfig.speed;
+                    document.getElementById('newSwarmSeparation').value = randomConfig.separation;
+                    document.getElementById('newSwarmAlignment').value = randomConfig.alignment;
+                    document.getElementById('newSwarmCohesion').value = randomConfig.cohesion;
+                    document.getElementById('newSwarmPerception').value = randomConfig.perception;
+                    
+                    // Also randomize size range (but keep sensible)
+                    const minSize = 0.5 + Math.random() * 2; // Random between 0.5-2.5
+                    const maxSize = minSize + 1 + Math.random() * 3; // At least 1 larger than min
+                    document.getElementById('newSwarmMinSize').value = minSize;
+                    document.getElementById('newSwarmMaxSize').value = maxSize;
+                    
+                    // Update displayed values
+                    document.getElementById('newSwarmZotCountValue').textContent = randomConfig.zotCount;
+                    document.getElementById('newSwarmSpeedValue').textContent = randomConfig.speed.toFixed(1);
+                    document.getElementById('newSwarmSeparationValue').textContent = randomConfig.separation.toFixed(1);
+                    document.getElementById('newSwarmAlignmentValue').textContent = randomConfig.alignment.toFixed(2);
+                    document.getElementById('newSwarmCohesionValue').textContent = randomConfig.cohesion.toFixed(1);
+                    document.getElementById('newSwarmPerceptionValue').textContent = randomConfig.perception;
+                    document.getElementById('newSwarmMinSizeValue').textContent = minSize.toFixed(1);
+                    document.getElementById('newSwarmMaxSizeValue').textContent = maxSize.toFixed(1);
+                    
+                    // Also update the dual slider visuals
+                    updateDualSliderVisuals('newSwarmMinSize', 'newSwarmMaxSize');
+                    
                     return;
                 }
                 
@@ -342,53 +333,169 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Color theme selector
-        const colorPresets = document.querySelectorAll('.color-preset');
-        colorPresets.forEach(preset => {
-            preset.addEventListener('click', function() {
-                // Remove active class from all presets
-                colorPresets.forEach(p => p.classList.remove('active'));
+        // Helper function to update dual slider visuals after changing values
+        function updateDualSliderVisuals(minId, maxId) {
+            const minSlider = document.getElementById(minId);
+            const maxSlider = document.getElementById(maxId);
+            
+            if (minSlider && maxSlider) {
+                const minVal = parseFloat(minSlider.value);
+                const maxVal = parseFloat(maxSlider.value);
                 
-                // Add active class to clicked preset
+                // Calculate percentage of position along track
+                const min = parseFloat(minSlider.min);
+                const max = parseFloat(minSlider.max);
+                const range = max - min;
+                
+                const minPercent = ((minVal - min) / range) * 100;
+                const maxPercent = ((maxVal - min) / range) * 100;
+                
+                // Set the min/max slider background to show selected range
+                const sliderContainer = minSlider.closest('.range-slider-container');
+                if (sliderContainer) {
+                    const sliderTrack = sliderContainer.querySelector('.range-slider');
+                    if (sliderTrack) {
+                        sliderTrack.style.background = `linear-gradient(
+                            to right,
+                            #444 0%, #444 ${minPercent}%,
+                            #4CAF50 ${minPercent}%, #4CAF50 ${maxPercent}%,
+                            #444 ${maxPercent}%, #444 100%
+                        )`;
+                    }
+                }
+            }
+        }
+        
+        // Create and setup the swarm color theme tooltips
+        const themeContainer = document.querySelector('.color-presets-container');
+        if (themeContainer) {
+            // Add click handler
+            themeContainer.addEventListener('click', function(e) {
+                const themeBtn = e.target.closest('.color-preset');
+                if (themeBtn) {
+                    // Set all buttons to inactive
+                    themeContainer.querySelectorAll('.color-preset').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    
+                    // Set clicked button to active
+                    themeBtn.classList.add('active');
+                    
+                    // Show tooltip with theme name
+                    const themeName = themeBtn.dataset.theme;
+                    showThemeNameTooltip(themeName, themeBtn);
+                    
+                    // Set the color theme
+                    if (ColorThemes && typeof ColorThemes.setTheme === 'function') {
+                        ColorThemes.setTheme(themeName);
+                    }
+                }
+            });
+        }
+        
+        // Add direct touch handlers to each color theme button
+        document.querySelectorAll('.color-preset').forEach(button => {
+            button.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Get the container to update all buttons
+                const container = this.closest('.color-presets-container') || this.parentElement;
+                
+                // Set all buttons to inactive
+                if (container) {
+                    container.querySelectorAll('.color-preset').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                }
+                
+                // Set this button to active
                 this.classList.add('active');
                 
-                // Update current color theme
-                updateCreateSwarmUI();
-            });
+                // Show tooltip with theme name
+                const themeName = this.dataset.theme;
+                showThemeNameTooltip(themeName, this);
+                
+                // Set the color theme
+                if (ColorThemes && typeof ColorThemes.setTheme === 'function') {
+                    ColorThemes.setTheme(themeName);
+                }
+                
+                console.log('Color theme button touched:', themeName);
+            }, { passive: false });
         });
+        
+        // Implementation of the showThemeNameTooltip function
+        function showThemeNameTooltip(themeName, element) {
+            // Remove any existing tooltips first
+            const existingTooltips = document.querySelectorAll('.theme-name-tooltip');
+            existingTooltips.forEach(tooltip => tooltip.remove());
+            
+            // Get the tooltip text from data-tooltip attribute or use the theme name
+            const tooltipText = element.dataset.tooltip || themeName;
+            
+            // Create a new tooltip element
+            const tooltip = document.createElement('div');
+            tooltip.className = 'theme-name-tooltip';
+            tooltip.textContent = tooltipText;
+            
+            // Position the tooltip above the element
+            const rect = element.getBoundingClientRect();
+            tooltip.style.position = 'fixed';
+            tooltip.style.left = rect.left + (rect.width / 2) + 'px';
+            tooltip.style.top = rect.top - 25 + 'px';
+            tooltip.style.transform = 'translateX(-50%)';
+            tooltip.style.background = 'rgba(0, 0, 0, 0.7)';
+            tooltip.style.color = 'white';
+            tooltip.style.padding = '4px 8px';
+            tooltip.style.borderRadius = '4px';
+            tooltip.style.fontSize = '12px';
+            tooltip.style.pointerEvents = 'none';
+            tooltip.style.zIndex = '1000';
+            
+            // Add to the document
+            document.body.appendChild(tooltip);
+            
+            // Automatically remove the tooltip after 1.5 seconds
+            setTimeout(() => {
+                if (tooltip.parentNode) {
+                    tooltip.parentNode.removeChild(tooltip);
+                }
+            }, 1500);
+        }
         
         // Create Swarm button
         const createSwarmButton = document.getElementById('createSwarmButton');
         if (createSwarmButton) {
             createSwarmButton.addEventListener('click', function() {
-                const activeSwarm = ParticleSystem.getActiveSwarmPlacement();
+                // Create a new swarm at center of canvas
+                const config = getSwarmConfigFromUI();
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
                 
-                if (activeSwarm) {
-                    // Confirm placement and create swarm
-                    const config = getSwarmConfigFromUI();
-                    const swarmId = ParticleSystem.confirmSwarmPlacement(config);
-                    
-                    if (swarmId) {
-                        // Update the swarm list
-                        updateSwarmList();
-                        
-                        // Reset button text
-                        this.textContent = "Create Swarm";
-                        
-                        // Reset touch handler placement mode
-                        TouchHandler.setSwarmPlacementMode(false, null);
-                    }
-                } else {
-                    // Create a new placement indicator
-                    const placement = ParticleSystem.createSwarmPlacementIndicator(getSwarmConfigFromUI());
-                    
-                    // Change button text
-                    this.textContent = "Confirm Placement";
-                    
-                    // Set touch handler to swarm placement mode
-                    if (placement) {
-                        TouchHandler.setSwarmPlacementMode(true, placement.id);
-                    }
+                // Add position to config
+                config.centerX = centerX;
+                config.centerY = centerY;
+                
+                // Create the swarm directly
+                const swarmId = ParticleSystem.createZotSwarm(config);
+                
+                if (swarmId) {
+                    // Update the swarm list
+                    updateSwarmList();
+                }
+            });
+        }
+        
+        // Clear Swarms button
+        const clearSwarmsButton = document.getElementById('clearSwarmsButton');
+        if (clearSwarmsButton) {
+            clearSwarmsButton.addEventListener('click', function() {
+                if (!this.classList.contains('disabled')) {
+                    // Remove all zot swarms
+                    ParticleSystem.removeAllZotSwarms();
+                    // Update the swarm list
+                    updateSwarmList();
                 }
             });
         }
@@ -549,82 +656,109 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Get the current swarm configuration from UI inputs
+    // Get configuration from the UI elements
     function getSwarmConfigFromUI() {
-        // Get the selected color theme
-        const activeTheme = document.querySelector('.color-preset.active');
-        const colorTheme = activeTheme ? activeTheme.getAttribute('data-theme') : 'blue';
+        const config = {};
         
-        return {
-            zotCount: parseInt(document.getElementById('newSwarmZotCount').value),
-            minSize: parseFloat(document.getElementById('newSwarmMinSize').value),
-            maxSize: parseFloat(document.getElementById('newSwarmMaxSize').value),
-            speed: parseFloat(document.getElementById('newSwarmSpeed').value),
-            separation: parseFloat(document.getElementById('newSwarmSeparation').value),
-            alignment: parseFloat(document.getElementById('newSwarmAlignment').value),
-            cohesion: parseFloat(document.getElementById('newSwarmCohesion').value),
-            perception: parseInt(document.getElementById('newSwarmPerception').value),
-            trailLength: 0, // No trails by default
-            colorTheme: colorTheme
-        };
+        // Get zot count
+        const zotCountSlider = document.getElementById('newSwarmZotCount');
+        if (zotCountSlider) {
+            config.zotCount = parseInt(zotCountSlider.value, 10);
+        }
+        
+        // Get color theme
+        const activeThemeBtn = document.querySelector('#colorPresets .color-preset.active');
+        if (activeThemeBtn) {
+            config.colorTheme = activeThemeBtn.dataset.theme;
+        } else {
+            // Fallback to default theme
+            config.colorTheme = 'rainbow';
+        }
+        
+        // Get size range
+        config.minSize = parseFloat(document.getElementById('newSwarmMinSize')?.value || 3);
+        config.maxSize = parseFloat(document.getElementById('newSwarmMaxSize')?.value || 8);
+        
+        // Get other properties
+        config.speed = parseFloat(document.getElementById('newSwarmSpeed')?.value || 2);
+        config.separation = parseFloat(document.getElementById('newSwarmSeparation')?.value || 25);
+        config.alignment = parseFloat(document.getElementById('newSwarmAlignment')?.value || 0.1);
+        config.cohesion = parseFloat(document.getElementById('newSwarmCohesion')?.value || 0.1);
+        config.perception = parseFloat(document.getElementById('newSwarmPerception')?.value || 50);
+        
+        return config;
     }
     
-    // Update the Create Swarm UI when configuration changes
+    // Function no longer needed since we removed confirm placement
     function updateCreateSwarmUI() {
-        // Reset the Create Swarm button if there's no active placement
-        const activeSwarm = ParticleSystem.getActiveSwarmPlacement();
-        const createButton = document.getElementById('createSwarmButton');
-        
-        if (createButton) {
-            createButton.textContent = activeSwarm ? "Confirm Placement" : "Create Swarm";
-            
-            // Update TouchHandler swarm placement mode
-            TouchHandler.setSwarmPlacementMode(!!activeSwarm, activeSwarm ? activeSwarm.id : null);
+        // This function is no longer needed
+    }
+    
+    // Setup function to initialize UI just once 
+    function setupSwarmManagementUI() {
+        const removeButton = document.getElementById('removeSwarmBtn');
+        if (removeButton && !removeButton.hasEventListener) {
+            removeButton.addEventListener('click', function() {
+                const swarmDropdown = document.getElementById('swarmList');
+                const selectedSwarmId = swarmDropdown.value;
+                if (selectedSwarmId) {
+                    ParticleSystem.removeZotSwarm(selectedSwarmId);
+                    updateSwarmList();
+                }
+            });
+            removeButton.hasEventListener = true;
         }
     }
     
     // Update the list of active swarms
     function updateSwarmList() {
-        const swarmList = document.getElementById('swarmList');
-        if (!swarmList) return;
+        const swarmDropdown = document.getElementById('swarmList');
+        const removeButton = document.getElementById('removeSwarmBtn');
+        const clearSwarmsButton = document.getElementById('clearSwarmsButton');
+        
+        if (!swarmDropdown || !removeButton) return;
+        
+        // Setup event handlers only once
+        setupSwarmManagementUI();
         
         // Get the current swarms
         const swarms = ParticleSystem.getZotSwarms();
         
-        // Clear the list
-        swarmList.innerHTML = '';
+        // Clear the dropdown
+        swarmDropdown.innerHTML = '';
         
-        // If no swarms, show message
+        // Disable the remove button if no swarms
         if (swarms.length === 0) {
-            swarmList.innerHTML = '<div class="swarm-list-item"><span>No swarms created yet</span></div>';
+            const noSwarmsOption = document.createElement('option');
+            noSwarmsOption.value = '';
+            noSwarmsOption.textContent = 'No swarms created yet';
+            swarmDropdown.appendChild(noSwarmsOption);
+            
+            removeButton.disabled = true;
+            
+            // Disable the clear swarms button
+            if (clearSwarmsButton) {
+                clearSwarmsButton.classList.add('disabled');
+            }
+            
             return;
+        } else {
+            removeButton.disabled = false;
+            
+            // Enable the clear swarms button
+            if (clearSwarmsButton) {
+                clearSwarmsButton.classList.remove('disabled');
+            }
         }
         
-        // Add each swarm to the list
+        // Add each swarm to the dropdown
         swarms.forEach(swarm => {
-            const swarmItem = document.createElement('div');
-            swarmItem.className = 'swarm-list-item';
-            
+            const option = document.createElement('option');
+            option.value = swarm.id;
             const colorThemeName = Presets.colorThemes[swarm.settings.colorTheme]?.name || 'Custom';
-            
-            swarmItem.innerHTML = `
-                <span>${colorThemeName} Swarm (${swarm.zotCount} zots)</span>
-                <button class="remove-swarm" data-id="${swarm.id}">Remove</button>
-            `;
-            
-            swarmList.appendChild(swarmItem);
-        });
-        
-        // Add event listeners to remove buttons
-        const removeButtons = swarmList.querySelectorAll('.remove-swarm');
-        removeButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const swarmId = this.getAttribute('data-id');
-                if (swarmId) {
-                    ParticleSystem.removeZotSwarm(swarmId);
-                    updateSwarmList();
-                }
-            });
+            const presetName = swarm.settings.presetName || 'Custom';
+            option.textContent = `${presetName} ${colorThemeName} (${swarm.zotCount})`;
+            swarmDropdown.appendChild(option);
         });
     }
     
@@ -634,10 +768,10 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('orbieSize').value = ParticleSystem.getOrbieSettings().size || 12;
         document.getElementById('orbieSizeValue').textContent = parseFloat(document.getElementById('orbieSize').value).toFixed(1);
         
-        document.getElementById('orbieGlowSize').value = ParticleSystem.getOrbieSettings().glowSize || 3;
+        document.getElementById('orbieGlowSize').value = ParticleSystem.getOrbieSettings().glowSize || 1.5;
         document.getElementById('orbieGlowSizeValue').textContent = parseFloat(document.getElementById('orbieGlowSize').value).toFixed(1);
         
-        document.getElementById('orbieGlowOpacity').value = ParticleSystem.getOrbieSettings().glowOpacity || 0.7;
+        document.getElementById('orbieGlowOpacity').value = ParticleSystem.getOrbieSettings().glowOpacity || 0.2;
         document.getElementById('orbieGlowOpacityValue').textContent = parseFloat(document.getElementById('orbieGlowOpacity').value).toFixed(2);
         
         document.getElementById('orbiePulseSpeed').value = ParticleSystem.getOrbieSettings().pulseSpeed || 0.05;
@@ -680,8 +814,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update swarm list
         updateSwarmList();
         
-        // Update create swarm UI
-        updateCreateSwarmUI();
+        // No need for updateCreateSwarmUI call anymore
     }
     
     // Setup wall-related controls

@@ -14,6 +14,7 @@ const jsFiles = [
     'menu.js',       // MenuSystem needs to be available before it's used 
     'particles.js',  // ParticleSystem depends on the above
     'walls.js',      // Wall system should be after particles.js
+    'demoMode.js',   // Demo mode needs to be before main.js
     'main.js'        // Main.js should always be last as it uses all the above
 ];
 

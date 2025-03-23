@@ -12,7 +12,7 @@
     
     <!-- Controls Panel -->
     <div id="controls" class="controls collapsed">
-        <h1>Orbie Zots Controls</h1>
+        <h1>Orbie Zot Parameters</h1>
         
         <!-- Parameter Group Selector -->
         <div class="control-group">
@@ -20,7 +20,7 @@
             <select id="paramGroup">
                 <option value="orbie">Orbie</option>
                 <option value="orbieSwarm">Orbie Swarm</option>
-                <option value="zotSwarms">Zot Swarms</option>
+                <option value="zotSwarms" selected>Zot Swarms</option>
                 <option value="forces">Forces</option>
                 <option value="walls">Walls</option>
             </select>
@@ -29,8 +29,16 @@
         <div class="section-divider"></div>
         
         <!-- Orbie Parameters Group -->
-        <div id="orbieParams" class="param-group active">
+        <div id="orbieParams" class="param-group">
             <div class="section-title">Orbie Settings</div>
+            
+            <div class="control-group toggle-control">
+                <label for="orbieEnabled">Enable Orbie:</label>
+                <label class="switch">
+                    <input type="checkbox" id="orbieEnabled" checked>
+                    <span class="slider round"></span>
+                </label>
+            </div>
             
             <div class="control-group">
                 <div class="slider-overlay-container">
@@ -75,8 +83,8 @@
             <div class="control-group">
                 <div class="slider-overlay-container">
                     <span class="slider-overlay-label">Glow Opacity</span>
-                    <input type="range" id="orbieGlowOpacity" class="slider-with-overlay" min="0" max="1" step="0.05" value="0.7">
-                    <span class="slider-overlay-value" id="orbieGlowOpacityValue">0.7</span>
+                    <input type="range" id="orbieGlowOpacity" class="slider-with-overlay" min="0" max="1" step="0.05" value="0.2">
+                    <span class="slider-overlay-value" id="orbieGlowOpacityValue">0.2</span>
                 </div>
             </div>
             
@@ -162,13 +170,19 @@
         </div>
         
         <!-- Zot Swarms Parameters Group -->
-        <div id="zotSwarmsParams" class="param-group">
+        <div id="zotSwarmsParams" class="param-group active">
             <div class="section-title">Zot Swarms Management</div>
             
-            <!-- Active Swarms List -->
-            <div class="swarm-list" id="swarmList">
-                <div class="swarm-list-item">
-                    <span>No swarms created yet</span>
+            <!-- Active Swarms List - Modified layout -->
+            <div class="swarm-management">
+                <div class="control-group swarm-list-container">
+                    <div class="swarm-list-header">
+                        <label for="swarmList">Active Swarms:</label>
+                        <button id="removeSwarmBtn" class="remove-swarm-btn">Remove</button>
+                    </div>
+                    <select id="swarmList" class="swarm-dropdown full-width">
+                        <option value="">No swarms created yet</option>
+                    </select>
                 </div>
             </div>
             
@@ -180,27 +194,29 @@
                 <div class="control-group">
                     <label for="swarmPreset">Preset:</label>
                     <select id="swarmPreset">
-                        <option value="custom">Custom</option>
-                        <option value="murmuration">Murmuration</option>
+                        <option value="random">Random</option>
+                        <option value="murmuration">Bird Flock</option>
                         <option value="lavaLamp">Lava Lamp</option>
                         <option value="cookingOil">Cooking Oil</option>
                         <option value="jellyOrbs">Jelly Orbs</option>
                         <option value="atomic">Atomic</option>
-                        <option value="fizzyOrb">Fizzy Orb</option>
+                        <option value="fizzyOrb">Fizzy Pop</option>
                     </select>
                 </div>
                 
                 <!-- Color theme selector -->
                 <div class="section-title">Color Theme</div>
                 <div class="color-presets-container" id="colorPresets">
-                    <div class="color-preset active" data-theme="rainbow" style="background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);"></div>
-                    <div class="color-preset" data-theme="blue" style="background: linear-gradient(to right, #041c41, #abd6f9);"></div>
-                    <div class="color-preset" data-theme="green" style="background: linear-gradient(to right, #012804, #a3ffa8);"></div>
-                    <div class="color-preset" data-theme="fire" style="background: linear-gradient(to right, #b71c1c, #ffdd98);"></div>
-                    <div class="color-preset" data-theme="neon" style="background: linear-gradient(to right, #ff00ff, #00ffff);"></div>
-                    <div class="color-preset" data-theme="gold" style="background: linear-gradient(to right, #ffd700, #ffa500);"></div>
-                    <div class="color-preset" data-theme="sparkle" style="background: linear-gradient(to right, #333333, #ffffff);"></div>
-                    <div class="color-preset" data-theme="mono" style="background: linear-gradient(to right, #111111, #cccccc);"></div>
+                    <div class="color-preset active" data-theme="rainbow" data-tooltip="Rainbow" style="background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);"></div>
+                    <div class="color-preset" data-theme="colorblind" data-tooltip="Colorblind-friendly" style="background: linear-gradient(to right, #0072B2, #F0E442, #009E73, #E69F00, #9e008e);"></div>
+                    <div class="color-preset" data-theme="neon" data-tooltip="Neon" style="background: linear-gradient(to right, #ff00ff, #00ffff);"></div>
+                    <div class="color-preset" data-theme="blue" data-tooltip="Twilight" style="background: linear-gradient(to right, #041c41, #abd6f9);"></div>
+                    <div class="color-preset" data-theme="green" data-tooltip="Forest" style="background: linear-gradient(to right, #012804, #a3ffa8);"></div>
+                    <div class="color-preset" data-theme="fire" data-tooltip="Fire" style="background: linear-gradient(to right, #b71c1c, #ffdd98);"></div>
+                    <div class="color-preset" data-theme="gold" data-tooltip="Gold" style="background: linear-gradient(to right, #ffd700, #ffa500);"></div>
+                    <div class="color-preset" data-theme="mono" data-tooltip="Monochrome" style="background: linear-gradient(to right, #111111, #cccccc);"></div>
+                    <div class="color-preset" data-theme="sparkle" data-tooltip="Sparkle" style="background: linear-gradient(to right, #333333, #ffffff);"></div>
+                    <div class="color-preset" data-theme="bumble" data-tooltip="Bumble" style="background: linear-gradient(to right, #ffd700, #333333);"></div>
                 </div>
                 
                 <div class="control-group">
@@ -212,15 +228,13 @@
                 </div>
                 
                 <!-- Size Min/Max Range Slider -->
-                <div class="section-title">Size Range (px)</div>
                 <div class="range-slider-container">
+                    <span class="slider-overlay-label" id="newSwarmMinSizeValue">1.0</span>
                     <div class="range-slider"></div>
-                    <input type="range" id="newSwarmMinSize" class="range-slider-min" min="0.5" max="6" step="0.1" value="0.5">
-                    <input type="range" id="newSwarmMaxSize" class="range-slider-max" min="0.5" max="6" step="0.1" value="4">
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-top: -0.5rem; margin-bottom: 0.5rem; font-size: 0.75rem;">
-                    <span id="newSwarmMinSizeValue">1.0</span>
-                    <span id="newSwarmMaxSizeValue">4.0</span>
+                    <span class="slider-overlay-label slider-overlay-center">Size Range (px)</span>
+                    <input type="range" id="newSwarmMinSize" class="range-slider-min" min="1" max="6" step="0.1" value="1">
+                    <input type="range" id="newSwarmMaxSize" class="range-slider-max" min="1" max="6" step="0.1" value="4">
+                    <span class="slider-overlay-value" id="newSwarmMaxSizeValue">4.0</span>
                 </div>
                 
                 <div class="control-group">
@@ -263,7 +277,10 @@
                     </div>
                 </div>
                 
-                <button id="createSwarmButton">Create Swarm</button>
+                <div class="button-group">
+                    <button id="createSwarmButton">Create Swarm</button>
+                    <button id="clearSwarmsButton" class="clear-swarms-btn disabled">Clear Swarms</button>
+                </div>
             </div>
         </div>
         

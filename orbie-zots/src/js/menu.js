@@ -43,6 +43,9 @@ const MenuSystem = (function() {
         // Setup color theme selector if available
         setupColorThemes();
         
+        // Setup dual range sliders for min/max values
+        setupRangeSliders();
+        
         isMenuInitialized = true;
     }
     
@@ -110,6 +113,25 @@ const MenuSystem = (function() {
     
     // Setup all input controls and their event handlers
     function setupInputControls() {
+        // Orbie toggle
+        const orbieEnabled = document.getElementById('orbieEnabled');
+        if (orbieEnabled && callbacks.updateOrbieSettings) {
+            // Initialize from settings if possible
+            if (typeof ParticleSystem !== 'undefined' && ParticleSystem.getOrbieSettings) {
+                const settings = ParticleSystem.getOrbieSettings();
+                console.log("Setting orbieEnabled checkbox from settings:", settings.enabled);
+                orbieEnabled.checked = settings.enabled !== false; // Default to true if not set
+            } else {
+                console.log("ParticleSystem not available, defaulting orbieEnabled to true");
+                orbieEnabled.checked = true; // Default to true if ParticleSystem isn't available
+            }
+            
+            orbieEnabled.addEventListener('change', function() {
+                console.log("Orbie toggle changed to:", this.checked);
+                callbacks.updateOrbieSettings('enabled', this.checked);
+            });
+        }
+        
         // Orbie controls
         setupRangeInput('orbieSize', value => updateSetting('orbie', 'size', value));
         setupRangeInput('orbieGlowSize', value => updateSetting('orbie', 'glowSize', value));
@@ -299,6 +321,29 @@ const MenuSystem = (function() {
             option.textContent = file.name;
             selectElement.appendChild(option);
         });
+    }
+    
+    function setupRangeSliders() {
+        const minSlider = document.getElementById('newSwarmMinSize');
+        const maxSlider = document.getElementById('newSwarmMaxSize');
+        const minValue = document.getElementById('newSwarmMinSizeValue');
+        const maxValue = document.getElementById('newSwarmMaxSizeValue');
+
+        if (minSlider && maxSlider && minValue && maxValue) {
+            minSlider.addEventListener('input', function() {
+                if (parseFloat(this.value) > parseFloat(maxSlider.value)) {
+                    this.value = maxSlider.value;
+                }
+                minValue.textContent = parseFloat(this.value).toFixed(1);
+            });
+
+            maxSlider.addEventListener('input', function() {
+                if (parseFloat(this.value) < parseFloat(minSlider.value)) {
+                    this.value = minSlider.value;
+                }
+                maxValue.textContent = parseFloat(this.value).toFixed(1);
+            });
+        }
     }
     
     // Public API

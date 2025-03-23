@@ -53,7 +53,7 @@ canvas {
     position: absolute;
     top: 0.6rem;
     left: 0.6rem;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(0, 0, 0, 0.35);
     padding: 0.7rem;
     border-radius: 0.3rem;
     user-select: none;
@@ -61,6 +61,7 @@ canvas {
     width: 18rem;
     max-height: 85vh;
     overflow-y: auto;
+    overflow-x: visible;
     z-index: 1000;
 }
 
@@ -164,6 +165,8 @@ select:focus {
     position: relative;
     margin-bottom: 0.8rem;
     height: 2.2rem;
+    display: flex;
+    align-items: center;
 }
 
 .slider-overlay-label {
@@ -176,6 +179,7 @@ select:focus {
     text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
     pointer-events: none;
     z-index: 2;
+    line-height: 1;
 }
 
 .slider-overlay-value {
@@ -189,6 +193,7 @@ select:focus {
     text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
     pointer-events: none;
     z-index: 2;
+    line-height: 1;
 }
 
 /* Custom styling for the slider with label overlay */
@@ -201,6 +206,7 @@ select:focus {
     padding: 0 !important;
     -webkit-appearance: none;
     appearance: none;
+    position: relative;
 }
 
 /* Track styling */
@@ -224,8 +230,8 @@ select:focus {
     height: 1.4rem;
     border-radius: 50%;
     background: #4CAF50;
-    border: 2px solid white;
-    margin-top: -0.25rem;
+    border: none;
+    margin-top: calc(-0.7rem + 0.4375rem);
     cursor: pointer;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
 }
@@ -235,7 +241,7 @@ select:focus {
     height: 1.4rem;
     border-radius: 50%;
     background: #4CAF50;
-    border: 2px solid white;
+    border: none;
     cursor: pointer;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
 }
@@ -244,7 +250,9 @@ select:focus {
 .range-slider-container {
     position: relative;
     height: 2.2rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0.8rem;
+    display: flex;
+    align-items: center;
 }
 
 .range-slider {
@@ -255,6 +263,33 @@ select:focus {
     border-radius: 0.25rem;
     top: 50%;
     transform: translateY(-50%);
+}
+
+.range-slider-container .slider-overlay-label {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 0.6rem;
+    color: white;
+    font-size: 0.75rem;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    pointer-events: none;
+    z-index: 3;
+    line-height: 1;
+}
+
+.range-slider-container .slider-overlay-value {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 0.6rem;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    pointer-events: none;
+    z-index: 3;
+    line-height: 1;
 }
 
 .range-slider-min, .range-slider-max {
@@ -276,7 +311,7 @@ select:focus {
     height: 1.4rem;
     border-radius: 50%;
     background: #4CAF50;
-    border: 2px solid white;
+    border: none;
     cursor: pointer;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
 }
@@ -287,7 +322,7 @@ select:focus {
     height: 1.4rem;
     border-radius: 50%;
     background: #4CAF50;
-    border: 2px solid white;
+    border: none;
     cursor: pointer;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
 }
@@ -296,7 +331,7 @@ select:focus {
 .swarm-creation {
     margin-top: 1rem;
     padding: 0.5rem;
-    background-color: rgba(50, 50, 50, 0.7);
+    background-color: rgba(50, 50, 50, 0.35);
     border-radius: 0.3rem;
 }
 
@@ -318,7 +353,7 @@ select:focus {
     overflow-y: auto;
     margin-top: 0.5rem;
     padding: 0.3rem;
-    background-color: rgba(30, 30, 30, 0.7);
+    background-color: rgba(30, 30, 30, 0.35);
     border-radius: 0.3rem;
 }
 
@@ -504,28 +539,34 @@ select:focus {
 }
 
 /* Toggle Switch */
-.toggle-container {
+.toggle-control {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
+    margin-bottom: 0.8rem;
     width: 100%;
-    margin-bottom: 0.5rem;
+    min-width: 16rem;
 }
 
-.toggle-switch {
+.toggle-control label {
+    width: auto;
+}
+
+.switch {
     position: relative;
     display: inline-block;
-    width: 45px;
-    height: 22px;
+    width: 100px;
+    height: 24px;
+    overflow: visible;
 }
 
-.toggle-switch input {
+.switch input {
     opacity: 0;
-    width: 0;
+    width: 54px;
     height: 0;
 }
 
-.toggle-slider {
+.slider {
     position: absolute;
     cursor: pointer;
     top: 0;
@@ -534,31 +575,37 @@ select:focus {
     bottom: 0;
     background-color: #444;
     transition: .4s;
-    border-radius: 22px;
 }
 
-.toggle-slider:before {
+.slider:before {
     position: absolute;
     content: "";
-    height: 16px;
-    width: 16px;
+    height: 18px;
+    width: 18px;
     left: 3px;
     bottom: 3px;
     background-color: white;
     transition: .4s;
+}
+
+input:checked + .slider {
+    background-color: #4CAF50;
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px #4CAF50;
+}
+
+input:checked + .slider:before {
+    transform: translateX(36px);
+}
+
+.slider.round {
+    border-radius: 24px;
+}
+
+.slider.round:before {
     border-radius: 50%;
-}
-
-input:checked + .toggle-slider {
-    background-color: #63a4ff;
-}
-
-input:focus + .toggle-slider {
-    box-shadow: 0 0 1px #63a4ff;
-}
-
-input:checked + .toggle-slider:before {
-    transform: translateX(23px);
 }
 
 .control-description {
@@ -566,4 +613,106 @@ input:checked + .toggle-slider:before {
     color: #999;
     margin-top: 0.25rem;
     margin-bottom: 0.5rem;
+}
+
+/* Swarm management styles */
+.swarm-management {
+    margin-bottom: 1rem;
+}
+
+.dropdown-with-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.swarm-dropdown {
+    flex: 1;
+    height: 2.2rem;
+    margin: 0;
+}
+
+/* New styles for swarm list layout */
+.swarm-list-container {
+    width: 100%;
+}
+
+.swarm-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 0.4rem;
+}
+
+.swarm-list-header label {
+    width: auto;
+    margin: 0;
+}
+
+.full-width {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.remove-swarm-btn {
+    background-color: #d32f2f;
+    border: none;
+    color: white;
+    padding: 0.3rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background-color 0.2s;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: auto;
+}
+
+.remove-swarm-btn:hover {
+    background-color: #b71c1c;
+}
+
+.remove-swarm-btn:disabled {
+    background-color: #666;
+    cursor: not-allowed;
+}
+
+/* Centered overlay label for slider */
+.slider-overlay-center {
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    font-weight: bold;
+    z-index: 4;
+    padding: 0.15rem 0.5rem;
+    border-radius: 0.2rem;
+}
+
+/* Button group styles */
+.button-group {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.button-group button {
+    flex: 1;
+    margin-top: 0;
+}
+
+/* Clear Swarms button styles */
+.clear-swarms-btn {
+    background-color: #d32f2f;
+    color: white;
+}
+
+.clear-swarms-btn:hover {
+    background-color: #b71c1c;
+}
+
+.clear-swarms-btn.disabled {
+    background-color: #666;
+    cursor: not-allowed;
 }

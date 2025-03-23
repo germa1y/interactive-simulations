@@ -1,7 +1,7 @@
 /**
  * Orbie Zots - Particle Swarm Simulation
  * Copyright (c) 2025
- * Built: 2025-03-22T17:38:26.454Z
+ * Built: 2025-03-23T14:53:12.544Z
  */
 
 // colors.js - Color themes and generators for particles
@@ -123,6 +123,29 @@ const ColorThemes = (function() {
                 '270, 100%, 60%'   // Purple
             ];
             return `hsl(${colorblindSafe[Math.floor(Math.random() * colorblindSafe.length)]})`;
+        },
+        
+        // Monochrome theme - grayscale only
+        mono: function() {
+            // Pure grayscale with varying brightness
+            const brightness = 20 + Math.random() * 80; // 20-100% brightness range
+            return `hsl(0, 0%, ${brightness}%)`;
+        },
+        
+        // Bumble theme - yellow-gold and greys
+        bumble: function() {
+            // 50% chance for yellow-gold colors, 50% chance for greys
+            if (Math.random() < 0.5) {
+                // Yellow to gold gradient (hue range 40-55)
+                const hue = 40 + Math.random() * 15; // Yellow to gold hue range
+                const saturation = 70 + Math.random() * 30; // High saturation
+                const lightness = 50 + Math.random() * 40; // Medium to bright
+                return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+            } else {
+                // Grey to light black (very dark grey)
+                const lightness = 10 + Math.random() * 40; // Dark to medium greys (10-50%)
+                return `hsl(0, 0%, ${lightness}%)`;
+            }
         }
     };
     
@@ -246,7 +269,7 @@ const Presets = {
             trailLength: 0
         },
         fizzyOrb: {
-            name: "Fizzy Orb",
+            name: "Fizzy Pop",
             zotCount: 25,
             speed: 2,
             separation: 0.1,
@@ -366,6 +389,37 @@ const Presets = {
                 const lightness = 20 + Math.random() * 60;
                 return `hsl(0, 0%, ${lightness}%)`;
             }
+        },
+        colorblind: {
+            name: "Colorblind-Friendly",
+            getColor: function() {
+                // Colors chosen for deuteranopia and protanopia visibility
+                const colorblindSafe = [
+                    '211, 100%, 50%',  // Blue
+                    '60, 100%, 50%',   // Yellow 
+                    '180, 100%, 30%',  // Teal
+                    '27, 100%, 50%',   // Orange
+                    '270, 100%, 60%'   // Purple
+                ];
+                return `hsl(${colorblindSafe[Math.floor(Math.random() * colorblindSafe.length)]})`;
+            }
+        },
+        bumble: {
+            name: "Bumble",
+            getColor: function() {
+                // 50% chance for yellow-gold colors, 50% chance for greys
+                if (Math.random() < 0.5) {
+                    // Yellow to gold gradient (hue range 40-55)
+                    const hue = 40 + Math.random() * 15; // Yellow to gold hue range
+                    const saturation = 70 + Math.random() * 30; // High saturation
+                    const lightness = 50 + Math.random() * 40; // Medium to bright
+                    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+                } else {
+                    // Grey to light black (very dark grey)
+                    const lightness = 10 + Math.random() * 40; // Dark to medium greys (10-50%)
+                    return `hsl(0, 0%, ${lightness}%)`;
+                }
+            }
         }
     },
     
@@ -378,7 +432,7 @@ const Presets = {
             speed: 2,
             color: 'rgba(255, 250, 230, 0.9)',
             glowColor: 'rgba(255, 215, 0, 0.6)',
-            glowSize: 3,  // Multiplier of orbie size
+            glowSize: 1.5,  // Multiplier of orbie size
             pulseSpeed: 0.05,
             pulseIntensity: 0.4,
             influenceRadius: 100,
@@ -443,13 +497,8 @@ const TouchHandler = (function() {
         onTouchMove: null,
         onTouchEnd: null,
         onDoubleTap: null,
-        onSwarmPlacement: null,  // New callback for placing swarms
         isAttractMode: null
     };
-    
-    // State for handling swarm placement
-    let placingSwarm = false;
-    let swarmPlacementLetter = null;
     
     // Throttle function for performance optimization
     function throttle(func, limit) {
@@ -474,19 +523,6 @@ const TouchHandler = (function() {
             touchX = x;
             touchY = y;
             touchActive = true;
-            
-            // Check if a swarm placement letter is active
-            if (placingSwarm && swarmPlacementLetter && callbacks.onSwarmPlacement) {
-                // Call the swarm placement callback
-                callbacks.onSwarmPlacement(x, y);
-                
-                // Clear swarm placement state
-                placingSwarm = false;
-                swarmPlacementLetter = null;
-                
-                // Skip other touch processing
-                return;
-            }
             
             // Detect double tap
             const currentTime = new Date().getTime();
@@ -681,33 +717,6 @@ const TouchHandler = (function() {
                 y: touchY,
                 active: touchActive
             };
-        },
-        
-        // Set swarm placement mode
-        setSwarmPlacementMode: function(isActive, letter) {
-            placingSwarm = isActive;
-            swarmPlacementLetter = letter;
-        },
-        
-        // Check if in swarm placement mode
-        isInSwarmPlacementMode: function() {
-            return placingSwarm;
-        },
-        
-        // Create a visual cue for swarm placement
-        createSwarmPlacementCue: function(x, y, letter) {
-            // Create a pulsing effect at the position
-            const cue = document.createElement('div');
-            cue.className = 'swarm-letter';
-            cue.textContent = letter;
-            cue.style.left = `${x}px`;
-            cue.style.top = `${y}px`;
-            document.body.appendChild(cue);
-            
-            // Add pulsing animation
-            cue.style.animation = 'pulse-animation 1s infinite ease-in-out';
-            
-            return cue;
         }
     };
 })();
@@ -761,6 +770,9 @@ const MenuSystem = (function() {
         
         // Setup color theme selector if available
         setupColorThemes();
+        
+        // Setup dual range sliders for min/max values
+        setupRangeSliders();
         
         isMenuInitialized = true;
     }
@@ -829,6 +841,25 @@ const MenuSystem = (function() {
     
     // Setup all input controls and their event handlers
     function setupInputControls() {
+        // Orbie toggle
+        const orbieEnabled = document.getElementById('orbieEnabled');
+        if (orbieEnabled && callbacks.updateOrbieSettings) {
+            // Initialize from settings if possible
+            if (typeof ParticleSystem !== 'undefined' && ParticleSystem.getOrbieSettings) {
+                const settings = ParticleSystem.getOrbieSettings();
+                console.log("Setting orbieEnabled checkbox from settings:", settings.enabled);
+                orbieEnabled.checked = settings.enabled !== false; // Default to true if not set
+            } else {
+                console.log("ParticleSystem not available, defaulting orbieEnabled to true");
+                orbieEnabled.checked = true; // Default to true if ParticleSystem isn't available
+            }
+            
+            orbieEnabled.addEventListener('change', function() {
+                console.log("Orbie toggle changed to:", this.checked);
+                callbacks.updateOrbieSettings('enabled', this.checked);
+            });
+        }
+        
         // Orbie controls
         setupRangeInput('orbieSize', value => updateSetting('orbie', 'size', value));
         setupRangeInput('orbieGlowSize', value => updateSetting('orbie', 'glowSize', value));
@@ -1020,6 +1051,29 @@ const MenuSystem = (function() {
         });
     }
     
+    function setupRangeSliders() {
+        const minSlider = document.getElementById('newSwarmMinSize');
+        const maxSlider = document.getElementById('newSwarmMaxSize');
+        const minValue = document.getElementById('newSwarmMinSizeValue');
+        const maxValue = document.getElementById('newSwarmMaxSizeValue');
+
+        if (minSlider && maxSlider && minValue && maxValue) {
+            minSlider.addEventListener('input', function() {
+                if (parseFloat(this.value) > parseFloat(maxSlider.value)) {
+                    this.value = maxSlider.value;
+                }
+                minValue.textContent = parseFloat(this.value).toFixed(1);
+            });
+
+            maxSlider.addEventListener('input', function() {
+                if (parseFloat(this.value) < parseFloat(minSlider.value)) {
+                    this.value = minSlider.value;
+                }
+                maxValue.textContent = parseFloat(this.value).toFixed(1);
+            });
+        }
+    }
+    
     // Public API
     return {
         init: init,
@@ -1069,12 +1123,13 @@ const ParticleSystem = (function() {
         color: 'rgba(255, 250, 230, 0.9)',
         glowColor: 'rgba(255, 215, 0, 0.6)',
         glowSize: 3,  // Multiplier of orbie size
-        glowOpacity: 0.7, // Base opacity for the glow
+        glowOpacity: 0.2, // Base opacity for the glow
         pulseSpeed: 0.05,
         pulseIntensity: 0.4,
         influenceRadius: 100,
         influenceIntensity: 0.05, // How strongly Orbie influences particles within its radius
-        touchMultiplier: 0.15
+        touchMultiplier: 0.15,
+        enabled: true  // Whether Orbie is visible and active
     };
     
     // Settings for particles in Orbie's swarm
@@ -1102,9 +1157,6 @@ const ParticleSystem = (function() {
     
     // Collection of ZotSwarms (multiple independent swarms)
     let zotSwarms = [];
-    
-    // Currently active swarm for placement (with letter indicator)
-    let activeSwarmPlacement = null;
     
     // Handle device pixel ratio and canvas sizing
     function setupCanvas() {
@@ -1193,6 +1245,7 @@ const ParticleSystem = (function() {
     
     // Initialize Orbie
     function initOrbie() {
+        console.log("Initializing Orbie at position:", width/2, height/2);
         orbie = {
             x: width / 2, // Center of screen
             y: height / 2, // Center of screen
@@ -1201,12 +1254,21 @@ const ParticleSystem = (function() {
             color: orbieSettings.color,
             size: orbieSettings.size,
             glowSize: orbieSettings.size * orbieSettings.glowSize,
-            glowColor: orbieSettings.glowColor,
+            glowColor: orbieSettings.glowColor || 'rgba(255, 215, 0, 0.6)', // Ensure glowColor is set
             glowOpacity: orbieSettings.glowOpacity,
             pulseSpeed: orbieSettings.pulseSpeed,
             pulseIntensity: orbieSettings.pulseIntensity,
             history: []
         };
+        
+        // Confirm all required properties are set
+        console.log("Orbie initialized with: ", 
+            "color:", orbie.color, 
+            "size:", orbie.size, 
+            "glowSize:", orbie.glowSize,
+            "glowColor:", orbie.glowColor,
+            "glowOpacity:", orbie.glowOpacity
+        );
     }
     
     // Create a new ZotSwarm
@@ -1234,7 +1296,8 @@ const ParticleSystem = (function() {
                 size: config.minSize + Math.random() * (config.maxSize - config.minSize),
                 history: [],
                 inOrbieSwarm: false, // Track if particle is in Orbie's swarm
-                swarmId: swarm.id // Assign swarm ID to each particle for identification
+                swarmId: swarm.id, // Assign swarm ID to each particle for identification
+                fromGlobalTheme: false // Mark particles as NOT using the global theme
             });
         }
         
@@ -1242,66 +1305,101 @@ const ParticleSystem = (function() {
         return swarm.id;
     }
     
+    // Update an existing ZotSwarm with new parameters
+    function updateZotSwarm(swarmId, config) {
+        // Find the swarm with the given ID
+        const swarmIndex = zotSwarms.findIndex(swarm => swarm.id === swarmId);
+        if (swarmIndex === -1) {
+            console.error(`Swarm with ID ${swarmId} not found`);
+            return false;
+        }
+        
+        const swarm = zotSwarms[swarmIndex];
+        
+        // Backup current particle positions and velocities
+        const particleState = swarm.zots.map(zot => ({
+            x: zot.x,
+            y: zot.y,
+            vx: zot.vx,
+            vy: zot.vy
+        }));
+        
+        // Update the swarm settings
+        swarm.settings = { ...swarm.settings, ...config };
+        swarm.originalSettings = { ...swarm.settings }; // Update original settings too
+        
+        // Set up color generator function
+        const colorTheme = config.colorTheme || swarm.settings.colorTheme;
+        const getColor = Presets.colorThemes[colorTheme]?.getColor || 
+                        Presets.colorThemes.blue.getColor;
+        
+        // Handle particle count changes if needed
+        const currentCount = swarm.zots.length;
+        const targetCount = config.zotCount || currentCount;
+        
+        if (targetCount > currentCount) {
+            // Add new particles
+            for (let i = 0; i < targetCount - currentCount; i++) {
+                // Try to add new particles near existing ones to avoid visual jumps
+                const sourceIndex = Math.floor(Math.random() * currentCount);
+                const sourceParticle = particleState[sourceIndex] || { 
+                    x: width / 2, 
+                    y: height / 2 
+                };
+                
+                swarm.zots.push({
+                    x: sourceParticle.x + (Math.random() * 100 - 50),
+                    y: sourceParticle.y + (Math.random() * 100 - 50),
+                    vx: (Math.random() * 2 - 1) * swarm.settings.speed,
+                    vy: (Math.random() * 2 - 1) * swarm.settings.speed,
+                    color: getColor(),
+                    size: swarm.settings.minSize + Math.random() * (swarm.settings.maxSize - swarm.settings.minSize),
+                    history: [],
+                    inOrbieSwarm: false,
+                    swarmId: swarm.id
+                });
+            }
+        } else if (targetCount < currentCount) {
+            // Remove excess particles
+            swarm.zots = swarm.zots.slice(0, targetCount);
+        }
+        
+        // Update existing particles with new properties
+        for (let i = 0; i < targetCount && i < currentCount; i++) {
+            const zot = swarm.zots[i];
+            
+            // Keep position and velocity from before
+            zot.x = particleState[i].x;
+            zot.y = particleState[i].y;
+            zot.vx = particleState[i].vx;
+            zot.vy = particleState[i].vy;
+            
+            // Update color if colorTheme changed
+            if (config.colorTheme) {
+                zot.color = getColor();
+            }
+            
+            // Update size if size range changed
+            if (config.minSize !== undefined || config.maxSize !== undefined) {
+                const minSize = config.minSize !== undefined ? config.minSize : swarm.settings.minSize;
+                const maxSize = config.maxSize !== undefined ? config.maxSize : swarm.settings.maxSize;
+                zot.size = minSize + Math.random() * (maxSize - minSize);
+            }
+        }
+        
+        return true;
+    }
+    
     // Create a letter indicator for new swarm placement
     function createSwarmPlacementIndicator(preset) {
-        // Generate a random position that's not too close to the edges
-        const margin = 100;
-        const x = margin + Math.random() * (width - 2 * margin);
-        const y = margin + Math.random() * (height - 2 * margin);
-        
-        // Generate a random letter (A-Z)
-        const letter = String.fromCharCode(65 + Math.floor(Math.random() * 26));
-        
-        // Create the placement indicator
-        activeSwarmPlacement = {
-            id: letter,
-            x: x,
-            y: y,
-            preset: preset,
-            element: null
-        };
-        
-        // Create and add the visual indicator element
-        const indicator = document.createElement('div');
-        indicator.className = 'swarm-letter';
-        indicator.textContent = letter;
-        indicator.style.left = `${x}px`;
-        indicator.style.top = `${y}px`;
-        document.body.appendChild(indicator);
-        
-        activeSwarmPlacement.element = indicator;
-        
-        return activeSwarmPlacement;
+        // This function has been removed as it's no longer needed
+        return null;
     }
     
     // Create a swarm at the letter indicator position
     function confirmSwarmPlacement(config) {
-        if (!activeSwarmPlacement) return null;
-        
-        // Remove the visual indicator
-        if (activeSwarmPlacement.element) {
-            activeSwarmPlacement.element.style.opacity = '0';
-            setTimeout(() => {
-                if (activeSwarmPlacement.element && activeSwarmPlacement.element.parentNode) {
-                    activeSwarmPlacement.element.parentNode.removeChild(activeSwarmPlacement.element);
-                }
-            }, 500);
-        }
-        
-        // Merge the placement position with the config
-        const swarmConfig = {
-            ...config,
-            centerX: activeSwarmPlacement.x,
-            centerY: activeSwarmPlacement.y
-        };
-        
-        // Create the swarm
-        const swarmId = createZotSwarm(swarmConfig);
-        
-        // Clear the active placement
-        activeSwarmPlacement = null;
-        
-        return swarmId;
+        // This function is removed as part of removing confirm placement logic
+        return null;
     }
     
     // Remove a swarm by ID
@@ -1314,6 +1412,15 @@ const ParticleSystem = (function() {
         return false;
     }
     
+    // Remove all zot swarms
+    function removeAllZotSwarms() {
+        if (zotSwarms.length > 0) {
+            zotSwarms = [];
+            return true;
+        }
+        return false;
+    }
+    
     // Generate a unique ID for swarms
     function generateSwarmId() {
         return 'swarm-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
@@ -1321,59 +1428,95 @@ const ParticleSystem = (function() {
     
     // Apply preset to new swarm settings
     function applyPresetToNewSwarm(presetName) {
+        // Special handling for the random preset
+        if (presetName === 'random') {
+            return {
+                ...Presets.defaults.zotSwarm,
+                name: "Random",
+                zotCount: 25, // Keep fixed at 25
+                speed: 2,     // Keep fixed at 2
+                separation: Math.random() * 4, // Random between 0-4
+                alignment: Math.random() * 3,  // Random between 0-3
+                cohesion: Math.random() * 5,   // Random between 0-5
+                perception: Math.floor(Math.random() * 180) + 20, // Random between 20-200
+                // Random size range
+                minSize: 0.5 + Math.random() * 2, // 0.5-2.5
+                maxSize: 3 + Math.random() * 2,   // 3-5
+                // Random color theme from available themes
+                colorTheme: getRandomColorTheme()
+            };
+        }
+        
+        // Regular preset handling
         const preset = Presets.swarmPresets[presetName];
         if (!preset) return null;
+        
+        // Map preset names to specific color themes
+        const presetColorThemes = {
+            murmuration: 'colorblind',
+            lavaLamp: 'fire',
+            cookingOil: 'gold',
+            jellyOrbs: 'green', // Using green since forest is not available
+            atomic: 'sparkle',
+            fizzyOrb: 'neon'
+        };
+        
+        // Use the mapped color theme or fallback to blue
+        const colorTheme = presetColorThemes[presetName] || 'blue';
         
         return {
             ...Presets.defaults.zotSwarm,
             ...preset,
-            colorTheme: 'blue' // Default color theme
+            colorTheme: colorTheme
         };
+    }
+    
+    // Get a random color theme from available themes
+    function getRandomColorTheme() {
+        const themes = Object.keys(Presets.colorThemes);
+        return themes[Math.floor(Math.random() * themes.length)];
     }
     
     // Update all particles in the system
     function updateParticles() {
-        // Update Orbie's pulse effect only if pulseSpeed is not zero
-        if (orbie.pulseSpeed > 0) {
-            // Update Orbie's pulse effect - modified for outward radiation with reset
-            orbiePulsePhase += orbie.pulseSpeed;
-            
-            // When reaching 1, start a new pulse
-            if (orbiePulsePhase > 1) {
-                // Reset the pulse phase to start a new pulse
-                orbiePulsePhase = 0;
-            }
-        }
-        
-        // Update Orbie's position based on touch or autonomous movement
-        if (orbie) {
-            const prevX = orbie.x;
-            const prevY = orbie.y;
-            
-            // Update Orbie's position based on touch with distance decay
-            if (touch.active) {
-                const dx = orbie.x - touch.x;
-                const dy = orbie.y - touch.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                if (distance > 0) {
-                    // Apply force with distance decay - stronger effect closer to touch point
-                    const forceDecay = Math.max(0, 1 - (distance / (width/2))); // Decay with distance
-                    const force = forceSettings.touchForce * orbieSettings.touchMultiplier * forceDecay;
-                    
-                    if (touch.attract) {
-                        // Attract Orbie towards touch point
-                        orbie.vx -= (dx / distance) * force;
-                        orbie.vy -= (dy / distance) * force;
-                    } else {
-                        // Repel Orbie from touch point
-                        orbie.vx += (dx / distance) * force;
-                        orbie.vy += (dy / distance) * force;
-                    }
+        // Update Orbie if enabled
+        if (orbie && orbieSettings.enabled) {
+            // Update Orbie's pulse effect only if pulseSpeed is not zero
+            if (orbieSettings.pulseSpeed > 0) {
+                orbiePulsePhase += orbieSettings.pulseSpeed;
+                if (orbiePulsePhase > Math.PI * 2) {
+                    orbiePulsePhase = 0;
                 }
             }
             
-            // Add some drag to Orbie's movement for smoother control
+            // Store previous position for wall collision
+            const prevX = orbie.x;
+            const prevY = orbie.y;
+            
+            // Apply touch force to Orbie
+            if (touch.active) {
+                const dx = touch.x - orbie.x;
+                const dy = touch.y - orbie.y;
+                const distSq = dx * dx + dy * dy;
+                const maxDistSq = orbieSettings.influenceRadius * orbieSettings.influenceRadius;
+                
+                // Only apply force if within influence radius and not too close
+                if (distSq > 1 && distSq < maxDistSq) {
+                    const dist = Math.sqrt(distSq);
+                    const force = touch.attract ? 
+                        forceSettings.touchForce * orbieSettings.touchMultiplier :
+                        -forceSettings.touchForce * orbieSettings.touchMultiplier;
+                    
+                    // Scale force by distance (stronger when closer)
+                    const scaledForce = force * (1 - dist / orbieSettings.influenceRadius);
+                    
+                    // Normalize direction vector and apply force
+                    orbie.vx += (dx / dist) * scaledForce;
+                    orbie.vy += (dy / dist) * scaledForce;
+                }
+            }
+            
+            // Apply drag to Orbie's movement
             orbie.vx *= 0.95;
             orbie.vy *= 0.95;
             
@@ -1418,7 +1561,8 @@ const ParticleSystem = (function() {
             }
             
             // If more than 30% of particles are influenced, consider the swarm influenced
-            swarm.inOrbieInfluence = (particlesInInfluence / swarm.zots.length) > 0.3;
+            // Only apply influence if Orbie is enabled
+            swarm.inOrbieInfluence = orbieSettings.enabled && (particlesInInfluence / swarm.zots.length) > 0.3;
             
             // If just left Orbie's influence, restore original settings
             if (wasInInfluence && !swarm.inOrbieInfluence) {
@@ -1430,6 +1574,10 @@ const ParticleSystem = (function() {
     
     // Update a group of particles based on their settings
     function updateParticleGroup(particles, settings) {
+        // Get current theme for color updates
+        const currentTheme = ColorThemes.getCurrentTheme();
+        const sparkleUpdateRate = 0.1; // Rate at which sparkle theme refreshes colors (increased for more visible effect)
+        
         // For each particle in the group
         for (let i = 0; i < particles.length; i++) {
             const particle = particles[i];
@@ -1443,7 +1591,8 @@ const ParticleSystem = (function() {
             
             // Check if the particle is newly entering or leaving Orbie's swarm
             const wasInSwarm = particle.inOrbieSwarm;
-            particle.inOrbieSwarm = distanceToOrbie < orbieSettings.influenceRadius;
+            // Only consider particles to be in Orbie's influence if Orbie is enabled
+            particle.inOrbieSwarm = orbieSettings.enabled && distanceToOrbie < orbieSettings.influenceRadius;
             
             // Change particle color when it enters or leaves the swarm
             if (particle.inOrbieSwarm && !wasInSwarm) {
@@ -1470,6 +1619,16 @@ const ParticleSystem = (function() {
             } else if (particle.inOrbieSwarm && Math.random() < orbieSwarmSettings.sparkleRate) {
                 // Occasionally change the color of particles in the swarm based on sparkle rate
                 particle.color = getSparkleColor();
+            } else if (currentTheme === 'sparkle' && Math.random() < sparkleUpdateRate) {
+                // Only apply the sparkle effect to background particles (not to swarm zots)
+                // or if this is a zot swarm that uses the 'sparkle' theme
+                const isBackgroundParticle = particles === backgroundParticles;
+                const isSparkleTheme = particle.swarmId && 
+                    zotSwarms.find(s => s.id === particle.swarmId)?.settings.colorTheme === 'sparkle';
+                
+                if (isBackgroundParticle || isSparkleTheme) {
+                    particle.color = ColorThemes.getColor();
+                }
             }
             
             // Use appropriate settings based on whether particle is in Orbie's swarm
@@ -1564,7 +1723,7 @@ const ParticleSystem = (function() {
             }
             
             // If in Orbie's swarm, add attraction to Orbie
-            if (particle.inOrbieSwarm && orbieSettings.influenceIntensity > 0) {
+            if (particle.inOrbieSwarm && orbieSettings.influenceIntensity > 0 && orbieSettings.enabled) {
                 // Apply force towards Orbie based on influenceIntensity
                 particle.vx += (orbie.x - particle.x) * orbieSettings.influenceIntensity;
                 particle.vy += (orbie.y - particle.y) * orbieSettings.influenceIntensity;
@@ -1574,11 +1733,12 @@ const ParticleSystem = (function() {
             if (touch.active && (particle.inOrbieSwarm || forceSettings.zotTouchEnabled)) {
                 const dx = particle.x - touch.x;
                 const dy = particle.y - touch.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                const maxDistance = 150;
+                const distSq = dx * dx + dy * dy;
+                const maxDistSq = orbieSettings.influenceRadius * orbieSettings.influenceRadius;
                 
-                if (distance < maxDistance) {
-                    const force = ((maxDistance - distance) / maxDistance) * forceSettings.touchForce;
+                if (distSq < maxDistSq) {
+                    const distance = Math.sqrt(distSq);
+                    const force = ((orbieSettings.influenceRadius - distance) / orbieSettings.influenceRadius) * forceSettings.touchForce;
                     
                     if (touch.attract) {
                         // Attract towards touch point
@@ -1629,60 +1789,67 @@ const ParticleSystem = (function() {
         // Draw walls if they exist
         WallSystem.render(ctx);
         
-        // Draw Orbie (our main character)
-        if (orbie) {
-            // Draw background particles
-            drawParticleGroup(backgroundParticles);
-            
-            // Draw all ZotSwarms
-            zotSwarms.forEach(swarm => {
-                drawParticleGroup(swarm.zots);
-            });
-            
-            // Draw Orbie's influence area (for debugging, comment out in production)
-            // ctx.beginPath();
-            // ctx.arc(orbie.x, orbie.y, orbieSettings.influenceRadius, 0, Math.PI * 2);
-            // ctx.strokeStyle = 'rgba(100, 150, 255, 0.1)';
-            // ctx.stroke();
-            
-            // Calculate current glow size with outward radiation only if pulseSpeed > 0
-            const pulseFactor = orbie.pulseSpeed > 0 ? 1 + (orbiePulsePhase * orbie.pulseIntensity) : 1;
-            const currentGlowSize = orbie.glowSize * pulseFactor;
-            
-            // Draw Orbie's pulsating glow - using gradient for smoother effect
-            const glowGradient = ctx.createRadialGradient(
-                orbie.x, orbie.y, orbie.size * 0.5,
-                orbie.x, orbie.y, currentGlowSize
-            );
-            glowGradient.addColorStop(0, `rgba(255, 223, 0, ${orbie.glowOpacity})`); // Bright gold inner glow
-            glowGradient.addColorStop(0.5, `rgba(255, 215, 0, ${orbie.glowOpacity * 0.57})`); // Mid gold (scaled from 0.4/0.7)
-            glowGradient.addColorStop(1, 'rgba(255, 200, 0, 0)'); // Fade to transparent
-            
-            ctx.beginPath();
-            ctx.arc(orbie.x, orbie.y, currentGlowSize, 0, Math.PI * 2);
-            ctx.fillStyle = glowGradient;
-            ctx.fill();
-            
-            // Add a subtle outer ring to Orbie for better visibility
-            ctx.beginPath();
-            ctx.arc(orbie.x, orbie.y, orbie.size * 1.2, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(255, 215, 0, ${Math.min(0.6, orbie.glowOpacity * 0.8)})`; // Golden stroke proportional to glow opacity
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            
-            // Draw Orbie's core with gradient for dimension
-            const coreGradient = ctx.createRadialGradient(
-                orbie.x - orbie.size * 0.3, orbie.y - orbie.size * 0.3, 0,
-                orbie.x, orbie.y, orbie.size
-            );
-            coreGradient.addColorStop(0, 'rgba(255, 255, 240, 0.6)'); // Warm white center with 40% reduced opacity
-            coreGradient.addColorStop(0.7, 'rgba(255, 233, 150, 0.54)'); // Pale gold middle with 40% reduced opacity
-            coreGradient.addColorStop(1, 'rgba(255, 215, 0, 0.42)'); // Gold edge with 40% reduced opacity
-            
-            ctx.beginPath();
-            ctx.arc(orbie.x, orbie.y, orbie.size, 0, Math.PI * 2);
-            ctx.fillStyle = coreGradient;
-            ctx.fill();
+        // Draw background particles
+        drawParticleGroup(backgroundParticles);
+        
+        // Draw all ZotSwarms
+        zotSwarms.forEach(swarm => {
+            drawParticleGroup(swarm.zots);
+        });
+        
+        // Draw Orbie (our main character) if enabled
+        if (orbie && orbieSettings.enabled) {
+            try {
+                // Ensure all required properties exist to prevent rendering errors
+                if (!orbie.size) orbie.size = orbieSettings.size || 12;
+                if (!orbie.glowSize) orbie.glowSize = orbie.size * (orbieSettings.glowSize || 3);
+                if (!orbie.glowOpacity) orbie.glowOpacity = orbieSettings.glowOpacity || 0.2;
+                if (!orbie.pulseSpeed) orbie.pulseSpeed = orbieSettings.pulseSpeed || 0.05;
+                if (!orbie.pulseIntensity) orbie.pulseIntensity = orbieSettings.pulseIntensity || 0.4;
+                
+                // Calculate current glow size with outward radiation only if pulseSpeed > 0
+                const pulseFactor = orbie.pulseSpeed > 0 ? 1 + (orbiePulsePhase * orbie.pulseIntensity) : 1;
+                const currentGlowSize = orbie.glowSize * pulseFactor;
+                
+                // Draw Orbie's pulsating glow - using gradient for smoother effect
+                const glowGradient = ctx.createRadialGradient(
+                    orbie.x, orbie.y, orbie.size * 0.5,
+                    orbie.x, orbie.y, currentGlowSize
+                );
+                glowGradient.addColorStop(0, `rgba(255, 223, 0, ${orbie.glowOpacity})`); // Bright gold inner glow
+                glowGradient.addColorStop(0.5, `rgba(255, 215, 0, ${orbie.glowOpacity * 0.57})`); // Mid gold (scaled from 0.4/0.7)
+                glowGradient.addColorStop(1, 'rgba(255, 200, 0, 0)'); // Fade to transparent
+                
+                ctx.beginPath();
+                ctx.arc(orbie.x, orbie.y, currentGlowSize, 0, Math.PI * 2);
+                ctx.fillStyle = glowGradient;
+                ctx.fill();
+                
+                // Add a subtle outer ring to Orbie for better visibility
+                ctx.beginPath();
+                ctx.arc(orbie.x, orbie.y, orbie.size * 1.2, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(255, 215, 0, ${Math.min(0.6, orbie.glowOpacity * 0.8)})`; // Golden stroke proportional to glow opacity
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Draw Orbie's core with gradient for dimension
+                const coreGradient = ctx.createRadialGradient(
+                    orbie.x - orbie.size * 0.3, orbie.y - orbie.size * 0.3, 0,
+                    orbie.x, orbie.y, orbie.size
+                );
+                coreGradient.addColorStop(0, 'rgba(255, 255, 240, 0.6)'); // Warm white center with 40% reduced opacity
+                coreGradient.addColorStop(0.7, 'rgba(255, 233, 150, 0.54)'); // Pale gold middle with 40% reduced opacity
+                coreGradient.addColorStop(1, 'rgba(255, 215, 0, 0.42)'); // Gold edge with 40% reduced opacity
+                
+                ctx.beginPath();
+                ctx.arc(orbie.x, orbie.y, orbie.size, 0, Math.PI * 2);
+                ctx.fillStyle = coreGradient;
+                ctx.fill();
+            } catch (e) {
+                console.error("Error rendering Orbie:", e);
+                console.log("Orbie state:", orbie);
+                console.log("orbieSettings:", orbieSettings);
+            }
         }
     }
     
@@ -1744,19 +1911,46 @@ const ParticleSystem = (function() {
     // Initialize everything
     function init() {
         // Load default settings from Presets
-        orbieSettings = {...Presets.defaults.orbie};
+        orbieSettings = JSON.parse(JSON.stringify(Presets.defaults.orbie));
         
         // Ensure glowOpacity has a default if it's missing from presets
         if (orbieSettings.glowOpacity === undefined) {
-            orbieSettings.glowOpacity = 0.7;
+            orbieSettings.glowOpacity = 0.2;
         }
+        
+        // Ensure glowColor has a default if it's missing
+        if (orbieSettings.glowColor === undefined) {
+            orbieSettings.glowColor = 'rgba(255, 215, 0, 0.6)';
+        }
+        
+        // Ensure enabled property is false by default
+        orbieSettings.enabled = false;
         
         orbieSwarmSettings = {...Presets.defaults.orbieSwarm};
         forceSettings = {...Presets.defaults.forces};
         
-        // Initialize particles
-        initBackgroundParticles();
+        // Initialize canvas dimensions
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        
+        // Reset mouse position
+        touch.x = width / 2;
+        touch.y = height / 2;
+        
+        // Clear particles arrays
+        backgroundParticles = [];
+        zotSwarms = [];
+        
+        // Reset Orbie pulse effect phase
+        orbiePulsePhase = 0;
+        
+        // Initialize Orbie
         initOrbie();
+        
+        console.log("Orbie initialized:", orbie, "Enabled:", orbieSettings.enabled);
+        
+        // Create background particles
+        initBackgroundParticles();
         
         // Start animation
         animationFrameId = requestAnimationFrame(animate);
@@ -1791,6 +1985,7 @@ const ParticleSystem = (function() {
         // Update Orbie settings
         updateOrbieSettings: function(property, value) {
             if (property in orbieSettings) {
+                const previousValue = orbieSettings[property];
                 orbieSettings[property] = value;
                 
                 // Update Orbie's properties
@@ -1806,8 +2001,28 @@ const ParticleSystem = (function() {
                         orbie[property] = value;
                     } else if (property === 'speed') {
                         // Just update the setting, velocity is calculated from this
+                    } else if (property === 'enabled') {
+                        // When enabling, ensure all visual properties are fully refreshed
+                        if (value === true) {
+                            console.log("Enabling Orbie, refreshing all visual properties");
+                            // Force a complete refresh of Orbie's properties
+                            orbie.color = orbieSettings.color || 'rgba(255, 250, 230, 0.9)';
+                            orbie.size = orbieSettings.size;
+                            orbie.glowSize = orbie.size * orbieSettings.glowSize;
+                            orbie.glowColor = orbieSettings.glowColor || 'rgba(255, 215, 0, 0.6)';
+                            orbie.glowOpacity = orbieSettings.glowOpacity;
+                            orbie.pulseSpeed = orbieSettings.pulseSpeed;
+                            orbie.pulseIntensity = orbieSettings.pulseIntensity;
+                        }
                     }
+                    // No action needed for other properties as they're checked during update/draw
                 }
+            }
+            
+            // Log state after property change
+            if (property === 'enabled') {
+                console.log("Orbie enabled:", orbieSettings.enabled);
+                console.log("Orbie properties:", orbie.color, orbie.size, orbie.glowColor, orbie.glowOpacity);
             }
         },
         
@@ -1843,25 +2058,8 @@ const ParticleSystem = (function() {
         },
         
         // Methods for ZotSwarm management
-        createSwarmPlacementIndicator: function(preset) {
-            return createSwarmPlacementIndicator(preset);
-        },
-        
-        confirmSwarmPlacement: function(config) {
-            return confirmSwarmPlacement(config);
-        },
-        
-        getActiveSwarmPlacement: function() {
-            return activeSwarmPlacement;
-        },
-        
-        cancelSwarmPlacement: function() {
-            if (activeSwarmPlacement && activeSwarmPlacement.element) {
-                if (activeSwarmPlacement.element.parentNode) {
-                    activeSwarmPlacement.element.parentNode.removeChild(activeSwarmPlacement.element);
-                }
-                activeSwarmPlacement = null;
-            }
+        createZotSwarm: function(config) {
+            return createZotSwarm(config);
         },
         
         getZotSwarms: function() {
@@ -1896,15 +2094,18 @@ const ParticleSystem = (function() {
             // Clear all swarms
             zotSwarms = [];
             
-            // Cancel any active placement
-            this.cancelSwarmPlacement();
-            
             // Reset settings to defaults
-            orbieSettings = {...Presets.defaults.orbie};
+            orbieSettings = JSON.parse(JSON.stringify(Presets.defaults.orbie));
+            orbieSettings.enabled = false; // Match initial app state (Orbie disabled)
             orbieSwarmSettings = {...Presets.defaults.orbieSwarm};
             forceSettings = {...Presets.defaults.forces};
             
             // Update UI toggle to match settings
+            const orbieEnabled = document.getElementById('orbieEnabled');
+            if (orbieEnabled) {
+                orbieEnabled.checked = false; // Match initial app state
+            }
+            
             const zotTouchEnabled = document.getElementById('zotTouchEnabled');
             if (zotTouchEnabled) {
                 zotTouchEnabled.checked = forceSettings.zotTouchEnabled;
@@ -1918,6 +2119,11 @@ const ParticleSystem = (function() {
             // Reinitialize
             initBackgroundParticles();
             initOrbie();
+            
+            // Sanity check for Orbie's visual properties
+            console.log("After reset - Orbie enabled:", orbieSettings.enabled);
+            console.log("After reset - Orbie visual properties:", 
+                orbie.color, orbie.size, orbie.glowColor, orbie.glowOpacity, orbie.glowSize);
         },
         
         // Add a wall segment - wrapper for WallSystem
@@ -1928,6 +2134,16 @@ const ParticleSystem = (function() {
         // Clear all walls - wrapper for WallSystem
         clearWalls: function() {
             WallSystem.clearWalls();
+        },
+        
+        // Remove all zot swarms
+        removeAllZotSwarms: function() {
+            return removeAllZotSwarms();
+        },
+        
+        // Update an existing ZotSwarm with new parameters
+        updateZotSwarm: function(swarmId, config) {
+            return updateZotSwarm(swarmId, config);
         }
     };
 })();
@@ -2631,33 +2847,360 @@ const WallSystem = (function() {
     };
 })(); 
 
-// Handle canvas click for swarm placement
-    canvas.addEventListener('click', function(e) {
-        // Only handle if in swarm placement mode
-        if (ParticleSystem.getActiveSwarmPlacement()) {
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+// demoMode.js - Automatic zot swarm demo mode
+const DemoMode = (function() {
+    // Track if demo mode is active
+    let isActive = false;
+    
+    // Store created swarms for cleanup
+    let demoSwarms = [];
+    
+    // Cycling properties
+    let cycleInterval = null;
+    let cycleIndex = 0;
+    let isCycling = false;
+    let touchDetected = false;
+    
+    // Configuration for demo mode
+    const DEMO_CONFIG = {
+        swarmCount: 6,         // Number of swarms to create
+        zotsPerSwarm: 50,      // Number of zots in each swarm
+        presetName: 'jellyOrbs', // Preset behavior to use
+        colorTheme: 'green',   // Color theme to use (forest-like)
+        minSize: 1,            // Minimum zot size
+        maxSize: 8,            // Maximum zot size
+        circleRadius: 0.35,    // Circle radius as a fraction of screen dimension for positioning
+        cycleInterval: 10000   // Cycle through presets every 10 seconds
+    };
+    
+    // Preset configurations to cycle through
+    const PRESET_CYCLES = [
+        // Initial configuration - jellyOrbs, green (when demo is initialized)
+        {
+            name: "Jelly Orbs - Green",
+            configs: Array(6).fill({
+                presetName: 'jellyOrbs',
+                colorTheme: 'green',
+                zotCount: 50
+            })
+        },
+        // Fizzy Pop, Neon
+        {
+            name: "Fizzy Pop - Neon",
+            configs: Array(6).fill({
+                presetName: 'fizzyOrb',
+                colorTheme: 'neon',
+                zotCount: 50
+            })
+        },
+        // Cooking Oil, Gold
+        {
+            name: "Cooking Oil - Gold",
+            configs: Array(6).fill({
+                presetName: 'cookingOil',
+                colorTheme: 'gold',
+                zotCount: 50
+            })
+        },
+        // Bird Flock (murmuration), Rainbow, zotCount=150
+        {
+            name: "Bird Flock - Rainbow",
+            configs: Array(6).fill({
+                presetName: 'murmuration',
+                colorTheme: 'rainbow',
+                zotCount: 150
+            })
+        },
+        // Lava Lamp, Fire, zotCount=150
+        {
+            name: "Lava Lamp - Fire",
+            configs: Array(6).fill({
+                presetName: 'lavaLamp',
+                colorTheme: 'fire',
+                zotCount: 150
+            })
+        },
+        // Atomic, Sparkle
+        {
+            name: "Atomic - Sparkle",
+            configs: Array(6).fill({
+                presetName: 'atomic',
+                colorTheme: 'sparkle',
+                zotCount: 50
+            })
+        },
+        // 2 of each - Mix of all presets
+        {
+            name: "Mixed Swarms",
+            configs: [
+                { presetName: 'fizzyOrb', colorTheme: 'neon', zotCount: 50 },
+                { presetName: 'fizzyOrb', colorTheme: 'neon', zotCount: 50 },
+                { presetName: 'cookingOil', colorTheme: 'gold', zotCount: 50 },
+                { presetName: 'cookingOil', colorTheme: 'gold', zotCount: 50 },
+                { presetName: 'murmuration', colorTheme: 'rainbow', zotCount: 50 },
+                { presetName: 'murmuration', colorTheme: 'rainbow', zotCount: 50 }
+            ]
+        }
+    ];
+    
+    /**
+     * Initialize and start the demo mode
+     */
+    function start() {
+        if (isActive) return; // Prevent multiple starts
+        
+        console.log('Starting Zot Swarm Demo Mode');
+        
+        // Make sure we have access to particle system
+        if (!ParticleSystem || typeof ParticleSystem.createZotSwarm !== 'function') {
+            console.error('Demo Mode: ParticleSystem not available');
+            return;
+        }
+        
+        // Delay to ensure all systems are properly initialized
+        setTimeout(() => {
+            createDemoSwarms();
+            setupMenuButtonListeners();
+            setupTouchDetection();
+            isActive = true;
+        }, 500);
+    }
+    
+    /**
+     * Create the demo swarms in a circular arrangement
+     */
+    function createDemoSwarms() {
+        // Get canvas dimensions
+        const canvas = document.getElementById('canvas');
+        if (!canvas) {
+            console.error('Demo Mode: Canvas not found');
+            return;
+        }
+        
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = Math.min(canvas.width, canvas.height) * DEMO_CONFIG.circleRadius;
+        
+        // Create swarms in a circular pattern
+        for (let i = 0; i < DEMO_CONFIG.swarmCount; i++) {
+            // Calculate position on circle
+            const angle = (i / DEMO_CONFIG.swarmCount) * Math.PI * 2;
+            const x = centerX + Math.cos(angle) * radius;
+            const y = centerY + Math.sin(angle) * radius;
             
-            // Confirm placement at click position
-            const config = getSwarmConfigFromUI();
-            const swarmId = ParticleSystem.confirmSwarmPlacement(config);
+            // Configure the swarm with parameters from jellyOrbs preset
+            const preset = Presets.swarmPresets[DEMO_CONFIG.presetName] || {};
             
-            if (swarmId) {
-                // Update the swarm list
-                updateSwarmList();
+            // Configuration object for the swarm
+            const config = {
+                // Swarm preset behavior parameters
+                zotCount: DEMO_CONFIG.zotsPerSwarm,
+                speed: preset.speed || 3,
+                separation: preset.separation || 0.1,
+                alignment: preset.alignment || 0.1,
+                cohesion: preset.cohesion || 5,
+                perception: preset.perception || 100,
                 
-                // Reset the Create Swarm button
-                const createButton = document.getElementById('createSwarmButton');
-                if (createButton) {
-                    createButton.textContent = "Create Swarm";
+                // Position
+                centerX: x,
+                centerY: y,
+                
+                // Appearance
+                colorTheme: DEMO_CONFIG.colorTheme,
+                minSize: DEMO_CONFIG.minSize,
+                maxSize: DEMO_CONFIG.maxSize,
+                
+                // Name
+                name: `Demo Swarm ${i+1}`
+            };
+            
+            // Create the swarm
+            try {
+                const swarmId = ParticleSystem.createZotSwarm(config);
+                if (swarmId) {
+                    demoSwarms.push(swarmId);
+                    console.log(`Demo Mode: Created swarm ${swarmId} at (${x.toFixed(0)}, ${y.toFixed(0)})`);
                 }
-                
-                // Reset touch handler
-                TouchHandler.setSwarmPlacementMode(false, null);
+            } catch (error) {
+                console.error('Demo Mode: Error creating swarm:', error);
             }
         }
-    });// main.js - Application initialization
+        
+        console.log(`Demo Mode: Created ${demoSwarms.length} swarms`);
+    }
+    
+    /**
+     * Set up touch detection to start the cycle
+     */
+    function setupTouchDetection() {
+        if (touchDetected) return;
+        
+        const canvas = document.getElementById('canvas');
+        if (!canvas) return;
+        
+        // Create one-time event listeners for touch and click
+        const startCyclingOnFirstTouch = function(e) {
+            if (!touchDetected && isActive) {
+                touchDetected = true;
+                startCycling();
+                
+                // Remove event listeners once triggered
+                canvas.removeEventListener('touchstart', startCyclingOnFirstTouch);
+                canvas.removeEventListener('click', startCyclingOnFirstTouch);
+                
+                console.log('Demo Mode: First touch detected, started cycling');
+            }
+        };
+        
+        canvas.addEventListener('touchstart', startCyclingOnFirstTouch);
+        canvas.addEventListener('click', startCyclingOnFirstTouch);
+    }
+    
+    /**
+     * Start cycling through presets
+     */
+    function startCycling() {
+        if (isCycling) return;
+        
+        isCycling = true;
+        cycleIndex = 0; // Start with the first preset (after the initial one)
+        
+        // Set up interval to cycle through presets
+        cycleInterval = setInterval(() => {
+            cycleToNextPreset();
+        }, DEMO_CONFIG.cycleInterval);
+    }
+    
+    /**
+     * Cycle to the next preset configuration
+     */
+    function cycleToNextPreset() {
+        if (!isActive || demoSwarms.length === 0) {
+            stopCycling();
+            return;
+        }
+        
+        cycleIndex = (cycleIndex + 1) % PRESET_CYCLES.length;
+        const presetCycle = PRESET_CYCLES[cycleIndex];
+        
+        console.log(`Demo Mode: Cycling to preset "${presetCycle.name}"`);
+        
+        // Apply new configurations to each swarm
+        demoSwarms.forEach((swarmId, index) => {
+            const swarmConfig = presetCycle.configs[index % presetCycle.configs.length];
+            updateSwarmParameters(swarmId, swarmConfig);
+        });
+    }
+    
+    /**
+     * Update parameters of an existing swarm
+     */
+    function updateSwarmParameters(swarmId, config) {
+        try {
+            // Get preset parameters
+            const preset = Presets.swarmPresets[config.presetName] || {};
+            
+            // Create update config with behavior parameters
+            const updateConfig = {
+                zotCount: config.zotCount || DEMO_CONFIG.zotsPerSwarm,
+                speed: preset.speed || 3,
+                separation: preset.separation || 0.1,
+                alignment: preset.alignment || 0.1,
+                cohesion: preset.cohesion || 5,
+                perception: preset.perception || 100,
+                colorTheme: config.colorTheme || DEMO_CONFIG.colorTheme
+            };
+            
+            // Update the swarm
+            if (ParticleSystem.updateZotSwarm) {
+                ParticleSystem.updateZotSwarm(swarmId, updateConfig);
+                console.log(`Demo Mode: Updated swarm ${swarmId} to ${config.presetName} - ${config.colorTheme}`);
+            }
+        } catch (error) {
+            console.error(`Demo Mode: Error updating swarm ${swarmId}:`, error);
+        }
+    }
+    
+    /**
+     * Stop the cycling interval
+     */
+    function stopCycling() {
+        if (cycleInterval) {
+            clearInterval(cycleInterval);
+            cycleInterval = null;
+        }
+        isCycling = false;
+    }
+    
+    /**
+     * Set up listeners for the menu button to end demo mode
+     */
+    function setupMenuButtonListeners() {
+        const menuToggle = document.getElementById('menuToggle');
+        if (!menuToggle) {
+            console.error('Demo Mode: Menu toggle button not found');
+            return;
+        }
+        
+        // Capture phase to ensure our handler runs before the menu toggle handlers
+        const eventOptions = { capture: true };
+        
+        // Add handlers for both click and touch events
+        menuToggle.addEventListener('click', endDemoMode, eventOptions);
+        menuToggle.addEventListener('touchstart', endDemoMode, eventOptions);
+    }
+    
+    /**
+     * End the demo mode by removing all swarms
+     */
+    function endDemoMode(event) {
+        if (!isActive) return;
+        
+        console.log('Ending Zot Swarm Demo Mode');
+        
+        // Stop cycling
+        stopCycling();
+        
+        // Remove event listeners
+        const menuToggle = document.getElementById('menuToggle');
+        if (menuToggle) {
+            menuToggle.removeEventListener('click', endDemoMode, { capture: true });
+            menuToggle.removeEventListener('touchstart', endDemoMode, { capture: true });
+        }
+        
+        // Remove all demo swarms
+        if (demoSwarms.length > 0 && ParticleSystem && typeof ParticleSystem.removeZotSwarm === 'function') {
+            demoSwarms.forEach(swarmId => {
+                try {
+                    ParticleSystem.removeZotSwarm(swarmId);
+                } catch (error) {
+                    console.error(`Demo Mode: Error removing swarm ${swarmId}:`, error);
+                }
+            });
+            demoSwarms = [];
+        }
+        
+        isActive = false;
+        touchDetected = false;
+        
+        // Allow the event to continue propagating after we've cleaned up
+        // (so the menu button still works normally)
+    }
+    
+    // Public API
+    return {
+        start: start,
+        end: endDemoMode,
+        isActive: function() { return isActive; }
+    };
+})();
+
+// Export for module system
+if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+    module.exports = DemoMode;
+} 
+
+// main.js - Application initialization
 document.addEventListener('DOMContentLoaded', function() {
     const canvas = document.getElementById('canvas');
     const menuToggle = document.getElementById('menuToggle');
@@ -2671,6 +3214,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize wall system
     WallSystem.init();
+    
+    // Start demo mode
+    if (typeof DemoMode !== 'undefined') {
+        console.log("Starting zot swarm demo mode...");
+        setTimeout(() => {
+            DemoMode.start();
+        }, 200); // Short delay to ensure all systems are fully initialized
+    } else {
+        console.error("Demo Mode module not available");
+    }
     
     // Add direct event listeners to menu toggle as a backup
     if (menuToggle && controlsPanel) {
@@ -2709,22 +3262,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // This function allows the TouchHandler to check the current mode
             return ParticleSystem.isAttractMode();
         },
-        onSwarmPlacement: function(x, y) {
-            // Create a swarm at the touch position
-            const config = getSwarmConfigFromUI();
-            const swarmId = ParticleSystem.confirmSwarmPlacement(config);
-            
-            if (swarmId) {
-                // Update the swarm list
-                updateSwarmList();
-                
-                // Reset the Create Swarm button
-                const createButton = document.getElementById('createSwarmButton');
-                if (createButton) {
-                    createButton.textContent = "Create Swarm";
-                }
-            }
-        }
     });
     
     // Initialize menu system with callbacks
@@ -2752,7 +3289,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 WallSystem.clearWalls();
             },
             changeColorTheme: function(theme) {
-                ColorSystem.setTheme(theme);
+                ColorThemes.setTheme(theme);
             },
             updateWallSettings: function(property, value) {
                 // Update wall settings
@@ -2789,42 +3326,29 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup wall controls
     setupWallControls();
     
-    // Handle menu toggle
+    // Event handlers for menu interactions
     menuToggle.addEventListener('click', function() {
         controlsPanel.classList.toggle('collapsed');
-        
-        // If closing the menu and there's an active swarm placement, cancel it
-        if (controlsPanel.classList.contains('collapsed') && ParticleSystem.getActiveSwarmPlacement()) {
-            ParticleSystem.cancelSwarmPlacement();
-            TouchHandler.setSwarmPlacementMode(false, null);
-            updateCreateSwarmUI();
-        }
     });
     
     // Properly handle touch behavior on menu toggle button
     menuToggle.addEventListener('touchstart', function(e) {
         e.preventDefault();
         controlsPanel.classList.toggle('collapsed');
-        
-        // If closing the menu and there's an active swarm placement, cancel it
-        if (controlsPanel.classList.contains('collapsed') && ParticleSystem.getActiveSwarmPlacement()) {
-            ParticleSystem.cancelSwarmPlacement();
-            TouchHandler.setSwarmPlacementMode(false, null);
-            updateCreateSwarmUI();
-        }
         e.stopPropagation();
     }, { passive: false });
     
-    // Cancel swarm placement when clicking/touching outside the menu
-    document.addEventListener('click', function(e) {
-        // Only if there's an active swarm placement and click is outside controls
-        if (ParticleSystem.getActiveSwarmPlacement() && 
-            !controlsPanel.contains(e.target) && 
-            e.target !== menuToggle) {
-            
-            ParticleSystem.cancelSwarmPlacement();
-            TouchHandler.setSwarmPlacementMode(false, null);
-            updateCreateSwarmUI();
+    // Close controls panel with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            controlsPanel.classList.add('collapsed');
+        }
+    });
+    
+    // Cancel any active placement if we close the controls panel while in placement mode
+    controlsPanel.addEventListener('transitionend', function(e) {
+        if (e.propertyName === 'right' && 
+            controlsPanel.classList.contains('collapsed')) {
         }
     });
     
@@ -2935,12 +3459,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup Zot Swarm controls
     function setupZotSwarmControls() {
         // Regular sliders
-        setupRangeInput('newSwarmZotCount', () => updateCreateSwarmUI());
-        setupRangeInput('newSwarmSpeed', () => updateCreateSwarmUI());
-        setupRangeInput('newSwarmSeparation', () => updateCreateSwarmUI());
-        setupRangeInput('newSwarmAlignment', () => updateCreateSwarmUI());
-        setupRangeInput('newSwarmCohesion', () => updateCreateSwarmUI());
-        setupRangeInput('newSwarmPerception', () => updateCreateSwarmUI());
+        setupRangeInput('newSwarmZotCount');
+        setupRangeInput('newSwarmSpeed');
+        setupRangeInput('newSwarmSeparation');
+        setupRangeInput('newSwarmAlignment');
+        setupRangeInput('newSwarmCohesion');
+        setupRangeInput('newSwarmPerception');
         
         // Min/Max size range slider
         setupDualRangeSlider('newSwarmMinSize', 'newSwarmMaxSize');
@@ -2949,8 +3473,44 @@ document.addEventListener('DOMContentLoaded', function() {
         const presetSelect = document.getElementById('swarmPreset');
         if (presetSelect) {
             presetSelect.addEventListener('change', function() {
-                if (this.value === 'custom') {
-                    // Keep current values
+                if (this.value === 'random') {
+                    // Apply random values to UI but keep count=25 and speed=2
+                    const randomConfig = {
+                        zotCount: 25, // Keep fixed at 25
+                        speed: 2,     // Keep fixed at 2
+                        separation: Math.random() * 4, // Random between 0-4
+                        alignment: Math.random() * 3,  // Random between 0-3
+                        cohesion: Math.random() * 5,   // Random between 0-5
+                        perception: Math.floor(Math.random() * 180) + 20 // Random between 20-200
+                    };
+                    
+                    // Apply to UI
+                    document.getElementById('newSwarmZotCount').value = randomConfig.zotCount;
+                    document.getElementById('newSwarmSpeed').value = randomConfig.speed;
+                    document.getElementById('newSwarmSeparation').value = randomConfig.separation;
+                    document.getElementById('newSwarmAlignment').value = randomConfig.alignment;
+                    document.getElementById('newSwarmCohesion').value = randomConfig.cohesion;
+                    document.getElementById('newSwarmPerception').value = randomConfig.perception;
+                    
+                    // Also randomize size range (but keep sensible)
+                    const minSize = 0.5 + Math.random() * 2; // Random between 0.5-2.5
+                    const maxSize = minSize + 1 + Math.random() * 3; // At least 1 larger than min
+                    document.getElementById('newSwarmMinSize').value = minSize;
+                    document.getElementById('newSwarmMaxSize').value = maxSize;
+                    
+                    // Update displayed values
+                    document.getElementById('newSwarmZotCountValue').textContent = randomConfig.zotCount;
+                    document.getElementById('newSwarmSpeedValue').textContent = randomConfig.speed.toFixed(1);
+                    document.getElementById('newSwarmSeparationValue').textContent = randomConfig.separation.toFixed(1);
+                    document.getElementById('newSwarmAlignmentValue').textContent = randomConfig.alignment.toFixed(2);
+                    document.getElementById('newSwarmCohesionValue').textContent = randomConfig.cohesion.toFixed(1);
+                    document.getElementById('newSwarmPerceptionValue').textContent = randomConfig.perception;
+                    document.getElementById('newSwarmMinSizeValue').textContent = minSize.toFixed(1);
+                    document.getElementById('newSwarmMaxSizeValue').textContent = maxSize.toFixed(1);
+                    
+                    // Also update the dual slider visuals
+                    updateDualSliderVisuals('newSwarmMinSize', 'newSwarmMaxSize');
+                    
                     return;
                 }
                 
@@ -2975,53 +3535,169 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Color theme selector
-        const colorPresets = document.querySelectorAll('.color-preset');
-        colorPresets.forEach(preset => {
-            preset.addEventListener('click', function() {
-                // Remove active class from all presets
-                colorPresets.forEach(p => p.classList.remove('active'));
+        // Helper function to update dual slider visuals after changing values
+        function updateDualSliderVisuals(minId, maxId) {
+            const minSlider = document.getElementById(minId);
+            const maxSlider = document.getElementById(maxId);
+            
+            if (minSlider && maxSlider) {
+                const minVal = parseFloat(minSlider.value);
+                const maxVal = parseFloat(maxSlider.value);
                 
-                // Add active class to clicked preset
+                // Calculate percentage of position along track
+                const min = parseFloat(minSlider.min);
+                const max = parseFloat(minSlider.max);
+                const range = max - min;
+                
+                const minPercent = ((minVal - min) / range) * 100;
+                const maxPercent = ((maxVal - min) / range) * 100;
+                
+                // Set the min/max slider background to show selected range
+                const sliderContainer = minSlider.closest('.range-slider-container');
+                if (sliderContainer) {
+                    const sliderTrack = sliderContainer.querySelector('.range-slider');
+                    if (sliderTrack) {
+                        sliderTrack.style.background = `linear-gradient(
+                            to right,
+                            #444 0%, #444 ${minPercent}%,
+                            #4CAF50 ${minPercent}%, #4CAF50 ${maxPercent}%,
+                            #444 ${maxPercent}%, #444 100%
+                        )`;
+                    }
+                }
+            }
+        }
+        
+        // Create and setup the swarm color theme tooltips
+        const themeContainer = document.querySelector('.color-presets-container');
+        if (themeContainer) {
+            // Add click handler
+            themeContainer.addEventListener('click', function(e) {
+                const themeBtn = e.target.closest('.color-preset');
+                if (themeBtn) {
+                    // Set all buttons to inactive
+                    themeContainer.querySelectorAll('.color-preset').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    
+                    // Set clicked button to active
+                    themeBtn.classList.add('active');
+                    
+                    // Show tooltip with theme name
+                    const themeName = themeBtn.dataset.theme;
+                    showThemeNameTooltip(themeName, themeBtn);
+                    
+                    // Set the color theme
+                    if (ColorThemes && typeof ColorThemes.setTheme === 'function') {
+                        ColorThemes.setTheme(themeName);
+                    }
+                }
+            });
+        }
+        
+        // Add direct touch handlers to each color theme button
+        document.querySelectorAll('.color-preset').forEach(button => {
+            button.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Get the container to update all buttons
+                const container = this.closest('.color-presets-container') || this.parentElement;
+                
+                // Set all buttons to inactive
+                if (container) {
+                    container.querySelectorAll('.color-preset').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                }
+                
+                // Set this button to active
                 this.classList.add('active');
                 
-                // Update current color theme
-                updateCreateSwarmUI();
-            });
+                // Show tooltip with theme name
+                const themeName = this.dataset.theme;
+                showThemeNameTooltip(themeName, this);
+                
+                // Set the color theme
+                if (ColorThemes && typeof ColorThemes.setTheme === 'function') {
+                    ColorThemes.setTheme(themeName);
+                }
+                
+                console.log('Color theme button touched:', themeName);
+            }, { passive: false });
         });
+        
+        // Implementation of the showThemeNameTooltip function
+        function showThemeNameTooltip(themeName, element) {
+            // Remove any existing tooltips first
+            const existingTooltips = document.querySelectorAll('.theme-name-tooltip');
+            existingTooltips.forEach(tooltip => tooltip.remove());
+            
+            // Get the tooltip text from data-tooltip attribute or use the theme name
+            const tooltipText = element.dataset.tooltip || themeName;
+            
+            // Create a new tooltip element
+            const tooltip = document.createElement('div');
+            tooltip.className = 'theme-name-tooltip';
+            tooltip.textContent = tooltipText;
+            
+            // Position the tooltip above the element
+            const rect = element.getBoundingClientRect();
+            tooltip.style.position = 'fixed';
+            tooltip.style.left = rect.left + (rect.width / 2) + 'px';
+            tooltip.style.top = rect.top - 25 + 'px';
+            tooltip.style.transform = 'translateX(-50%)';
+            tooltip.style.background = 'rgba(0, 0, 0, 0.7)';
+            tooltip.style.color = 'white';
+            tooltip.style.padding = '4px 8px';
+            tooltip.style.borderRadius = '4px';
+            tooltip.style.fontSize = '12px';
+            tooltip.style.pointerEvents = 'none';
+            tooltip.style.zIndex = '1000';
+            
+            // Add to the document
+            document.body.appendChild(tooltip);
+            
+            // Automatically remove the tooltip after 1.5 seconds
+            setTimeout(() => {
+                if (tooltip.parentNode) {
+                    tooltip.parentNode.removeChild(tooltip);
+                }
+            }, 1500);
+        }
         
         // Create Swarm button
         const createSwarmButton = document.getElementById('createSwarmButton');
         if (createSwarmButton) {
             createSwarmButton.addEventListener('click', function() {
-                const activeSwarm = ParticleSystem.getActiveSwarmPlacement();
+                // Create a new swarm at center of canvas
+                const config = getSwarmConfigFromUI();
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
                 
-                if (activeSwarm) {
-                    // Confirm placement and create swarm
-                    const config = getSwarmConfigFromUI();
-                    const swarmId = ParticleSystem.confirmSwarmPlacement(config);
-                    
-                    if (swarmId) {
-                        // Update the swarm list
-                        updateSwarmList();
-                        
-                        // Reset button text
-                        this.textContent = "Create Swarm";
-                        
-                        // Reset touch handler placement mode
-                        TouchHandler.setSwarmPlacementMode(false, null);
-                    }
-                } else {
-                    // Create a new placement indicator
-                    const placement = ParticleSystem.createSwarmPlacementIndicator(getSwarmConfigFromUI());
-                    
-                    // Change button text
-                    this.textContent = "Confirm Placement";
-                    
-                    // Set touch handler to swarm placement mode
-                    if (placement) {
-                        TouchHandler.setSwarmPlacementMode(true, placement.id);
-                    }
+                // Add position to config
+                config.centerX = centerX;
+                config.centerY = centerY;
+                
+                // Create the swarm directly
+                const swarmId = ParticleSystem.createZotSwarm(config);
+                
+                if (swarmId) {
+                    // Update the swarm list
+                    updateSwarmList();
+                }
+            });
+        }
+        
+        // Clear Swarms button
+        const clearSwarmsButton = document.getElementById('clearSwarmsButton');
+        if (clearSwarmsButton) {
+            clearSwarmsButton.addEventListener('click', function() {
+                if (!this.classList.contains('disabled')) {
+                    // Remove all zot swarms
+                    ParticleSystem.removeAllZotSwarms();
+                    // Update the swarm list
+                    updateSwarmList();
                 }
             });
         }
@@ -3182,82 +3858,109 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Get the current swarm configuration from UI inputs
+    // Get configuration from the UI elements
     function getSwarmConfigFromUI() {
-        // Get the selected color theme
-        const activeTheme = document.querySelector('.color-preset.active');
-        const colorTheme = activeTheme ? activeTheme.getAttribute('data-theme') : 'blue';
+        const config = {};
         
-        return {
-            zotCount: parseInt(document.getElementById('newSwarmZotCount').value),
-            minSize: parseFloat(document.getElementById('newSwarmMinSize').value),
-            maxSize: parseFloat(document.getElementById('newSwarmMaxSize').value),
-            speed: parseFloat(document.getElementById('newSwarmSpeed').value),
-            separation: parseFloat(document.getElementById('newSwarmSeparation').value),
-            alignment: parseFloat(document.getElementById('newSwarmAlignment').value),
-            cohesion: parseFloat(document.getElementById('newSwarmCohesion').value),
-            perception: parseInt(document.getElementById('newSwarmPerception').value),
-            trailLength: 0, // No trails by default
-            colorTheme: colorTheme
-        };
+        // Get zot count
+        const zotCountSlider = document.getElementById('newSwarmZotCount');
+        if (zotCountSlider) {
+            config.zotCount = parseInt(zotCountSlider.value, 10);
+        }
+        
+        // Get color theme
+        const activeThemeBtn = document.querySelector('#colorPresets .color-preset.active');
+        if (activeThemeBtn) {
+            config.colorTheme = activeThemeBtn.dataset.theme;
+        } else {
+            // Fallback to default theme
+            config.colorTheme = 'rainbow';
+        }
+        
+        // Get size range
+        config.minSize = parseFloat(document.getElementById('newSwarmMinSize')?.value || 3);
+        config.maxSize = parseFloat(document.getElementById('newSwarmMaxSize')?.value || 8);
+        
+        // Get other properties
+        config.speed = parseFloat(document.getElementById('newSwarmSpeed')?.value || 2);
+        config.separation = parseFloat(document.getElementById('newSwarmSeparation')?.value || 25);
+        config.alignment = parseFloat(document.getElementById('newSwarmAlignment')?.value || 0.1);
+        config.cohesion = parseFloat(document.getElementById('newSwarmCohesion')?.value || 0.1);
+        config.perception = parseFloat(document.getElementById('newSwarmPerception')?.value || 50);
+        
+        return config;
     }
     
-    // Update the Create Swarm UI when configuration changes
+    // Function no longer needed since we removed confirm placement
     function updateCreateSwarmUI() {
-        // Reset the Create Swarm button if there's no active placement
-        const activeSwarm = ParticleSystem.getActiveSwarmPlacement();
-        const createButton = document.getElementById('createSwarmButton');
-        
-        if (createButton) {
-            createButton.textContent = activeSwarm ? "Confirm Placement" : "Create Swarm";
-            
-            // Update TouchHandler swarm placement mode
-            TouchHandler.setSwarmPlacementMode(!!activeSwarm, activeSwarm ? activeSwarm.id : null);
+        // This function is no longer needed
+    }
+    
+    // Setup function to initialize UI just once 
+    function setupSwarmManagementUI() {
+        const removeButton = document.getElementById('removeSwarmBtn');
+        if (removeButton && !removeButton.hasEventListener) {
+            removeButton.addEventListener('click', function() {
+                const swarmDropdown = document.getElementById('swarmList');
+                const selectedSwarmId = swarmDropdown.value;
+                if (selectedSwarmId) {
+                    ParticleSystem.removeZotSwarm(selectedSwarmId);
+                    updateSwarmList();
+                }
+            });
+            removeButton.hasEventListener = true;
         }
     }
     
     // Update the list of active swarms
     function updateSwarmList() {
-        const swarmList = document.getElementById('swarmList');
-        if (!swarmList) return;
+        const swarmDropdown = document.getElementById('swarmList');
+        const removeButton = document.getElementById('removeSwarmBtn');
+        const clearSwarmsButton = document.getElementById('clearSwarmsButton');
+        
+        if (!swarmDropdown || !removeButton) return;
+        
+        // Setup event handlers only once
+        setupSwarmManagementUI();
         
         // Get the current swarms
         const swarms = ParticleSystem.getZotSwarms();
         
-        // Clear the list
-        swarmList.innerHTML = '';
+        // Clear the dropdown
+        swarmDropdown.innerHTML = '';
         
-        // If no swarms, show message
+        // Disable the remove button if no swarms
         if (swarms.length === 0) {
-            swarmList.innerHTML = '<div class="swarm-list-item"><span>No swarms created yet</span></div>';
+            const noSwarmsOption = document.createElement('option');
+            noSwarmsOption.value = '';
+            noSwarmsOption.textContent = 'No swarms created yet';
+            swarmDropdown.appendChild(noSwarmsOption);
+            
+            removeButton.disabled = true;
+            
+            // Disable the clear swarms button
+            if (clearSwarmsButton) {
+                clearSwarmsButton.classList.add('disabled');
+            }
+            
             return;
+        } else {
+            removeButton.disabled = false;
+            
+            // Enable the clear swarms button
+            if (clearSwarmsButton) {
+                clearSwarmsButton.classList.remove('disabled');
+            }
         }
         
-        // Add each swarm to the list
+        // Add each swarm to the dropdown
         swarms.forEach(swarm => {
-            const swarmItem = document.createElement('div');
-            swarmItem.className = 'swarm-list-item';
-            
+            const option = document.createElement('option');
+            option.value = swarm.id;
             const colorThemeName = Presets.colorThemes[swarm.settings.colorTheme]?.name || 'Custom';
-            
-            swarmItem.innerHTML = `
-                <span>${colorThemeName} Swarm (${swarm.zotCount} zots)</span>
-                <button class="remove-swarm" data-id="${swarm.id}">Remove</button>
-            `;
-            
-            swarmList.appendChild(swarmItem);
-        });
-        
-        // Add event listeners to remove buttons
-        const removeButtons = swarmList.querySelectorAll('.remove-swarm');
-        removeButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const swarmId = this.getAttribute('data-id');
-                if (swarmId) {
-                    ParticleSystem.removeZotSwarm(swarmId);
-                    updateSwarmList();
-                }
-            });
+            const presetName = swarm.settings.presetName || 'Custom';
+            option.textContent = `${presetName} ${colorThemeName} (${swarm.zotCount})`;
+            swarmDropdown.appendChild(option);
         });
     }
     
@@ -3267,10 +3970,10 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('orbieSize').value = ParticleSystem.getOrbieSettings().size || 12;
         document.getElementById('orbieSizeValue').textContent = parseFloat(document.getElementById('orbieSize').value).toFixed(1);
         
-        document.getElementById('orbieGlowSize').value = ParticleSystem.getOrbieSettings().glowSize || 3;
+        document.getElementById('orbieGlowSize').value = ParticleSystem.getOrbieSettings().glowSize || 1.5;
         document.getElementById('orbieGlowSizeValue').textContent = parseFloat(document.getElementById('orbieGlowSize').value).toFixed(1);
         
-        document.getElementById('orbieGlowOpacity').value = ParticleSystem.getOrbieSettings().glowOpacity || 0.7;
+        document.getElementById('orbieGlowOpacity').value = ParticleSystem.getOrbieSettings().glowOpacity || 0.2;
         document.getElementById('orbieGlowOpacityValue').textContent = parseFloat(document.getElementById('orbieGlowOpacity').value).toFixed(2);
         
         document.getElementById('orbiePulseSpeed').value = ParticleSystem.getOrbieSettings().pulseSpeed || 0.05;
@@ -3313,8 +4016,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update swarm list
         updateSwarmList();
         
-        // Update create swarm UI
-        updateCreateSwarmUI();
+        // No need for updateCreateSwarmUI call anymore
     }
     
     // Setup wall-related controls
@@ -3336,32 +4038,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Setup wall SVG dropdown
         const wallSVGSelector = document.getElementById('wallSVG');
         if (wallSVGSelector) {
-            // Manually populate the dropdown with SVG files
-            // Clear existing options
-            wallSVGSelector.innerHTML = '';
-            
-            // Add a placeholder option
-            const placeholderOption = document.createElement('option');
-            placeholderOption.value = '';
-            placeholderOption.textContent = 'Select a wall design...';
-            placeholderOption.selected = true;
-            wallSVGSelector.appendChild(placeholderOption);
-            
-            // Known SVG files in the public directory
-            const svgFiles = [
-                { name: 'Sample Walls', path: './sample-walls.svg' },
-                { name: 'Sample Walls with Curves', path: './sample-walls-curves.svg' },
-                { name: 'Curves Sample', path: './curves-sample.svg' }
-            ];
-            
-            // Add options for each SVG file
-            svgFiles.forEach(file => {
-                const option = document.createElement('option');
-                option.value = file.path;
-                option.textContent = file.name;
-                wallSVGSelector.appendChild(option);
-            });
-            
             wallSVGSelector.addEventListener('change', function() {
                 if (this.value) {
                     // Load the selected SVG file

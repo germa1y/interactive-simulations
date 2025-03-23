@@ -117,6 +117,29 @@ const ColorThemes = (function() {
                 '270, 100%, 60%'   // Purple
             ];
             return `hsl(${colorblindSafe[Math.floor(Math.random() * colorblindSafe.length)]})`;
+        },
+        
+        // Monochrome theme - grayscale only
+        mono: function() {
+            // Pure grayscale with varying brightness
+            const brightness = 20 + Math.random() * 80; // 20-100% brightness range
+            return `hsl(0, 0%, ${brightness}%)`;
+        },
+        
+        // Bumble theme - yellow-gold and greys
+        bumble: function() {
+            // 50% chance for yellow-gold colors, 50% chance for greys
+            if (Math.random() < 0.5) {
+                // Yellow to gold gradient (hue range 40-55)
+                const hue = 40 + Math.random() * 15; // Yellow to gold hue range
+                const saturation = 70 + Math.random() * 30; // High saturation
+                const lightness = 50 + Math.random() * 40; // Medium to bright
+                return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+            } else {
+                // Grey to light black (very dark grey)
+                const lightness = 10 + Math.random() * 40; // Dark to medium greys (10-50%)
+                return `hsl(0, 0%, ${lightness}%)`;
+            }
         }
     };
     

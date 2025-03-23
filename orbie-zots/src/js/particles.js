@@ -31,12 +31,13 @@ const ParticleSystem = (function() {
         color: 'rgba(255, 250, 230, 0.9)',
         glowColor: 'rgba(255, 215, 0, 0.6)',
         glowSize: 3,  // Multiplier of orbie size
-        glowOpacity: 0.7, // Base opacity for the glow
+        glowOpacity: 0.2, // Base opacity for the glow
         pulseSpeed: 0.05,
         pulseIntensity: 0.4,
         influenceRadius: 100,
         influenceIntensity: 0.05, // How strongly Orbie influences particles within its radius
-        touchMultiplier: 0.15
+        touchMultiplier: 0.15,
+        enabled: true  // Whether Orbie is visible and active
     };
     
     // Settings for particles in Orbie's swarm
@@ -64,9 +65,6 @@ const ParticleSystem = (function() {
     
     // Collection of ZotSwarms (multiple independent swarms)
     let zotSwarms = [];
-    
-    // Currently active swarm for placement (with letter indicator)
-    let activeSwarmPlacement = null;
     
     // Handle device pixel ratio and canvas sizing
     function setupCanvas() {
@@ -155,6 +153,7 @@ const ParticleSystem = (function() {
     
     // Initialize Orbie
     function initOrbie() {
+        console.log("Initializing Orbie at position:", width/2, height/2);
         orbie = {
             x: width / 2, // Center of screen
             y: height / 2, // Center of screen
@@ -163,12 +162,21 @@ const ParticleSystem = (function() {
             color: orbieSettings.color,
             size: orbieSettings.size,
             glowSize: orbieSettings.size * orbieSettings.glowSize,
-            glowColor: orbieSettings.glowColor,
+            glowColor: orbieSettings.glowColor || 'rgba(255, 215, 0, 0.6)', // Ensure glowColor is set
             glowOpacity: orbieSettings.glowOpacity,
             pulseSpeed: orbieSettings.pulseSpeed,
             pulseIntensity: orbieSettings.pulseIntensity,
             history: []
         };
+        
+        // Confirm all required properties are set
+        console.log("Orbie initialized with: ", 
+            "color:", orbie.color, 
+            "size:", orbie.size, 
+            "glowSize:", orbie.glowSize,
+            "glowColor:", orbie.glowColor,
+            "glowOpacity:", orbie.glowOpacity
+        );
     }
     
     // Create a new ZotSwarm
@@ -196,7 +204,8 @@ const ParticleSystem = (function() {
                 size: config.minSize + Math.random() * (config.maxSize - config.minSize),
                 history: [],
                 inOrbieSwarm: false, // Track if particle is in Orbie's swarm
-                swarmId: swarm.id // Assign swarm ID to each particle for identification
+                swarmId: swarm.id, // Assign swarm ID to each particle for identification
+                fromGlobalTheme: false // Mark particles as NOT using the global theme
             });
         }
         
@@ -204,66 +213,101 @@ const ParticleSystem = (function() {
         return swarm.id;
     }
     
+    // Update an existing ZotSwarm with new parameters
+    function updateZotSwarm(swarmId, config) {
+        // Find the swarm with the given ID
+        const swarmIndex = zotSwarms.findIndex(swarm => swarm.id === swarmId);
+        if (swarmIndex === -1) {
+            console.error(`Swarm with ID ${swarmId} not found`);
+            return false;
+        }
+        
+        const swarm = zotSwarms[swarmIndex];
+        
+        // Backup current particle positions and velocities
+        const particleState = swarm.zots.map(zot => ({
+            x: zot.x,
+            y: zot.y,
+            vx: zot.vx,
+            vy: zot.vy
+        }));
+        
+        // Update the swarm settings
+        swarm.settings = { ...swarm.settings, ...config };
+        swarm.originalSettings = { ...swarm.settings }; // Update original settings too
+        
+        // Set up color generator function
+        const colorTheme = config.colorTheme || swarm.settings.colorTheme;
+        const getColor = Presets.colorThemes[colorTheme]?.getColor || 
+                        Presets.colorThemes.blue.getColor;
+        
+        // Handle particle count changes if needed
+        const currentCount = swarm.zots.length;
+        const targetCount = config.zotCount || currentCount;
+        
+        if (targetCount > currentCount) {
+            // Add new particles
+            for (let i = 0; i < targetCount - currentCount; i++) {
+                // Try to add new particles near existing ones to avoid visual jumps
+                const sourceIndex = Math.floor(Math.random() * currentCount);
+                const sourceParticle = particleState[sourceIndex] || { 
+                    x: width / 2, 
+                    y: height / 2 
+                };
+                
+                swarm.zots.push({
+                    x: sourceParticle.x + (Math.random() * 100 - 50),
+                    y: sourceParticle.y + (Math.random() * 100 - 50),
+                    vx: (Math.random() * 2 - 1) * swarm.settings.speed,
+                    vy: (Math.random() * 2 - 1) * swarm.settings.speed,
+                    color: getColor(),
+                    size: swarm.settings.minSize + Math.random() * (swarm.settings.maxSize - swarm.settings.minSize),
+                    history: [],
+                    inOrbieSwarm: false,
+                    swarmId: swarm.id
+                });
+            }
+        } else if (targetCount < currentCount) {
+            // Remove excess particles
+            swarm.zots = swarm.zots.slice(0, targetCount);
+        }
+        
+        // Update existing particles with new properties
+        for (let i = 0; i < targetCount && i < currentCount; i++) {
+            const zot = swarm.zots[i];
+            
+            // Keep position and velocity from before
+            zot.x = particleState[i].x;
+            zot.y = particleState[i].y;
+            zot.vx = particleState[i].vx;
+            zot.vy = particleState[i].vy;
+            
+            // Update color if colorTheme changed
+            if (config.colorTheme) {
+                zot.color = getColor();
+            }
+            
+            // Update size if size range changed
+            if (config.minSize !== undefined || config.maxSize !== undefined) {
+                const minSize = config.minSize !== undefined ? config.minSize : swarm.settings.minSize;
+                const maxSize = config.maxSize !== undefined ? config.maxSize : swarm.settings.maxSize;
+                zot.size = minSize + Math.random() * (maxSize - minSize);
+            }
+        }
+        
+        return true;
+    }
+    
     // Create a letter indicator for new swarm placement
     function createSwarmPlacementIndicator(preset) {
-        // Generate a random position that's not too close to the edges
-        const margin = 100;
-        const x = margin + Math.random() * (width - 2 * margin);
-        const y = margin + Math.random() * (height - 2 * margin);
-        
-        // Generate a random letter (A-Z)
-        const letter = String.fromCharCode(65 + Math.floor(Math.random() * 26));
-        
-        // Create the placement indicator
-        activeSwarmPlacement = {
-            id: letter,
-            x: x,
-            y: y,
-            preset: preset,
-            element: null
-        };
-        
-        // Create and add the visual indicator element
-        const indicator = document.createElement('div');
-        indicator.className = 'swarm-letter';
-        indicator.textContent = letter;
-        indicator.style.left = `${x}px`;
-        indicator.style.top = `${y}px`;
-        document.body.appendChild(indicator);
-        
-        activeSwarmPlacement.element = indicator;
-        
-        return activeSwarmPlacement;
+        // This function has been removed as it's no longer needed
+        return null;
     }
     
     // Create a swarm at the letter indicator position
     function confirmSwarmPlacement(config) {
-        if (!activeSwarmPlacement) return null;
-        
-        // Remove the visual indicator
-        if (activeSwarmPlacement.element) {
-            activeSwarmPlacement.element.style.opacity = '0';
-            setTimeout(() => {
-                if (activeSwarmPlacement.element && activeSwarmPlacement.element.parentNode) {
-                    activeSwarmPlacement.element.parentNode.removeChild(activeSwarmPlacement.element);
-                }
-            }, 500);
-        }
-        
-        // Merge the placement position with the config
-        const swarmConfig = {
-            ...config,
-            centerX: activeSwarmPlacement.x,
-            centerY: activeSwarmPlacement.y
-        };
-        
-        // Create the swarm
-        const swarmId = createZotSwarm(swarmConfig);
-        
-        // Clear the active placement
-        activeSwarmPlacement = null;
-        
-        return swarmId;
+        // This function is removed as part of removing confirm placement logic
+        return null;
     }
     
     // Remove a swarm by ID
@@ -276,6 +320,15 @@ const ParticleSystem = (function() {
         return false;
     }
     
+    // Remove all zot swarms
+    function removeAllZotSwarms() {
+        if (zotSwarms.length > 0) {
+            zotSwarms = [];
+            return true;
+        }
+        return false;
+    }
+    
     // Generate a unique ID for swarms
     function generateSwarmId() {
         return 'swarm-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
@@ -283,59 +336,95 @@ const ParticleSystem = (function() {
     
     // Apply preset to new swarm settings
     function applyPresetToNewSwarm(presetName) {
+        // Special handling for the random preset
+        if (presetName === 'random') {
+            return {
+                ...Presets.defaults.zotSwarm,
+                name: "Random",
+                zotCount: 25, // Keep fixed at 25
+                speed: 2,     // Keep fixed at 2
+                separation: Math.random() * 4, // Random between 0-4
+                alignment: Math.random() * 3,  // Random between 0-3
+                cohesion: Math.random() * 5,   // Random between 0-5
+                perception: Math.floor(Math.random() * 180) + 20, // Random between 20-200
+                // Random size range
+                minSize: 0.5 + Math.random() * 2, // 0.5-2.5
+                maxSize: 3 + Math.random() * 2,   // 3-5
+                // Random color theme from available themes
+                colorTheme: getRandomColorTheme()
+            };
+        }
+        
+        // Regular preset handling
         const preset = Presets.swarmPresets[presetName];
         if (!preset) return null;
+        
+        // Map preset names to specific color themes
+        const presetColorThemes = {
+            murmuration: 'colorblind',
+            lavaLamp: 'fire',
+            cookingOil: 'gold',
+            jellyOrbs: 'green', // Using green since forest is not available
+            atomic: 'sparkle',
+            fizzyOrb: 'neon'
+        };
+        
+        // Use the mapped color theme or fallback to blue
+        const colorTheme = presetColorThemes[presetName] || 'blue';
         
         return {
             ...Presets.defaults.zotSwarm,
             ...preset,
-            colorTheme: 'blue' // Default color theme
+            colorTheme: colorTheme
         };
+    }
+    
+    // Get a random color theme from available themes
+    function getRandomColorTheme() {
+        const themes = Object.keys(Presets.colorThemes);
+        return themes[Math.floor(Math.random() * themes.length)];
     }
     
     // Update all particles in the system
     function updateParticles() {
-        // Update Orbie's pulse effect only if pulseSpeed is not zero
-        if (orbie.pulseSpeed > 0) {
-            // Update Orbie's pulse effect - modified for outward radiation with reset
-            orbiePulsePhase += orbie.pulseSpeed;
-            
-            // When reaching 1, start a new pulse
-            if (orbiePulsePhase > 1) {
-                // Reset the pulse phase to start a new pulse
-                orbiePulsePhase = 0;
-            }
-        }
-        
-        // Update Orbie's position based on touch or autonomous movement
-        if (orbie) {
-            const prevX = orbie.x;
-            const prevY = orbie.y;
-            
-            // Update Orbie's position based on touch with distance decay
-            if (touch.active) {
-                const dx = orbie.x - touch.x;
-                const dy = orbie.y - touch.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                if (distance > 0) {
-                    // Apply force with distance decay - stronger effect closer to touch point
-                    const forceDecay = Math.max(0, 1 - (distance / (width/2))); // Decay with distance
-                    const force = forceSettings.touchForce * orbieSettings.touchMultiplier * forceDecay;
-                    
-                    if (touch.attract) {
-                        // Attract Orbie towards touch point
-                        orbie.vx -= (dx / distance) * force;
-                        orbie.vy -= (dy / distance) * force;
-                    } else {
-                        // Repel Orbie from touch point
-                        orbie.vx += (dx / distance) * force;
-                        orbie.vy += (dy / distance) * force;
-                    }
+        // Update Orbie if enabled
+        if (orbie && orbieSettings.enabled) {
+            // Update Orbie's pulse effect only if pulseSpeed is not zero
+            if (orbieSettings.pulseSpeed > 0) {
+                orbiePulsePhase += orbieSettings.pulseSpeed;
+                if (orbiePulsePhase > Math.PI * 2) {
+                    orbiePulsePhase = 0;
                 }
             }
             
-            // Add some drag to Orbie's movement for smoother control
+            // Store previous position for wall collision
+            const prevX = orbie.x;
+            const prevY = orbie.y;
+            
+            // Apply touch force to Orbie
+            if (touch.active) {
+                const dx = touch.x - orbie.x;
+                const dy = touch.y - orbie.y;
+                const distSq = dx * dx + dy * dy;
+                const maxDistSq = orbieSettings.influenceRadius * orbieSettings.influenceRadius;
+                
+                // Only apply force if within influence radius and not too close
+                if (distSq > 1 && distSq < maxDistSq) {
+                    const dist = Math.sqrt(distSq);
+                    const force = touch.attract ? 
+                        forceSettings.touchForce * orbieSettings.touchMultiplier :
+                        -forceSettings.touchForce * orbieSettings.touchMultiplier;
+                    
+                    // Scale force by distance (stronger when closer)
+                    const scaledForce = force * (1 - dist / orbieSettings.influenceRadius);
+                    
+                    // Normalize direction vector and apply force
+                    orbie.vx += (dx / dist) * scaledForce;
+                    orbie.vy += (dy / dist) * scaledForce;
+                }
+            }
+            
+            // Apply drag to Orbie's movement
             orbie.vx *= 0.95;
             orbie.vy *= 0.95;
             
@@ -380,7 +469,8 @@ const ParticleSystem = (function() {
             }
             
             // If more than 30% of particles are influenced, consider the swarm influenced
-            swarm.inOrbieInfluence = (particlesInInfluence / swarm.zots.length) > 0.3;
+            // Only apply influence if Orbie is enabled
+            swarm.inOrbieInfluence = orbieSettings.enabled && (particlesInInfluence / swarm.zots.length) > 0.3;
             
             // If just left Orbie's influence, restore original settings
             if (wasInInfluence && !swarm.inOrbieInfluence) {
@@ -392,6 +482,10 @@ const ParticleSystem = (function() {
     
     // Update a group of particles based on their settings
     function updateParticleGroup(particles, settings) {
+        // Get current theme for color updates
+        const currentTheme = ColorThemes.getCurrentTheme();
+        const sparkleUpdateRate = 0.1; // Rate at which sparkle theme refreshes colors (increased for more visible effect)
+        
         // For each particle in the group
         for (let i = 0; i < particles.length; i++) {
             const particle = particles[i];
@@ -405,7 +499,8 @@ const ParticleSystem = (function() {
             
             // Check if the particle is newly entering or leaving Orbie's swarm
             const wasInSwarm = particle.inOrbieSwarm;
-            particle.inOrbieSwarm = distanceToOrbie < orbieSettings.influenceRadius;
+            // Only consider particles to be in Orbie's influence if Orbie is enabled
+            particle.inOrbieSwarm = orbieSettings.enabled && distanceToOrbie < orbieSettings.influenceRadius;
             
             // Change particle color when it enters or leaves the swarm
             if (particle.inOrbieSwarm && !wasInSwarm) {
@@ -432,6 +527,16 @@ const ParticleSystem = (function() {
             } else if (particle.inOrbieSwarm && Math.random() < orbieSwarmSettings.sparkleRate) {
                 // Occasionally change the color of particles in the swarm based on sparkle rate
                 particle.color = getSparkleColor();
+            } else if (currentTheme === 'sparkle' && Math.random() < sparkleUpdateRate) {
+                // Only apply the sparkle effect to background particles (not to swarm zots)
+                // or if this is a zot swarm that uses the 'sparkle' theme
+                const isBackgroundParticle = particles === backgroundParticles;
+                const isSparkleTheme = particle.swarmId && 
+                    zotSwarms.find(s => s.id === particle.swarmId)?.settings.colorTheme === 'sparkle';
+                
+                if (isBackgroundParticle || isSparkleTheme) {
+                    particle.color = ColorThemes.getColor();
+                }
             }
             
             // Use appropriate settings based on whether particle is in Orbie's swarm
@@ -526,7 +631,7 @@ const ParticleSystem = (function() {
             }
             
             // If in Orbie's swarm, add attraction to Orbie
-            if (particle.inOrbieSwarm && orbieSettings.influenceIntensity > 0) {
+            if (particle.inOrbieSwarm && orbieSettings.influenceIntensity > 0 && orbieSettings.enabled) {
                 // Apply force towards Orbie based on influenceIntensity
                 particle.vx += (orbie.x - particle.x) * orbieSettings.influenceIntensity;
                 particle.vy += (orbie.y - particle.y) * orbieSettings.influenceIntensity;
@@ -536,11 +641,12 @@ const ParticleSystem = (function() {
             if (touch.active && (particle.inOrbieSwarm || forceSettings.zotTouchEnabled)) {
                 const dx = particle.x - touch.x;
                 const dy = particle.y - touch.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                const maxDistance = 150;
+                const distSq = dx * dx + dy * dy;
+                const maxDistSq = orbieSettings.influenceRadius * orbieSettings.influenceRadius;
                 
-                if (distance < maxDistance) {
-                    const force = ((maxDistance - distance) / maxDistance) * forceSettings.touchForce;
+                if (distSq < maxDistSq) {
+                    const distance = Math.sqrt(distSq);
+                    const force = ((orbieSettings.influenceRadius - distance) / orbieSettings.influenceRadius) * forceSettings.touchForce;
                     
                     if (touch.attract) {
                         // Attract towards touch point
@@ -591,60 +697,67 @@ const ParticleSystem = (function() {
         // Draw walls if they exist
         WallSystem.render(ctx);
         
-        // Draw Orbie (our main character)
-        if (orbie) {
-            // Draw background particles
-            drawParticleGroup(backgroundParticles);
-            
-            // Draw all ZotSwarms
-            zotSwarms.forEach(swarm => {
-                drawParticleGroup(swarm.zots);
-            });
-            
-            // Draw Orbie's influence area (for debugging, comment out in production)
-            // ctx.beginPath();
-            // ctx.arc(orbie.x, orbie.y, orbieSettings.influenceRadius, 0, Math.PI * 2);
-            // ctx.strokeStyle = 'rgba(100, 150, 255, 0.1)';
-            // ctx.stroke();
-            
-            // Calculate current glow size with outward radiation only if pulseSpeed > 0
-            const pulseFactor = orbie.pulseSpeed > 0 ? 1 + (orbiePulsePhase * orbie.pulseIntensity) : 1;
-            const currentGlowSize = orbie.glowSize * pulseFactor;
-            
-            // Draw Orbie's pulsating glow - using gradient for smoother effect
-            const glowGradient = ctx.createRadialGradient(
-                orbie.x, orbie.y, orbie.size * 0.5,
-                orbie.x, orbie.y, currentGlowSize
-            );
-            glowGradient.addColorStop(0, `rgba(255, 223, 0, ${orbie.glowOpacity})`); // Bright gold inner glow
-            glowGradient.addColorStop(0.5, `rgba(255, 215, 0, ${orbie.glowOpacity * 0.57})`); // Mid gold (scaled from 0.4/0.7)
-            glowGradient.addColorStop(1, 'rgba(255, 200, 0, 0)'); // Fade to transparent
-            
-            ctx.beginPath();
-            ctx.arc(orbie.x, orbie.y, currentGlowSize, 0, Math.PI * 2);
-            ctx.fillStyle = glowGradient;
-            ctx.fill();
-            
-            // Add a subtle outer ring to Orbie for better visibility
-            ctx.beginPath();
-            ctx.arc(orbie.x, orbie.y, orbie.size * 1.2, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(255, 215, 0, ${Math.min(0.6, orbie.glowOpacity * 0.8)})`; // Golden stroke proportional to glow opacity
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            
-            // Draw Orbie's core with gradient for dimension
-            const coreGradient = ctx.createRadialGradient(
-                orbie.x - orbie.size * 0.3, orbie.y - orbie.size * 0.3, 0,
-                orbie.x, orbie.y, orbie.size
-            );
-            coreGradient.addColorStop(0, 'rgba(255, 255, 240, 0.6)'); // Warm white center with 40% reduced opacity
-            coreGradient.addColorStop(0.7, 'rgba(255, 233, 150, 0.54)'); // Pale gold middle with 40% reduced opacity
-            coreGradient.addColorStop(1, 'rgba(255, 215, 0, 0.42)'); // Gold edge with 40% reduced opacity
-            
-            ctx.beginPath();
-            ctx.arc(orbie.x, orbie.y, orbie.size, 0, Math.PI * 2);
-            ctx.fillStyle = coreGradient;
-            ctx.fill();
+        // Draw background particles
+        drawParticleGroup(backgroundParticles);
+        
+        // Draw all ZotSwarms
+        zotSwarms.forEach(swarm => {
+            drawParticleGroup(swarm.zots);
+        });
+        
+        // Draw Orbie (our main character) if enabled
+        if (orbie && orbieSettings.enabled) {
+            try {
+                // Ensure all required properties exist to prevent rendering errors
+                if (!orbie.size) orbie.size = orbieSettings.size || 12;
+                if (!orbie.glowSize) orbie.glowSize = orbie.size * (orbieSettings.glowSize || 3);
+                if (!orbie.glowOpacity) orbie.glowOpacity = orbieSettings.glowOpacity || 0.2;
+                if (!orbie.pulseSpeed) orbie.pulseSpeed = orbieSettings.pulseSpeed || 0.05;
+                if (!orbie.pulseIntensity) orbie.pulseIntensity = orbieSettings.pulseIntensity || 0.4;
+                
+                // Calculate current glow size with outward radiation only if pulseSpeed > 0
+                const pulseFactor = orbie.pulseSpeed > 0 ? 1 + (orbiePulsePhase * orbie.pulseIntensity) : 1;
+                const currentGlowSize = orbie.glowSize * pulseFactor;
+                
+                // Draw Orbie's pulsating glow - using gradient for smoother effect
+                const glowGradient = ctx.createRadialGradient(
+                    orbie.x, orbie.y, orbie.size * 0.5,
+                    orbie.x, orbie.y, currentGlowSize
+                );
+                glowGradient.addColorStop(0, `rgba(255, 223, 0, ${orbie.glowOpacity})`); // Bright gold inner glow
+                glowGradient.addColorStop(0.5, `rgba(255, 215, 0, ${orbie.glowOpacity * 0.57})`); // Mid gold (scaled from 0.4/0.7)
+                glowGradient.addColorStop(1, 'rgba(255, 200, 0, 0)'); // Fade to transparent
+                
+                ctx.beginPath();
+                ctx.arc(orbie.x, orbie.y, currentGlowSize, 0, Math.PI * 2);
+                ctx.fillStyle = glowGradient;
+                ctx.fill();
+                
+                // Add a subtle outer ring to Orbie for better visibility
+                ctx.beginPath();
+                ctx.arc(orbie.x, orbie.y, orbie.size * 1.2, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(255, 215, 0, ${Math.min(0.6, orbie.glowOpacity * 0.8)})`; // Golden stroke proportional to glow opacity
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Draw Orbie's core with gradient for dimension
+                const coreGradient = ctx.createRadialGradient(
+                    orbie.x - orbie.size * 0.3, orbie.y - orbie.size * 0.3, 0,
+                    orbie.x, orbie.y, orbie.size
+                );
+                coreGradient.addColorStop(0, 'rgba(255, 255, 240, 0.6)'); // Warm white center with 40% reduced opacity
+                coreGradient.addColorStop(0.7, 'rgba(255, 233, 150, 0.54)'); // Pale gold middle with 40% reduced opacity
+                coreGradient.addColorStop(1, 'rgba(255, 215, 0, 0.42)'); // Gold edge with 40% reduced opacity
+                
+                ctx.beginPath();
+                ctx.arc(orbie.x, orbie.y, orbie.size, 0, Math.PI * 2);
+                ctx.fillStyle = coreGradient;
+                ctx.fill();
+            } catch (e) {
+                console.error("Error rendering Orbie:", e);
+                console.log("Orbie state:", orbie);
+                console.log("orbieSettings:", orbieSettings);
+            }
         }
     }
     
@@ -706,19 +819,46 @@ const ParticleSystem = (function() {
     // Initialize everything
     function init() {
         // Load default settings from Presets
-        orbieSettings = {...Presets.defaults.orbie};
+        orbieSettings = JSON.parse(JSON.stringify(Presets.defaults.orbie));
         
         // Ensure glowOpacity has a default if it's missing from presets
         if (orbieSettings.glowOpacity === undefined) {
-            orbieSettings.glowOpacity = 0.7;
+            orbieSettings.glowOpacity = 0.2;
         }
+        
+        // Ensure glowColor has a default if it's missing
+        if (orbieSettings.glowColor === undefined) {
+            orbieSettings.glowColor = 'rgba(255, 215, 0, 0.6)';
+        }
+        
+        // Ensure enabled property is false by default
+        orbieSettings.enabled = false;
         
         orbieSwarmSettings = {...Presets.defaults.orbieSwarm};
         forceSettings = {...Presets.defaults.forces};
         
-        // Initialize particles
-        initBackgroundParticles();
+        // Initialize canvas dimensions
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        
+        // Reset mouse position
+        touch.x = width / 2;
+        touch.y = height / 2;
+        
+        // Clear particles arrays
+        backgroundParticles = [];
+        zotSwarms = [];
+        
+        // Reset Orbie pulse effect phase
+        orbiePulsePhase = 0;
+        
+        // Initialize Orbie
         initOrbie();
+        
+        console.log("Orbie initialized:", orbie, "Enabled:", orbieSettings.enabled);
+        
+        // Create background particles
+        initBackgroundParticles();
         
         // Start animation
         animationFrameId = requestAnimationFrame(animate);
@@ -753,6 +893,7 @@ const ParticleSystem = (function() {
         // Update Orbie settings
         updateOrbieSettings: function(property, value) {
             if (property in orbieSettings) {
+                const previousValue = orbieSettings[property];
                 orbieSettings[property] = value;
                 
                 // Update Orbie's properties
@@ -768,8 +909,28 @@ const ParticleSystem = (function() {
                         orbie[property] = value;
                     } else if (property === 'speed') {
                         // Just update the setting, velocity is calculated from this
+                    } else if (property === 'enabled') {
+                        // When enabling, ensure all visual properties are fully refreshed
+                        if (value === true) {
+                            console.log("Enabling Orbie, refreshing all visual properties");
+                            // Force a complete refresh of Orbie's properties
+                            orbie.color = orbieSettings.color || 'rgba(255, 250, 230, 0.9)';
+                            orbie.size = orbieSettings.size;
+                            orbie.glowSize = orbie.size * orbieSettings.glowSize;
+                            orbie.glowColor = orbieSettings.glowColor || 'rgba(255, 215, 0, 0.6)';
+                            orbie.glowOpacity = orbieSettings.glowOpacity;
+                            orbie.pulseSpeed = orbieSettings.pulseSpeed;
+                            orbie.pulseIntensity = orbieSettings.pulseIntensity;
+                        }
                     }
+                    // No action needed for other properties as they're checked during update/draw
                 }
+            }
+            
+            // Log state after property change
+            if (property === 'enabled') {
+                console.log("Orbie enabled:", orbieSettings.enabled);
+                console.log("Orbie properties:", orbie.color, orbie.size, orbie.glowColor, orbie.glowOpacity);
             }
         },
         
@@ -805,25 +966,8 @@ const ParticleSystem = (function() {
         },
         
         // Methods for ZotSwarm management
-        createSwarmPlacementIndicator: function(preset) {
-            return createSwarmPlacementIndicator(preset);
-        },
-        
-        confirmSwarmPlacement: function(config) {
-            return confirmSwarmPlacement(config);
-        },
-        
-        getActiveSwarmPlacement: function() {
-            return activeSwarmPlacement;
-        },
-        
-        cancelSwarmPlacement: function() {
-            if (activeSwarmPlacement && activeSwarmPlacement.element) {
-                if (activeSwarmPlacement.element.parentNode) {
-                    activeSwarmPlacement.element.parentNode.removeChild(activeSwarmPlacement.element);
-                }
-                activeSwarmPlacement = null;
-            }
+        createZotSwarm: function(config) {
+            return createZotSwarm(config);
         },
         
         getZotSwarms: function() {
@@ -858,15 +1002,18 @@ const ParticleSystem = (function() {
             // Clear all swarms
             zotSwarms = [];
             
-            // Cancel any active placement
-            this.cancelSwarmPlacement();
-            
             // Reset settings to defaults
-            orbieSettings = {...Presets.defaults.orbie};
+            orbieSettings = JSON.parse(JSON.stringify(Presets.defaults.orbie));
+            orbieSettings.enabled = false; // Match initial app state (Orbie disabled)
             orbieSwarmSettings = {...Presets.defaults.orbieSwarm};
             forceSettings = {...Presets.defaults.forces};
             
             // Update UI toggle to match settings
+            const orbieEnabled = document.getElementById('orbieEnabled');
+            if (orbieEnabled) {
+                orbieEnabled.checked = false; // Match initial app state
+            }
+            
             const zotTouchEnabled = document.getElementById('zotTouchEnabled');
             if (zotTouchEnabled) {
                 zotTouchEnabled.checked = forceSettings.zotTouchEnabled;
@@ -880,6 +1027,11 @@ const ParticleSystem = (function() {
             // Reinitialize
             initBackgroundParticles();
             initOrbie();
+            
+            // Sanity check for Orbie's visual properties
+            console.log("After reset - Orbie enabled:", orbieSettings.enabled);
+            console.log("After reset - Orbie visual properties:", 
+                orbie.color, orbie.size, orbie.glowColor, orbie.glowOpacity, orbie.glowSize);
         },
         
         // Add a wall segment - wrapper for WallSystem
@@ -890,6 +1042,16 @@ const ParticleSystem = (function() {
         // Clear all walls - wrapper for WallSystem
         clearWalls: function() {
             WallSystem.clearWalls();
+        },
+        
+        // Remove all zot swarms
+        removeAllZotSwarms: function() {
+            return removeAllZotSwarms();
+        },
+        
+        // Update an existing ZotSwarm with new parameters
+        updateZotSwarm: function(swarmId, config) {
+            return updateZotSwarm(swarmId, config);
         }
     };
 })();
