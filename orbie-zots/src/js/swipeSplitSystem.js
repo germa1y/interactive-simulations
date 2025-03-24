@@ -11,7 +11,7 @@ const SwipeSplitSystem = (function() {
     // Force field parameters
     let forceRadius = 150;         // How far the force extends from the path
     let forceIntensity = 2.5;     // Base intensity of the force
-    let attractMultiplier = 1.0;  // Multiplier for attract force strength
+    let attractMultiplier = 0.2;  // Multiplier for attract force strength
     let repelMultiplier = 3.0;    // Multiplier for repel force strength
     let forceDecayFactor = 0.98;  // How quickly force decays per frame
     let forceActive = true;       // Whether forces are active

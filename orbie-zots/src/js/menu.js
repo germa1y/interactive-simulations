@@ -193,7 +193,7 @@ const MenuSystem = (function() {
             
             setupRangeInput('swipeAttractMultiplier', value => {
                 SwipeSplitSystem.updateSettings({ attractMultiplier: value });
-            }, swipeSettings.attractMultiplier || 1.0);
+            }, swipeSettings.attractMultiplier || 0.2);
         }
         
         // Checkboxes for enabled/disabled features

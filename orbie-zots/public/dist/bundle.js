@@ -1,7 +1,7 @@
 /**
  * Orbie Zots - Particle Swarm Simulation
  * Copyright (c) 2025
- * Built: 2025-03-24T04:00:40.505Z
+ * Built: 2025-03-24T05:32:09.394Z
  */
 
 // colors.js - Color themes and generators for particles
@@ -974,7 +974,7 @@ const MenuSystem = (function() {
             
             setupRangeInput('swipeAttractMultiplier', value => {
                 SwipeSplitSystem.updateSettings({ attractMultiplier: value });
-            }, swipeSettings.attractMultiplier || 1.0);
+            }, swipeSettings.attractMultiplier || 0.2);
         }
         
         // Checkboxes for enabled/disabled features
@@ -2998,7 +2998,7 @@ const SwipeSplitSystem = (function() {
     // Force field parameters
     let forceRadius = 150;         // How far the force extends from the path
     let forceIntensity = 2.5;     // Base intensity of the force
-    let attractMultiplier = 1.0;  // Multiplier for attract force strength
+    let attractMultiplier = 0.2;  // Multiplier for attract force strength
     let repelMultiplier = 3.0;    // Multiplier for repel force strength
     let forceDecayFactor = 0.98;  // How quickly force decays per frame
     let forceActive = true;       // Whether forces are active
