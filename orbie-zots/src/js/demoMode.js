@@ -577,7 +577,7 @@ const DemoMode = (function() {
             if (!promptActive) return; // Stop if no longer active
             
             // Add the "T-T-T-Touch Me" text
-            secondPart.textContent = 'T-T-T-Touch em';
+            secondPart.textContent = 'T-T-T-Touch \'em';
             
             // Apply zoom fade-in to second part
             zoomAnimation = txtZoomFadeIn(secondPart, 2, 1, 1000, () => {
@@ -586,7 +586,7 @@ const DemoMode = (function() {
                 secondPart.innerHTML = ''; // Clear for individual chars
                 
                 // Content for the second part with hyphens
-                const text = 'T-T-T-Touch em';
+                const text = 'T-T-T-Touch \'em';
                 
                 // Animation variables
                 let letterIndex = 0;
