@@ -7,6 +7,7 @@ const ParticleSystem = (function() {
     let lastTime = 0;
     let frameCount = 0;
     let fpsDisplay;
+    let zotsCounterDisplay; // Add Zots counter display element
     
     // Touch interaction state
     let touch = {
@@ -364,9 +365,9 @@ const ParticleSystem = (function() {
             murmuration: 'colorblind',
             lavaLamp: 'fire',
             cookingOil: 'gold',
-            jellyOrbs: 'green', // Using green since forest is not available
+            jellyOrbs: 'green',
             atomic: 'sparkle',
-            fizzyOrb: 'neon'
+            fizzyPop: 'neon'
         };
         
         // Use the mapped color theme or fallback to blue
@@ -807,6 +808,10 @@ const ParticleSystem = (function() {
         if (timestamp - lastTime >= 1000) {
             const fps = Math.round((frameCount * 1000) / (timestamp - lastTime));
             fpsDisplay.textContent = `FPS: ${fps}`;
+            
+            // Update Zots counter
+            updateZotsCounter();
+            
             frameCount = 0;
             lastTime = timestamp;
         }
@@ -814,6 +819,26 @@ const ParticleSystem = (function() {
         // Update and draw particles
         updateParticles();
         drawParticles();
+    }
+    
+    // Count and update the Zots counter
+    function updateZotsCounter() {
+        let totalZots = 0;
+        
+        // Count zots in all swarms
+        for (let i = 0; i < zotSwarms.length; i++) {
+            if (zotSwarms[i] && zotSwarms[i].zots) {
+                totalZots += zotSwarms[i].zots.length;
+            }
+        }
+        
+        // Count background particles if they're considered zots
+        totalZots += backgroundParticles.length;
+        
+        // Update the counter display
+        if (zotsCounterDisplay) {
+            zotsCounterDisplay.textContent = `Zots: ${totalZots}`;
+        }
     }
     
     // Initialize everything
@@ -870,6 +895,7 @@ const ParticleSystem = (function() {
             canvas = canvasElement;
             ctx = canvas.getContext('2d', { alpha: false });
             fpsDisplay = fpsElement;
+            zotsCounterDisplay = document.getElementById('zotsCounter');
             
             setupCanvas();
             init();

@@ -52,7 +52,7 @@ const Presets = {
             perception: 200,
             trailLength: 0
         },
-        fizzyOrb: {
+        fizzyPop: {
             name: "Fizzy Pop",
             zotCount: 25,
             speed: 2,
