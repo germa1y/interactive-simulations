@@ -664,6 +664,15 @@ const ParticleSystem = (function() {
             // Apply wall forces
             WallSystem.applyForces(particle, prevX, prevY, true);
             
+            // Apply SwipeSplitSystem forces if active
+            if (typeof SwipeSplitSystem !== 'undefined' && SwipeSplitSystem.isSwipeActive()) {
+                const swipeForces = SwipeSplitSystem.applyForces(particle);
+                if (swipeForces.fx !== 0 || swipeForces.fy !== 0) {
+                    particle.vx += swipeForces.fx;
+                    particle.vy += swipeForces.fy;
+                }
+            }
+            
             // Apply dampening to reduce wobble if particle is in orbieSwarm
             if (particle.inOrbieSwarm && orbieSwarmSettings.dampening > 0) {
                 particle.vx *= orbieSwarmSettings.dampening;
@@ -697,6 +706,11 @@ const ParticleSystem = (function() {
         
         // Draw walls if they exist
         WallSystem.render(ctx);
+        
+        // Draw SwipeSplitSystem lines if available
+        if (typeof SwipeSplitSystem !== 'undefined') {
+            SwipeSplitSystem.draw();
+        }
         
         // Draw background particles
         drawParticleGroup(backgroundParticles);

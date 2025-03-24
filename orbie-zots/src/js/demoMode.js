@@ -577,7 +577,7 @@ const DemoMode = (function() {
             if (!promptActive) return; // Stop if no longer active
             
             // Add the "T-T-T-Touch Me" text
-            secondPart.textContent = 'T-T-T-Touch Me';
+            secondPart.textContent = 'T-T-T-Touch em';
             
             // Apply zoom fade-in to second part
             zoomAnimation = txtZoomFadeIn(secondPart, 2, 1, 1000, () => {
@@ -586,7 +586,7 @@ const DemoMode = (function() {
                 secondPart.innerHTML = ''; // Clear for individual chars
                 
                 // Content for the second part with hyphens
-                const text = 'T-T-T-Touch Me';
+                const text = 'T-T-T-Touch em';
                 
                 // Animation variables
                 let letterIndex = 0;
@@ -658,12 +658,6 @@ const DemoMode = (function() {
         isCycling = true;
         cycleIndex = 0; // Start with the first preset (after the initial one)
         
-        // Make sure we start with push mode by default
-        if (ParticleSystem.isAttractMode()) {
-            ParticleSystem.toggleAttraction(); // Ensure we start in push (repel) mode
-            console.log('Demo Mode: Initializing touch mode to PUSH');
-        }
-        
         // Set up interval to cycle through presets
         cycleInterval = setInterval(() => {
             cycleToNextPreset();
@@ -683,20 +677,6 @@ const DemoMode = (function() {
         const presetCycle = PRESET_CYCLES[cycleIndex];
         
         console.log(`Demo Mode: Cycling to preset "${presetCycle.name}"`);
-        
-        // Check if this is the murmuration preset
-        const isMurmuration = presetCycle.name === "Bird Flock";
-        
-        // If this is the murmuration preset, set touch to "pull" (attract mode)
-        if (isMurmuration && !ParticleSystem.isAttractMode()) {
-            ParticleSystem.toggleAttraction(); // Enable attract mode for murmuration
-            console.log('Demo Mode: Setting touch mode to PULL for murmuration');
-        } 
-        // If we're moving away from murmuration preset to something else, set touch to "push"
-        else if (!isMurmuration && ParticleSystem.isAttractMode()) {
-            ParticleSystem.toggleAttraction(); // Disable attract mode for other presets
-            console.log('Demo Mode: Setting touch mode to PUSH for non-murmuration preset');
-        }
         
         // Apply new configurations to each swarm
         demoSwarms.forEach((swarmId, index) => {

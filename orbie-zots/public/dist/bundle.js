@@ -1,7 +1,7 @@
 /**
  * Orbie Zots - Particle Swarm Simulation
  * Copyright (c) 2025
- * Built: 2025-03-24T00:49:09.024Z
+ * Built: 2025-03-24T03:51:56.877Z
  */
 
 // colors.js - Color themes and generators for particles
@@ -490,6 +490,11 @@ const TouchHandler = (function() {
     let touchY = 0;
     let lastTouchTime = 0;
     let touchPulseElement = null;
+    let swipeModeActive = false;  // Track if we're in swipe mode
+    let swipeStartX = 0;          // Starting X position of swipe
+    let swipeStartY = 0;          // Starting Y position of swipe
+    let swipeThreshold = 10;      // Minimum distance to trigger swipe detection
+    let swipeDetected = false;    // Flag to indicate if swipe is detected
     
     // Callbacks for integration with particle system
     let callbacks = {
@@ -524,6 +529,11 @@ const TouchHandler = (function() {
             touchY = y;
             touchActive = true;
             
+            // Record the start position for swipe detection
+            swipeStartX = x;
+            swipeStartY = y;
+            swipeDetected = false;
+            
             // Detect double tap
             const currentTime = new Date().getTime();
             const timeDiff = currentTime - lastTouchTime;
@@ -543,6 +553,12 @@ const TouchHandler = (function() {
                             touchPulseElement.classList.add('touch-pulse-repel');
                         }
                     }
+                    
+                    // Update SwipeSplitSystem with new attract/repel mode
+                    if (typeof SwipeSplitSystem !== 'undefined') {
+                        const isAttract = callbacks.isAttractMode ? callbacks.isAttractMode() : false;
+                        SwipeSplitSystem.setAttractMode(isAttract);
+                    }
                 }
             }
             
@@ -555,6 +571,14 @@ const TouchHandler = (function() {
             // Call the callback
             if (callbacks.onTouchStart) {
                 callbacks.onTouchStart(x, y);
+            }
+            
+            // Initialize swipe path if SwipeSplitSystem is available
+            if (typeof SwipeSplitSystem !== 'undefined') {
+                // Set the current attract/repel mode
+                const isAttract = callbacks.isAttractMode ? callbacks.isAttractMode() : false;
+                SwipeSplitSystem.setAttractMode(isAttract);
+                SwipeSplitSystem.startSwipePath(x, y);
             }
         }
     }
@@ -573,6 +597,23 @@ const TouchHandler = (function() {
             // Update pulse position
             updateTouchPulse(x, y);
             
+            // Check for swipe
+            if (!swipeDetected) {
+                const dx = x - swipeStartX;
+                const dy = y - swipeStartY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance > swipeThreshold) {
+                    swipeDetected = true;
+                    console.log("Swipe detected");
+                }
+            }
+            
+            // Continue updating swipe path if SwipeSplitSystem is available
+            if (swipeDetected && typeof SwipeSplitSystem !== 'undefined') {
+                SwipeSplitSystem.addPointToSwipePath(x, y);
+            }
+            
             // Call the callback
             if (callbacks.onTouchMove) {
                 callbacks.onTouchMove(x, y);
@@ -586,7 +627,13 @@ const TouchHandler = (function() {
         // Remove pulse effect
         removeTouchPulse();
         
+        // End swipe path if SwipeSplitSystem is available
+        if (swipeDetected && typeof SwipeSplitSystem !== 'undefined') {
+            SwipeSplitSystem.endSwipePath();
+        }
+        
         touchActive = false;
+        swipeDetected = false;
         
         // Call the callback
         if (callbacks.onTouchEnd) {
@@ -701,6 +748,12 @@ const TouchHandler = (function() {
             // Merge provided callbacks with defaults
             if (callbacksObj) {
                 callbacks = {...callbacks, ...callbacksObj};
+            }
+            
+            // Initialize the SwipeSplitSystem with the current mode if available
+            if (typeof SwipeSplitSystem !== 'undefined') {
+                const isAttract = callbacks.isAttractMode ? callbacks.isAttractMode() : false;
+                SwipeSplitSystem.setAttractMode(isAttract);
             }
             
             // Add touch event listeners
@@ -889,13 +942,53 @@ const MenuSystem = (function() {
         setupRangeInput('touchForce', value => updateSetting('forces', 'touchForce', value));
         setupRangeInput('wallForce', value => updateSetting('forces', 'wallForce', value));
         
-        // Setup Zot Touch Interaction toggle
+        // SwipeSplitSystem force controls
+        if (typeof SwipeSplitSystem !== 'undefined') {
+            // Get current settings to initialize UI elements
+            const swipeSettings = SwipeSplitSystem.getSettings();
+            
+            // Force enable toggle
+            const swipeForcesEnabled = document.getElementById('swipeForcesEnabled');
+            if (swipeForcesEnabled) {
+                // Initialize checkbox state from current settings
+                swipeForcesEnabled.checked = swipeSettings.forceActive !== false;
+                
+                swipeForcesEnabled.addEventListener('change', function() {
+                    SwipeSplitSystem.updateSettings({ forceActive: this.checked });
+                });
+            }
+            
+            // Range sliders for force parameters
+            setupRangeInput('swipeForceRadius', value => {
+                SwipeSplitSystem.updateSettings({ forceRadius: value });
+            }, swipeSettings.forceRadius);
+            
+            setupRangeInput('swipeForceIntensity', value => {
+                SwipeSplitSystem.updateSettings({ forceIntensity: value });
+            }, swipeSettings.forceIntensity);
+            
+            // Separate controls for attract and repel multipliers
+            setupRangeInput('swipeRepelMultiplier', value => {
+                SwipeSplitSystem.updateSettings({ repelMultiplier: value });
+            }, swipeSettings.repelMultiplier || 3.0);
+            
+            setupRangeInput('swipeAttractMultiplier', value => {
+                SwipeSplitSystem.updateSettings({ attractMultiplier: value });
+            }, swipeSettings.attractMultiplier || 1.0);
+        }
+        
+        // Checkboxes for enabled/disabled features
         const zotTouchEnabled = document.getElementById('zotTouchEnabled');
         if (zotTouchEnabled) {
             zotTouchEnabled.addEventListener('change', function() {
-                if (callbacks.updateSettings) {
-                    callbacks.updateSettings('forces', 'zotTouchEnabled', this.checked);
-                }
+                updateSetting('forces', 'zotTouchEnabled', this.checked);
+            });
+        }
+        
+        const zotSwarmInteractionEnabled = document.getElementById('zotSwarmInteractionEnabled');
+        if (zotSwarmInteractionEnabled) {
+            zotSwarmInteractionEnabled.addEventListener('change', function() {
+                updateSetting('forces', 'zotSwarmInteractionEnabled', this.checked);
             });
         }
         
@@ -986,11 +1079,16 @@ const MenuSystem = (function() {
     }
     
     // Helper function to set up a range input
-    function setupRangeInput(id, changeCallback) {
+    function setupRangeInput(id, changeCallback, initialValue) {
         const input = document.getElementById(id);
         const valueDisplay = document.getElementById(id + 'Value');
         
         if (input && valueDisplay) {
+            // Set initial value from settings if provided
+            if (initialValue !== undefined) {
+                input.value = initialValue;
+            }
+            
             // Set initial value display
             valueDisplay.textContent = parseFloat(input.value).toFixed(input.step.includes('.') ? 2 : 0);
             
@@ -1756,6 +1854,15 @@ const ParticleSystem = (function() {
             // Apply wall forces
             WallSystem.applyForces(particle, prevX, prevY, true);
             
+            // Apply SwipeSplitSystem forces if active
+            if (typeof SwipeSplitSystem !== 'undefined' && SwipeSplitSystem.isSwipeActive()) {
+                const swipeForces = SwipeSplitSystem.applyForces(particle);
+                if (swipeForces.fx !== 0 || swipeForces.fy !== 0) {
+                    particle.vx += swipeForces.fx;
+                    particle.vy += swipeForces.fy;
+                }
+            }
+            
             // Apply dampening to reduce wobble if particle is in orbieSwarm
             if (particle.inOrbieSwarm && orbieSwarmSettings.dampening > 0) {
                 particle.vx *= orbieSwarmSettings.dampening;
@@ -1789,6 +1896,11 @@ const ParticleSystem = (function() {
         
         // Draw walls if they exist
         WallSystem.render(ctx);
+        
+        // Draw SwipeSplitSystem lines if available
+        if (typeof SwipeSplitSystem !== 'undefined') {
+            SwipeSplitSystem.draw();
+        }
         
         // Draw background particles
         drawParticleGroup(backgroundParticles);
@@ -2873,6 +2985,488 @@ const WallSystem = (function() {
     };
 })(); 
 
+// swipeSplitSystem.js - Handle swipe path drawing and effects
+const SwipeSplitSystem = (function() {
+    // Private variables
+    let canvas;
+    let ctx;
+    let swipePaths = []; // Array to hold multiple swipe paths
+    let activePathIndex = -1; // Index of the currently active path
+    let pathWidth = 6;
+    let isAttractMode = false; // Track if we're in attract (pull) or repel (push) mode
+    
+    // Force field parameters
+    let forceRadius = 150;         // How far the force extends from the path
+    let forceIntensity = 2.5;     // Base intensity of the force
+    let attractMultiplier = 1.0;  // Multiplier for attract force strength
+    let repelMultiplier = 3.0;    // Multiplier for repel force strength
+    let forceDecayFactor = 0.98;  // How quickly force decays per frame
+    let forceActive = true;       // Whether forces are active
+    let baseDuration = 800;       // Base duration in milliseconds for path visibility (reduced from 3000)
+    let decayDelay = 1000;        // Delay in ms before decay starts (1 second)
+    
+    // Path colors based on mode
+    const pathColors = {
+        attract: 'rgba(0, 150, 255, 0.8)',  // Blue for attract/pull
+        repel: 'rgba(255, 100, 0, 0.8)'     // Orange for repel/push
+    };
+    let pathColor = pathColors.repel; // Default to repel color
+    
+    let lastPointTime = 0;
+    let pointsAddedSinceDecay = 0;
+    let pathCreationTime = 0;     // Time when the path was created
+    
+    // Settings for path decay
+    let currentDecaySpeed = 0.01; // How quickly the path fades out (will be dynamically adjusted)
+    const decayInterval = 16;     // Update interval in ms
+    const minOpacity = 0.1;       // Minimum opacity while actively drawing
+    
+    // Calculate path duration based on force parameters
+    function calculatePathDuration() {
+        // Get current multiplier based on mode
+        const modeMultiplier = isAttractMode ? attractMultiplier : repelMultiplier;
+        
+        // Original decay speed was 0.01 per 16ms interval
+        const originalDecayRatePerSecond = 0.01 * (1000 / decayInterval);
+        
+        // Calculate a factor based on force parameters - now with much less influence
+        // We're keeping a small influence but greatly reducing it
+        const radiusFactor = 1.0 + (forceRadius / 50 - 1) * 0.15;       // 15% influence
+        const intensityFactor = 1.0 + (forceIntensity / 0.8 - 1) * 0.15; // 15% influence
+        const multiplierFactor = 1.0 + (modeMultiplier / 1.0 - 1) * 0.15; // 15% influence
+        
+        // Combined factor with extremely reduced impact
+        const combinedFactor = Math.min(radiusFactor * intensityFactor * multiplierFactor, 1.5);
+        
+        // Cap the max duration to prevent extremely slow decay
+        return Math.min(baseDuration * combinedFactor, 1200);
+    }
+    
+    // Internal methods
+    function drawPaths() {
+        if (!ctx) return;
+        
+        // Draw each path
+        swipePaths.forEach(path => {
+            if (path.points.length < 2) return;
+            
+            ctx.save();
+            
+            // Set drawing properties
+            ctx.globalAlpha = path.opacity;
+            ctx.strokeStyle = path.color;
+            ctx.lineWidth = pathWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            // Begin path drawing
+            ctx.beginPath();
+            ctx.moveTo(path.points[0].x, path.points[0].y);
+            
+            // Draw path through all points
+            for (let i = 1; i < path.points.length; i++) {
+                ctx.lineTo(path.points[i].x, path.points[i].y);
+            }
+            
+            ctx.stroke();
+            ctx.restore();
+        });
+    }
+    
+    // Create a decay timer for a specific path
+    function startPathDecay(pathIndex, isFinalDecay = false) {
+        const path = swipePaths[pathIndex];
+        if (!path) return;
+        
+        // Clear any existing decay timer for this path
+        if (path.decayTimer) {
+            clearInterval(path.decayTimer);
+        }
+        
+        // Calculate decay speed based on the path's properties
+        const modeMultiplier = path.isAttract ? attractMultiplier : repelMultiplier;
+        const radiusFactor = 1.0 + (forceRadius / 50 - 1) * 0.15;
+        const intensityFactor = 1.0 + (forceIntensity / 0.8 - 1) * 0.15;
+        const multiplierFactor = 1.0 + (modeMultiplier / 1.0 - 1) * 0.15;
+        
+        const combinedFactor = Math.min(radiusFactor * intensityFactor * multiplierFactor, 1.5);
+        const pathDuration = Math.min(baseDuration * combinedFactor, 1200);
+        const decaySpeed = 1.0 / (pathDuration / decayInterval);
+        
+        // Always add delay before starting decay, even for "final" decay
+        // If path doesn't have a decayStartTime yet, set it
+        if (!path.decayStartTime || path.decayStartTime < Date.now()) {
+            path.decayStartTime = Date.now() + decayDelay;
+        }
+        
+        // Store the final decay state for later
+        path.pendingFinalDecay = isFinalDecay;
+        
+        // Save pathIndex and reference to the actual path object to prevent index confusion
+        const pathRef = path;
+        const savedPathIndex = path.pathIndex;
+        
+        // Start a new decay timer
+        path.decayTimer = setInterval(() => {
+            // Get current index from the saved reference rather than using the original pathIndex
+            // This ensures we always operate on the correct path even if indices have changed
+            const currentPathIndex = pathRef.pathIndex;
+            
+            // Safety check to make sure this path still exists in the array
+            if (!swipePaths.includes(pathRef)) {
+                clearInterval(pathRef.decayTimer);
+                return;
+            }
+            
+            const now = Date.now();
+            
+            // Skip decay if we're still in the delay period
+            if (now < pathRef.decayStartTime) {
+                return;
+            }
+            
+            // Once delay period is over, check if this should be a final decay
+            const shouldFinalDecay = pathRef.pendingFinalDecay;
+            
+            if (shouldFinalDecay) {
+                // Final decay - fade out completely
+                pathRef.opacity -= decaySpeed * 2;
+                
+                if (pathRef.opacity <= 0) {
+                    clearInterval(pathRef.decayTimer);
+                    pathRef.decayTimer = null;
+                    
+                    // Find the current index of this path and remove it
+                    const currentIndex = swipePaths.indexOf(pathRef);
+                    if (currentIndex !== -1) {
+                        swipePaths.splice(currentIndex, 1);
+                        
+                        // Update activePathIndex if needed
+                        if (activePathIndex >= currentIndex) {
+                            activePathIndex = Math.max(-1, activePathIndex - 1);
+                        }
+                        
+                        // Reassign all path indices to ensure consistency
+                        swipePaths.forEach((p, i) => {
+                            p.pathIndex = i;
+                        });
+                    }
+                }
+            } else {
+                // Active decay - diminish but maintain minimum opacity if still adding points
+                const inactiveTime = Date.now() - pathRef.lastPointTime;
+                
+                // If we haven't added points for a while, switch to final decay
+                if (inactiveTime > 250 && currentPathIndex === activePathIndex) {
+                    clearInterval(pathRef.decayTimer);
+                    
+                    // Mark this path as no longer active
+                    if (activePathIndex === currentPathIndex) {
+                        activePathIndex = -1;
+                    }
+                    
+                    // Start final decay
+                    pathRef.pendingFinalDecay = true;
+                    startPathDecay(currentPathIndex, true);
+                    return;
+                }
+                
+                // Only decrease opacity if we haven't added new points recently
+                if (pathRef.pointsAddedSinceDecay === 0) {
+                    pathRef.opacity = Math.max(pathRef.opacity - decaySpeed, pathRef.isActive ? minOpacity : 0);
+                } else {
+                    // Reset counter after processing decay
+                    pathRef.pointsAddedSinceDecay = 0;
+                }
+            }
+        }, decayInterval);
+    }
+    
+    // Update color based on current attract/repel mode
+    function updatePathColor() {
+        pathColor = isAttractMode ? pathColors.attract : pathColors.repel;
+    }
+    
+    // Calculate distance from point to line segment
+    function distToSegment(px, py, x1, y1, x2, y2) {
+        const A = px - x1;
+        const B = py - y1;
+        const C = x2 - x1;
+        const D = y2 - y1;
+        
+        const dot = A * C + B * D;
+        const len_sq = C * C + D * D;
+        let param = -1;
+        
+        if (len_sq !== 0) {
+            param = dot / len_sq;
+        }
+        
+        let xx, yy;
+        
+        if (param < 0) {
+            xx = x1;
+            yy = y1;
+        } else if (param > 1) {
+            xx = x2;
+            yy = y2;
+        } else {
+            xx = x1 + param * C;
+            yy = y1 + param * D;
+        }
+        
+        const dx = px - xx;
+        const dy = py - yy;
+        
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+    
+    // Calculate the force applied to a particle from all active paths
+    function calculateForce(particle) {
+        if (!forceActive || swipePaths.length === 0) return { fx: 0, fy: 0 };
+        
+        let totalFx = 0;
+        let totalFy = 0;
+        
+        // Apply forces from all paths
+        swipePaths.forEach(path => {
+            if (path.points.length < 2) return;
+            
+            let minDist = Infinity;
+            let closestPoint = { x: 0, y: 0 };
+            
+            // Find the closest point on this path to the particle
+            for (let i = 1; i < path.points.length; i++) {
+                const p1 = path.points[i-1];
+                const p2 = path.points[i];
+                
+                // Calculate distance to this segment
+                const dist = distToSegment(particle.x, particle.y, p1.x, p1.y, p2.x, p2.y);
+                
+                if (dist < minDist) {
+                    minDist = dist;
+                    
+                    // Find the closest point on the segment (for force direction)
+                    const A = particle.x - p1.x;
+                    const B = particle.y - p1.y;
+                    const C = p2.x - p1.x;
+                    const D = p2.y - p1.y;
+                    
+                    const dot = A * C + B * D;
+                    const len_sq = C * C + D * D;
+                    let param = -1;
+                    
+                    if (len_sq !== 0) {
+                        param = dot / len_sq;
+                    }
+                    
+                    if (param < 0) {
+                        closestPoint = { x: p1.x, y: p1.y };
+                    } else if (param > 1) {
+                        closestPoint = { x: p2.x, y: p2.y };
+                    } else {
+                        closestPoint = { 
+                            x: p1.x + param * C,
+                            y: p1.y + param * D
+                        };
+                    }
+                }
+            }
+            
+            // Calculate force if within range
+            if (minDist < forceRadius) {
+                // Force direction
+                let dx = particle.x - closestPoint.x;
+                let dy = particle.y - closestPoint.y;
+                
+                // Normalize direction
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > 0) {
+                    dx /= dist;
+                    dy /= dist;
+                }
+                
+                // If in attract mode, reverse the direction
+                if (path.isAttract) {
+                    dx = -dx;
+                    dy = -dy;
+                }
+                
+                // Calculate force strength (stronger when closer to the path)
+                const forceFactor = (1 - minDist / forceRadius);
+                
+                // Apply appropriate multiplier based on mode
+                const modeMultiplier = path.isAttract ? attractMultiplier : repelMultiplier;
+                
+                // Calculate force components for this path and add to total
+                totalFx += dx * forceFactor * forceIntensity * modeMultiplier * path.opacity;
+                totalFy += dy * forceFactor * forceIntensity * modeMultiplier * path.opacity;
+            }
+        });
+        
+        return { fx: totalFx, fy: totalFy };
+    }
+    
+    // Public API
+    return {
+        init: function(canvasElement) {
+            canvas = canvasElement;
+            ctx = canvas.getContext('2d');
+            
+            console.log("SwipeSplitSystem initialized");
+            return this;
+        },
+        
+        // Set attract/repel mode and update color
+        setAttractMode: function(attractMode) {
+            isAttractMode = attractMode;
+            updatePathColor();
+            return this;
+        },
+        
+        // Start a new swipe path at the given coordinates
+        startSwipePath: function(x, y) {
+            // Create a new path
+            const newPathIndex = swipePaths.length;
+            const newPath = {
+                points: [{ x, y }],
+                isActive: true,
+                opacity: 1.0,
+                lastPointTime: Date.now(),
+                creationTime: Date.now(),
+                pointsAddedSinceDecay: 0,
+                decayTimer: null,
+                color: isAttractMode ? pathColors.attract : pathColors.repel,
+                isAttract: isAttractMode,
+                pathIndex: newPathIndex
+            };
+            
+            // Add to paths array
+            swipePaths.push(newPath);
+            activePathIndex = newPathIndex;
+            
+            // Start the diminishing effect immediately
+            startPathDecay(newPathIndex);
+            
+            // Ensure all paths have their correct pathIndex after adding a new one
+            // This prevents index confusion when adding/removing paths
+            swipePaths.forEach((path, idx) => {
+                path.pathIndex = idx;
+            });
+            
+            console.log("Swipe path started at", x, y, "- Path #", newPathIndex);
+            return this;
+        },
+        
+        // Add a point to the current swipe path
+        addPointToSwipePath: function(x, y) {
+            // If no active path, ignore
+            if (activePathIndex < 0 || activePathIndex >= swipePaths.length) return this;
+            
+            const path = swipePaths[activePathIndex];
+            
+            // Add the point to the active path
+            path.points.push({ x, y });
+            path.lastPointTime = Date.now();
+            path.pointsAddedSinceDecay++;
+            
+            // Boost opacity slightly when adding new points to keep the line visible
+            path.opacity = Math.min(path.opacity + 0.05, 1.0);
+            
+            return this;
+        },
+        
+        // End the current swipe path and begin final decay
+        endSwipePath: function() {
+            // If no active path, ignore
+            if (activePathIndex < 0 || activePathIndex >= swipePaths.length) return this;
+            
+            const path = swipePaths[activePathIndex];
+            
+            console.log("Swipe path ended with", path.points.length, "points - Path #", activePathIndex);
+            
+            // Mark as inactive but keep it in the array to continue fading
+            path.isActive = false;
+            
+            // Mark for final decay after the delay period
+            path.pendingFinalDecay = true;
+            
+            // Make sure we have a decay timer running
+            if (!path.decayTimer) {
+                // If no timer exists, create one that will honor the delay
+                startPathDecay(activePathIndex, true);
+            }
+            
+            // No active path now
+            activePathIndex = -1;
+            
+            return this;
+        },
+        
+        // Draw the current swipe path (called from animation loop)
+        draw: function() {
+            if (swipePaths.length > 0) {
+                drawPaths();
+            }
+            return this;
+        },
+        
+        // Apply forces to a particle - returns the force to apply
+        applyForces: function(particle) {
+            if (!forceActive || swipePaths.length === 0) return { fx: 0, fy: 0 };
+            return calculateForce(particle);
+        },
+        
+        // Check if a swipe is currently active
+        isSwipeActive: function() {
+            return swipePaths.length > 0;
+        },
+        
+        // Check if forces are active
+        areForceEffectsActive: function() {
+            return forceActive && swipePaths.length > 0;
+        },
+        
+        // Update path and force settings
+        updateSettings: function(settings) {
+            if (settings.pathColor) pathColor = settings.pathColor;
+            if (settings.pathWidth) pathWidth = settings.pathWidth;
+            if (settings.isAttractMode !== undefined) {
+                isAttractMode = settings.isAttractMode;
+                updatePathColor();
+            }
+            
+            // Force settings
+            if (settings.forceRadius !== undefined) forceRadius = settings.forceRadius;
+            if (settings.forceIntensity !== undefined) forceIntensity = settings.forceIntensity;
+            if (settings.attractMultiplier !== undefined) attractMultiplier = settings.attractMultiplier;
+            if (settings.repelMultiplier !== undefined) repelMultiplier = settings.repelMultiplier;
+            if (settings.forceActive !== undefined) forceActive = settings.forceActive;
+            
+            // If we have an active path, recalculate the decay speed
+            if (activePathIndex >= 0 && swipePaths[activePathIndex].decayTimer) {
+                clearInterval(swipePaths[activePathIndex].decayTimer);
+                startPathDecay(activePathIndex, false);
+            }
+            
+            return this;
+        },
+        
+        // Get current settings (for UI or debugging)
+        getSettings: function() {
+            return {
+                isAttractMode,
+                pathWidth,
+                forceRadius,
+                forceIntensity,
+                attractMultiplier,
+                repelMultiplier,
+                forceActive
+            };
+        }
+    };
+})(); 
+
 // demoMode.js - Automatic zot swarm demo mode
 const DemoMode = (function() {
     // Track if demo mode is active
@@ -3452,7 +4046,7 @@ const DemoMode = (function() {
             if (!promptActive) return; // Stop if no longer active
             
             // Add the "T-T-T-Touch Me" text
-            secondPart.textContent = 'T-T-T-Touch Me';
+            secondPart.textContent = 'T-T-T-Touch em';
             
             // Apply zoom fade-in to second part
             zoomAnimation = txtZoomFadeIn(secondPart, 2, 1, 1000, () => {
@@ -3461,7 +4055,7 @@ const DemoMode = (function() {
                 secondPart.innerHTML = ''; // Clear for individual chars
                 
                 // Content for the second part with hyphens
-                const text = 'T-T-T-Touch Me';
+                const text = 'T-T-T-Touch em';
                 
                 // Animation variables
                 let letterIndex = 0;
@@ -3533,12 +4127,6 @@ const DemoMode = (function() {
         isCycling = true;
         cycleIndex = 0; // Start with the first preset (after the initial one)
         
-        // Make sure we start with push mode by default
-        if (ParticleSystem.isAttractMode()) {
-            ParticleSystem.toggleAttraction(); // Ensure we start in push (repel) mode
-            console.log('Demo Mode: Initializing touch mode to PUSH');
-        }
-        
         // Set up interval to cycle through presets
         cycleInterval = setInterval(() => {
             cycleToNextPreset();
@@ -3558,20 +4146,6 @@ const DemoMode = (function() {
         const presetCycle = PRESET_CYCLES[cycleIndex];
         
         console.log(`Demo Mode: Cycling to preset "${presetCycle.name}"`);
-        
-        // Check if this is the murmuration preset
-        const isMurmuration = presetCycle.name === "Bird Flock";
-        
-        // If this is the murmuration preset, set touch to "pull" (attract mode)
-        if (isMurmuration && !ParticleSystem.isAttractMode()) {
-            ParticleSystem.toggleAttraction(); // Enable attract mode for murmuration
-            console.log('Demo Mode: Setting touch mode to PULL for murmuration');
-        } 
-        // If we're moving away from murmuration preset to something else, set touch to "push"
-        else if (!isMurmuration && ParticleSystem.isAttractMode()) {
-            ParticleSystem.toggleAttraction(); // Disable attract mode for other presets
-            console.log('Demo Mode: Setting touch mode to PUSH for non-murmuration preset');
-        }
         
         // Apply new configurations to each swarm
         demoSwarms.forEach((swarmId, index) => {
@@ -3728,6 +4302,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize wall system
     WallSystem.init();
+    
+    // Initialize swipe split system
+    if (typeof SwipeSplitSystem !== 'undefined') {
+        console.log("Initializing SwipeSplitSystem...");
+        SwipeSplitSystem.init(canvas);
+    } else {
+        console.error("SwipeSplitSystem module not available");
+    }
     
     // Start demo mode
     if (typeof DemoMode !== 'undefined') {
@@ -4382,6 +4964,12 @@ document.addEventListener('DOMContentLoaded', function() {
             config.zotCount = parseInt(zotCountSlider.value, 10);
         }
         
+        // Get swarm preset
+        const presetSelect = document.getElementById('swarmPreset');
+        if (presetSelect && presetSelect.value) {
+            config.presetName = presetSelect.value;
+        }
+        
         // Get color theme
         const activeThemeBtn = document.querySelector('#colorPresets .color-preset.active');
         if (activeThemeBtn) {
@@ -4472,8 +5060,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const option = document.createElement('option');
             option.value = swarm.id;
             const colorThemeName = Presets.colorThemes[swarm.settings.colorTheme]?.name || 'Custom';
-            const presetName = swarm.settings.presetName || 'Custom';
-            option.textContent = `${presetName} ${colorThemeName} (${swarm.zotCount})`;
+            const presetDisplayName = Presets.swarmPresets[swarm.settings.presetName]?.name || 'Custom';
+            option.textContent = `${presetDisplayName} ${colorThemeName} (${swarm.zotCount})`;
             swarmDropdown.appendChild(option);
         });
     }

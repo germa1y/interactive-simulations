@@ -161,13 +161,53 @@ const MenuSystem = (function() {
         setupRangeInput('touchForce', value => updateSetting('forces', 'touchForce', value));
         setupRangeInput('wallForce', value => updateSetting('forces', 'wallForce', value));
         
-        // Setup Zot Touch Interaction toggle
+        // SwipeSplitSystem force controls
+        if (typeof SwipeSplitSystem !== 'undefined') {
+            // Get current settings to initialize UI elements
+            const swipeSettings = SwipeSplitSystem.getSettings();
+            
+            // Force enable toggle
+            const swipeForcesEnabled = document.getElementById('swipeForcesEnabled');
+            if (swipeForcesEnabled) {
+                // Initialize checkbox state from current settings
+                swipeForcesEnabled.checked = swipeSettings.forceActive !== false;
+                
+                swipeForcesEnabled.addEventListener('change', function() {
+                    SwipeSplitSystem.updateSettings({ forceActive: this.checked });
+                });
+            }
+            
+            // Range sliders for force parameters
+            setupRangeInput('swipeForceRadius', value => {
+                SwipeSplitSystem.updateSettings({ forceRadius: value });
+            }, swipeSettings.forceRadius);
+            
+            setupRangeInput('swipeForceIntensity', value => {
+                SwipeSplitSystem.updateSettings({ forceIntensity: value });
+            }, swipeSettings.forceIntensity);
+            
+            // Separate controls for attract and repel multipliers
+            setupRangeInput('swipeRepelMultiplier', value => {
+                SwipeSplitSystem.updateSettings({ repelMultiplier: value });
+            }, swipeSettings.repelMultiplier || 3.0);
+            
+            setupRangeInput('swipeAttractMultiplier', value => {
+                SwipeSplitSystem.updateSettings({ attractMultiplier: value });
+            }, swipeSettings.attractMultiplier || 1.0);
+        }
+        
+        // Checkboxes for enabled/disabled features
         const zotTouchEnabled = document.getElementById('zotTouchEnabled');
         if (zotTouchEnabled) {
             zotTouchEnabled.addEventListener('change', function() {
-                if (callbacks.updateSettings) {
-                    callbacks.updateSettings('forces', 'zotTouchEnabled', this.checked);
-                }
+                updateSetting('forces', 'zotTouchEnabled', this.checked);
+            });
+        }
+        
+        const zotSwarmInteractionEnabled = document.getElementById('zotSwarmInteractionEnabled');
+        if (zotSwarmInteractionEnabled) {
+            zotSwarmInteractionEnabled.addEventListener('change', function() {
+                updateSetting('forces', 'zotSwarmInteractionEnabled', this.checked);
             });
         }
         
@@ -258,11 +298,16 @@ const MenuSystem = (function() {
     }
     
     // Helper function to set up a range input
-    function setupRangeInput(id, changeCallback) {
+    function setupRangeInput(id, changeCallback, initialValue) {
         const input = document.getElementById(id);
         const valueDisplay = document.getElementById(id + 'Value');
         
         if (input && valueDisplay) {
+            // Set initial value from settings if provided
+            if (initialValue !== undefined) {
+                input.value = initialValue;
+            }
+            
             // Set initial value display
             valueDisplay.textContent = parseFloat(input.value).toFixed(input.step.includes('.') ? 2 : 0);
             

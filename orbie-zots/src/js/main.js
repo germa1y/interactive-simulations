@@ -13,6 +13,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize wall system
     WallSystem.init();
     
+    // Initialize swipe split system
+    if (typeof SwipeSplitSystem !== 'undefined') {
+        console.log("Initializing SwipeSplitSystem...");
+        SwipeSplitSystem.init(canvas);
+    } else {
+        console.error("SwipeSplitSystem module not available");
+    }
+    
     // Start demo mode
     if (typeof DemoMode !== 'undefined') {
         console.log("Starting zot swarm demo mode...");
@@ -666,6 +674,12 @@ document.addEventListener('DOMContentLoaded', function() {
             config.zotCount = parseInt(zotCountSlider.value, 10);
         }
         
+        // Get swarm preset
+        const presetSelect = document.getElementById('swarmPreset');
+        if (presetSelect && presetSelect.value) {
+            config.presetName = presetSelect.value;
+        }
+        
         // Get color theme
         const activeThemeBtn = document.querySelector('#colorPresets .color-preset.active');
         if (activeThemeBtn) {
@@ -756,8 +770,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const option = document.createElement('option');
             option.value = swarm.id;
             const colorThemeName = Presets.colorThemes[swarm.settings.colorTheme]?.name || 'Custom';
-            const presetName = swarm.settings.presetName || 'Custom';
-            option.textContent = `${presetName} ${colorThemeName} (${swarm.zotCount})`;
+            const presetDisplayName = Presets.swarmPresets[swarm.settings.presetName]?.name || 'Custom';
+            option.textContent = `${presetDisplayName} ${colorThemeName} (${swarm.zotCount})`;
             swarmDropdown.appendChild(option);
         });
     }

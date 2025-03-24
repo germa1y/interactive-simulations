@@ -7,6 +7,11 @@ const TouchHandler = (function() {
     let touchY = 0;
     let lastTouchTime = 0;
     let touchPulseElement = null;
+    let swipeModeActive = false;  // Track if we're in swipe mode
+    let swipeStartX = 0;          // Starting X position of swipe
+    let swipeStartY = 0;          // Starting Y position of swipe
+    let swipeThreshold = 10;      // Minimum distance to trigger swipe detection
+    let swipeDetected = false;    // Flag to indicate if swipe is detected
     
     // Callbacks for integration with particle system
     let callbacks = {
@@ -41,6 +46,11 @@ const TouchHandler = (function() {
             touchY = y;
             touchActive = true;
             
+            // Record the start position for swipe detection
+            swipeStartX = x;
+            swipeStartY = y;
+            swipeDetected = false;
+            
             // Detect double tap
             const currentTime = new Date().getTime();
             const timeDiff = currentTime - lastTouchTime;
@@ -60,6 +70,12 @@ const TouchHandler = (function() {
                             touchPulseElement.classList.add('touch-pulse-repel');
                         }
                     }
+                    
+                    // Update SwipeSplitSystem with new attract/repel mode
+                    if (typeof SwipeSplitSystem !== 'undefined') {
+                        const isAttract = callbacks.isAttractMode ? callbacks.isAttractMode() : false;
+                        SwipeSplitSystem.setAttractMode(isAttract);
+                    }
                 }
             }
             
@@ -72,6 +88,14 @@ const TouchHandler = (function() {
             // Call the callback
             if (callbacks.onTouchStart) {
                 callbacks.onTouchStart(x, y);
+            }
+            
+            // Initialize swipe path if SwipeSplitSystem is available
+            if (typeof SwipeSplitSystem !== 'undefined') {
+                // Set the current attract/repel mode
+                const isAttract = callbacks.isAttractMode ? callbacks.isAttractMode() : false;
+                SwipeSplitSystem.setAttractMode(isAttract);
+                SwipeSplitSystem.startSwipePath(x, y);
             }
         }
     }
@@ -90,6 +114,23 @@ const TouchHandler = (function() {
             // Update pulse position
             updateTouchPulse(x, y);
             
+            // Check for swipe
+            if (!swipeDetected) {
+                const dx = x - swipeStartX;
+                const dy = y - swipeStartY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance > swipeThreshold) {
+                    swipeDetected = true;
+                    console.log("Swipe detected");
+                }
+            }
+            
+            // Continue updating swipe path if SwipeSplitSystem is available
+            if (swipeDetected && typeof SwipeSplitSystem !== 'undefined') {
+                SwipeSplitSystem.addPointToSwipePath(x, y);
+            }
+            
             // Call the callback
             if (callbacks.onTouchMove) {
                 callbacks.onTouchMove(x, y);
@@ -103,7 +144,13 @@ const TouchHandler = (function() {
         // Remove pulse effect
         removeTouchPulse();
         
+        // End swipe path if SwipeSplitSystem is available
+        if (swipeDetected && typeof SwipeSplitSystem !== 'undefined') {
+            SwipeSplitSystem.endSwipePath();
+        }
+        
         touchActive = false;
+        swipeDetected = false;
         
         // Call the callback
         if (callbacks.onTouchEnd) {
@@ -218,6 +265,12 @@ const TouchHandler = (function() {
             // Merge provided callbacks with defaults
             if (callbacksObj) {
                 callbacks = {...callbacks, ...callbacksObj};
+            }
+            
+            // Initialize the SwipeSplitSystem with the current mode if available
+            if (typeof SwipeSplitSystem !== 'undefined') {
+                const isAttract = callbacks.isAttractMode ? callbacks.isAttractMode() : false;
+                SwipeSplitSystem.setAttractMode(isAttract);
             }
             
             // Add touch event listeners
