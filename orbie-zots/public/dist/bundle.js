@@ -1,7 +1,7 @@
 /**
  * Orbie Zots - Particle Swarm Simulation
  * Copyright (c) 2025
- * Built: 2025-03-26T04:01:12.474Z
+ * Built: 2025-03-26T04:24:39.248Z
  */
 
 // colors.js - Color themes and generators for particles
@@ -3592,12 +3592,9 @@ const DemoMode = (function() {
             name: "Mixed Swarms",
             configs: [
                 { presetName: 'fizzyPop', zotCount: 50 },
-                { presetName: 'cookingOil', zotCount: 50 },
-                { presetName: 'murmuration', zotCount: 50 },
-                { presetName: 'lavaLamp', zotCount: 100 },
                 { presetName: 'bubble', zotCount: 50 },
                 { presetName: 'jellyOrbs', zotCount: 50 },
-                { presetName: 'atomic', zotCount: 100 },
+                { presetName: 'atomic', zotCount: 600 },
                 { presetName: 'torrential', zotCount: 50 }
             ]
         }

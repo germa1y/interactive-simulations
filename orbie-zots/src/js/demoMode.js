@@ -109,12 +109,9 @@ const DemoMode = (function() {
             name: "Mixed Swarms",
             configs: [
                 { presetName: 'fizzyPop', zotCount: 50 },
-                { presetName: 'cookingOil', zotCount: 50 },
-                { presetName: 'murmuration', zotCount: 50 },
-                { presetName: 'lavaLamp', zotCount: 100 },
                 { presetName: 'bubble', zotCount: 50 },
                 { presetName: 'jellyOrbs', zotCount: 50 },
-                { presetName: 'atomic', zotCount: 100 },
+                { presetName: 'atomic', zotCount: 600 },
                 { presetName: 'torrential', zotCount: 50 }
             ]
         }
