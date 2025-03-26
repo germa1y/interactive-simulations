@@ -61,6 +61,19 @@ const ParticleSystem = (function() {
         zotSwarmInteractionEnabled: true  // New setting for zot swarm interaction
     };
     
+    // Zot swarm settings
+    let zotSwarmSettings = {
+        particleCount: 50,
+        speed: 2,
+        separation: 2,
+        alignment: 1,
+        cohesion: 2.5,
+        perception: 100,
+        touchForce: 1.5,
+        showExteriorStroke: false, // New setting to toggle the exterior stroke
+        exteriorStrokeWidth: 3 // Width of the exterior stroke in pixels
+    };
+    
     // Collection of all particles (regular background particles)
     let backgroundParticles = [];
     
@@ -764,6 +777,11 @@ const ParticleSystem = (function() {
     
     // Draw a group of particles
     function drawParticleGroup(particles) {
+        // Check if particles is a swarm and if exterior stroke is enabled
+        const isSwarm = particles.length > 0 && particles[0].swarmId !== undefined;
+        const shouldDrawExteriorStroke = isSwarm && zotSwarmSettings.showExteriorStroke;
+        
+        // First, draw all particles
         for (let i = 0; i < particles.length; i++) {
             const particle = particles[i];
             
@@ -796,6 +814,233 @@ const ParticleSystem = (function() {
             ctx.fillStyle = particleColor;
             ctx.fill();
         }
+        
+        // Draw exterior stroke if enabled and has enough particles
+        if (shouldDrawExteriorStroke && particles.length >= 3) {
+            drawExteriorStroke(particles);
+        }
+    }
+    
+    // Draw a stroke around the exterior of a swarm
+    function drawExteriorStroke(particles) {
+        // Filter out stray zots that are too far from the main group
+        const filteredParticles = filterStrayParticles(particles, 100);
+        
+        // If we don't have enough particles after filtering, don't draw the stroke
+        if (filteredParticles.length < 3) return;
+        
+        // Find particles on the exterior of the swarm using convex hull algorithm
+        const exteriorPoints = findConvexHull(filteredParticles);
+        
+        if (exteriorPoints.length < 3) return; // Need at least 3 points for a polygon
+        
+        // Calculate the center of the swarm to create padding
+        let centerX = 0, centerY = 0;
+        for (let i = 0; i < exteriorPoints.length; i++) {
+            centerX += exteriorPoints[i].x;
+            centerY += exteriorPoints[i].y;
+        }
+        centerX /= exteriorPoints.length;
+        centerY /= exteriorPoints.length;
+        
+        // Create a new array with padded points
+        const paddedPoints = [];
+        const padding = 10; // 10px padding
+        
+        for (let i = 0; i < exteriorPoints.length; i++) {
+            const point = exteriorPoints[i];
+            // Calculate vector from center to point
+            const dx = point.x - centerX;
+            const dy = point.y - centerY;
+            // Calculate distance
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            // Normalize the vector
+            const nx = dx / distance;
+            const ny = dy / distance;
+            // Add padding along the normalized vector
+            paddedPoints.push({
+                x: point.x + nx * padding,
+                y: point.y + ny * padding
+            });
+        }
+        
+        // Save the current context state
+        ctx.save();
+        
+        // Set inner glow effect properties
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = 'rgba(94, 157, 230, 0.7)'; // Light blue inner glow
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        
+        // Draw the stroke path with padded points and rounded corners
+        ctx.beginPath();
+        
+        // If we have at least 3 points, use quadratic curves for rounded corners
+        if (paddedPoints.length >= 3) {
+            // Calculate the first control point (middle between the last and first point)
+            const lastPoint = paddedPoints[paddedPoints.length - 1];
+            const firstPoint = paddedPoints[0];
+            const secondPoint = paddedPoints[1];
+            
+            // Start at the midpoint between last and first point for a smooth start
+            const startX = (lastPoint.x + firstPoint.x) / 2;
+            const startY = (lastPoint.y + firstPoint.y) / 2;
+            ctx.moveTo(startX, startY);
+            
+            // Draw quadratic curve to the midpoint of current and next point,
+            // using the current point as control point
+            for (let i = 0; i < paddedPoints.length; i++) {
+                const current = paddedPoints[i];
+                const next = paddedPoints[(i + 1) % paddedPoints.length];
+                
+                // Midpoint to next point
+                const midX = (current.x + next.x) / 2;
+                const midY = (current.y + next.y) / 2;
+                
+                // Use the current point as the control point
+                ctx.quadraticCurveTo(current.x, current.y, midX, midY);
+            }
+        } else {
+            // Fallback for fewer points
+            ctx.moveTo(paddedPoints[0].x, paddedPoints[0].y);
+            for (let i = 1; i < paddedPoints.length; i++) {
+                ctx.lineTo(paddedPoints[i].x, paddedPoints[i].y);
+            }
+        }
+        
+        // Close the path
+        ctx.closePath();
+        
+        // Draw the exterior stroke
+        ctx.strokeStyle = '#5e9de6'; // Light blue color
+        ctx.lineWidth = zotSwarmSettings.exteriorStrokeWidth;
+        ctx.stroke();
+        
+        // Restore the context to remove shadow effect for other drawings
+        ctx.restore();
+    }
+    
+    // Filter out stray particles that are too far from the main group
+    function filterStrayParticles(particles, maxDistance) {
+        if (particles.length <= 3) return particles;
+        
+        // Calculate the center of mass of all particles
+        let centerX = 0, centerY = 0;
+        for (let i = 0; i < particles.length; i++) {
+            centerX += particles[i].x;
+            centerY += particles[i].y;
+        }
+        centerX /= particles.length;
+        centerY /= particles.length;
+        
+        // Count how many particles are within the maxDistance of the center
+        let withinRangeCount = 0;
+        for (let i = 0; i < particles.length; i++) {
+            const dx = particles[i].x - centerX;
+            const dy = particles[i].y - centerY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance <= maxDistance) {
+                withinRangeCount++;
+            }
+        }
+        
+        // If all particles are within range, no need to filter
+        if (withinRangeCount === particles.length) {
+            return particles;
+        }
+        
+        // If more than 80% of particles are within range, use them as the main group
+        // and recalculate the center of mass
+        if (withinRangeCount >= particles.length * 0.8) {
+            const mainGroup = [];
+            
+            // First pass - collect particles within maxDistance of center of mass
+            for (let i = 0; i < particles.length; i++) {
+                const dx = particles[i].x - centerX;
+                const dy = particles[i].y - centerY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance <= maxDistance) {
+                    mainGroup.push(particles[i]);
+                }
+            }
+            
+            // Recalculate center of mass for the main group
+            let newCenterX = 0, newCenterY = 0;
+            for (let i = 0; i < mainGroup.length; i++) {
+                newCenterX += mainGroup[i].x;
+                newCenterY += mainGroup[i].y;
+            }
+            newCenterX /= mainGroup.length;
+            newCenterY /= mainGroup.length;
+            
+            // Second pass - filter based on distance from new center
+            return particles.filter(particle => {
+                const dx = particle.x - newCenterX;
+                const dy = particle.y - newCenterY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                return distance <= maxDistance;
+            });
+        }
+        
+        // If less than 80% are within range, it might be multiple clusters
+        // Just return all particles and let the convex hull algorithm handle it
+        return particles;
+    }
+    
+    // Find convex hull of particles (Graham scan algorithm)
+    function findConvexHull(particles) {
+        if (particles.length < 3) return particles;
+        
+        // Find the point with the lowest y-coordinate
+        // If tied, the one with the lowest x-coordinate
+        let lowestPoint = particles[0];
+        for (let i = 1; i < particles.length; i++) {
+            if (particles[i].y > lowestPoint.y || 
+                (particles[i].y === lowestPoint.y && particles[i].x < lowestPoint.x)) {
+                lowestPoint = particles[i];
+            }
+        }
+        
+        // Sort points by polar angle
+        const sortedPoints = particles.slice().sort((a, b) => {
+            if (a === lowestPoint) return -1;
+            if (b === lowestPoint) return 1;
+            
+            // Compute the polar angle
+            const angleA = Math.atan2(a.y - lowestPoint.y, a.x - lowestPoint.x);
+            const angleB = Math.atan2(b.y - lowestPoint.y, b.x - lowestPoint.x);
+            
+            // If angles are the same, sort by distance (farther points first)
+            if (angleA === angleB) {
+                const distA = (a.x - lowestPoint.x) * (a.x - lowestPoint.x) + 
+                              (a.y - lowestPoint.y) * (a.y - lowestPoint.y);
+                const distB = (b.x - lowestPoint.x) * (b.x - lowestPoint.x) + 
+                              (b.y - lowestPoint.y) * (b.y - lowestPoint.y);
+                return distB - distA;
+            }
+            
+            return angleA - angleB;
+        });
+        
+        // Graham scan algorithm
+        const hull = [];
+        for (let i = 0; i < sortedPoints.length; i++) {
+            while (hull.length >= 2 && 
+                  !isCounterClockwise(hull[hull.length - 2], hull[hull.length - 1], sortedPoints[i])) {
+                hull.pop();
+            }
+            hull.push(sortedPoints[i]);
+        }
+        
+        return hull;
+    }
+    
+    // Check if three points form a counter-clockwise turn
+    function isCounterClockwise(p1, p2, p3) {
+        return (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x) > 0;
     }
     
     // Animation loop
@@ -981,8 +1226,25 @@ const ParticleSystem = (function() {
         
         // Update settings (generic method)
         updateSettings: function(group, property, value) {
-            if (group === 'forces' && property in forceSettings) {
+            if (group === 'orbie') {
+                this.updateOrbieSettings(property, value);
+            } else if (group === 'orbieSwarm') {
+                this.updateOrbieSwarmSettings(property, value);
+            } else if (group === 'forces') {
                 forceSettings[property] = value;
+                console.log(`Updated Force ${property} to ${value}`);
+            } else if (group === 'zotSwarms') {
+                // Handle update to global zot swarm settings
+                if (property === 'showExteriorStroke') {
+                    zotSwarmSettings.showExteriorStroke = value;
+                    console.log(`Updated Zot Swarms exterior stroke to ${value ? 'enabled' : 'disabled'}`);
+                } else if (property === 'exteriorStrokeWidth') {
+                    zotSwarmSettings.exteriorStrokeWidth = value;
+                    console.log(`Updated Zot Swarms exterior stroke width to ${value}px`);
+                } else {
+                    zotSwarmSettings[property] = value;
+                    console.log(`Updated Zot Swarms ${property} to ${value}`);
+                }
             }
         },
         
@@ -1078,6 +1340,11 @@ const ParticleSystem = (function() {
         // Update an existing ZotSwarm with new parameters
         updateZotSwarm: function(swarmId, config) {
             return updateZotSwarm(swarmId, config);
+        },
+        
+        // Get current zot swarm settings
+        getZotSwarmSettings: function() {
+            return {...zotSwarmSettings};
         }
     };
 })();
