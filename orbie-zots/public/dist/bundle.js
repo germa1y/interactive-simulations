@@ -1,7 +1,7 @@
 /**
  * Orbie Zots - Particle Swarm Simulation
  * Copyright (c) 2025
- * Built: 2025-03-26T13:42:07.570Z
+ * Built: 2025-03-26T22:45:21.937Z
  */
 
 // colors.js - Color themes and generators for particles
@@ -2050,7 +2050,7 @@ const ParticleSystem = (function() {
     // Draw a stroke around the exterior of a swarm
     function drawExteriorStroke(particles) {
         // Filter out stray zots that are too far from the main group
-        const filteredParticles = filterStrayParticles(particles, 100);
+        const filteredParticles = filterStrayParticles(particles, 50);
         
         // If we don't have enough particles after filtering, don't draw the stroke
         if (filteredParticles.length < 3) return;
