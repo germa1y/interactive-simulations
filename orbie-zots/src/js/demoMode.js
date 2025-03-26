@@ -111,7 +111,7 @@ const DemoMode = (function() {
                 { presetName: 'fizzyPop', zotCount: 50 },
                 { presetName: 'bubble', zotCount: 50 },
                 { presetName: 'jellyOrbs', zotCount: 50 },
-                { presetName: 'atomic', zotCount: 600 },
+                { presetName: 'atomic', zotCount: 300 },
                 { presetName: 'torrential', zotCount: 50 }
             ]
         }
