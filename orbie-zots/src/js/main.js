@@ -275,21 +275,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Min/Max size range slider
         setupDualRangeSlider('newSwarmMinSize', 'newSwarmMaxSize');
         
-        // Initialize exterior stroke toggle
-        const exteriorStrokeToggle = document.getElementById('zotsExteriorStrokeEnabled');
-        if (exteriorStrokeToggle) {
-            // Initialize toggle from settings if available
-            const zotSwarmSettings = ParticleSystem.getZotSwarmSettings();
-            if (zotSwarmSettings && zotSwarmSettings.showExteriorStroke !== undefined) {
-                exteriorStrokeToggle.checked = zotSwarmSettings.showExteriorStroke;
-            }
-            
-            // Add event listener
-            exteriorStrokeToggle.addEventListener('change', function() {
-                ParticleSystem.updateSettings('zotSwarms', 'showExteriorStroke', this.checked);
-            });
-        }
-        
         // Preset selector
         const presetSelect = document.getElementById('swarmPreset');
         if (presetSelect) {

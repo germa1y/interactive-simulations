@@ -157,14 +157,6 @@ const MenuSystem = (function() {
         setupRangeInput('zotsPerception', value => updateSetting('zotSwarms', 'perception', value));
         setupRangeInput('zotsTouchForce', value => updateSetting('zotSwarms', 'touchForce', value));
         
-        // Exterior stroke toggle for zot swarms
-        const exteriorStrokeToggle = document.getElementById('zotsExteriorStrokeEnabled');
-        if (exteriorStrokeToggle) {
-            exteriorStrokeToggle.addEventListener('change', function() {
-                updateSetting('zotSwarms', 'showExteriorStroke', this.checked);
-            });
-        }
-        
         // Force controls
         setupRangeInput('touchForce', value => updateSetting('forces', 'touchForce', value));
         setupRangeInput('wallForce', value => updateSetting('forces', 'wallForce', value));
