@@ -9,8 +9,8 @@ const SwipeSplitSystem = (function() {
     let isAttractMode = false; // Track if we're in attract (pull) or repel (push) mode
     
     // Force field parameters
-    let forceRadius = 50;         // How far the force extends from the path
-    let forceIntensity = 1.5;     // Base intensity of the force
+    let forceRadius = 75;         // How far the force extends from the path
+    let forceIntensity = 2;       // Base intensity of the force
     let attractMultiplier = 0.2;  // Multiplier for attract force strength
     let repelMultiplier = 3.0;    // Multiplier for repel force strength
     let forceDecayFactor = 0.98;  // How quickly force decays per frame
