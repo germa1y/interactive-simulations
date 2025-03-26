@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XDCHJQ15WZ"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-XDCHJQ15WZ');
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Particle Swarm Simulation</title>
@@ -202,8 +211,10 @@
                         <option value="lavaLamp">Lava Lamp</option>
                         <option value="cookingOil">Cooking Oil</option>
                         <option value="jellyOrbs">Jelly Orbs</option>
+                        <option value="bubble">Bubble</option>
                         <option value="atomic">Atomic</option>
                         <option value="fizzyPop">Fizzy Pop</option>
+                        <option value="torrential">Torrential</option>
                     </select>
                 </div>
                 
@@ -235,7 +246,7 @@
                     <span class="slider-overlay-label" id="newSwarmMinSizeValue">1.0</span>
                     <div class="range-slider"></div>
                     <span class="slider-overlay-label slider-overlay-center">Size Range (px)</span>
-                    <input type="range" id="newSwarmMinSize" class="range-slider-min" min="1" max="6" step="0.1" value="1">
+                    <input type="range" id="newSwarmMinSize" class="range-slider-min" min="1" max="6" step="0.1" value="2">
                     <input type="range" id="newSwarmMaxSize" class="range-slider-max" min="1" max="6" step="0.1" value="4">
                     <span class="slider-overlay-value" id="newSwarmMaxSizeValue">4.0</span>
                 </div>
@@ -259,7 +270,7 @@
                 <div class="control-group">
                     <div class="slider-overlay-container">
                         <span class="slider-overlay-label">Alignment</span>
-                        <input type="range" id="newSwarmAlignment" class="slider-with-overlay" min="0" max="5" step="0.01" value="0.1">
+                        <input type="range" id="newSwarmAlignment" class="slider-with-overlay" min="-2" max="5" step="0.01" value="0.1">
                         <span class="slider-overlay-value" id="newSwarmAlignmentValue">0.10</span>
                     </div>
                 </div>
@@ -301,14 +312,6 @@
             
             <div class="control-group">
                 <div class="slider-overlay-container">
-                    <span class="slider-overlay-label">Wall Force</span>
-                    <input type="range" id="wallForce" class="slider-with-overlay" min="0" max="5" step="0.1" value="1.0">
-                    <span class="slider-overlay-value" id="wallForceValue">1.0</span>
-                </div>
-            </div>
-            
-            <div class="control-group">
-                <div class="slider-overlay-container">
                     <span class="slider-overlay-label">Orbie Touch</span>
                     <input type="range" id="orbieTouchMultiplier" class="slider-with-overlay" min="0.05" max="0.5" step="0.05" value="0.15">
                     <span class="slider-overlay-value" id="orbieTouchMultiplierValue">0.15</span>
@@ -323,7 +326,6 @@
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
-                <div class="control-description">Allow touch to influence Zot swarms outside of Orbie's influence</div>
             </div>
             
             <div class="control-group">
@@ -334,7 +336,6 @@
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
-                <div class="control-description">Allow Zot swarms to interact with each other</div>
             </div>
             
             <div class="section-divider"></div>
@@ -348,7 +349,6 @@
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
-                <div class="control-description">Enable force effects when swiping</div>
             </div>
             
             <div class="control-group">
@@ -357,7 +357,6 @@
                     <div class="slider-overlay-label">Force Radius</div>
                     <div class="slider-overlay-value" id="swipeForceRadiusValue">50</div>
                 </div>
-                <div class="control-description">Distance around swipe lines that affects particles</div>
             </div>
             
             <div class="control-group">
@@ -366,7 +365,6 @@
                     <div class="slider-overlay-label">Force Intensity</div>
                     <div class="slider-overlay-value" id="swipeForceIntensityValue">1.0</div>
                 </div>
-                <div class="control-description">Overall strength of swipe force effects</div>
             </div>
             
             <div class="control-group">
@@ -375,7 +373,6 @@
                     <div class="slider-overlay-label">Repel Multiplier</div>
                     <div class="slider-overlay-value" id="swipeRepelMultiplierValue">3.0</div>
                 </div>
-                <div class="control-description">Strength multiplier for orange repel forces</div>
             </div>
             
             <div class="control-group">
@@ -384,7 +381,6 @@
                     <div class="slider-overlay-label">Attract Multiplier</div>
                     <div class="slider-overlay-value" id="swipeAttractMultiplierValue">0.2</div>
                 </div>
-                <div class="control-description">Strength multiplier for blue attract forces</div>
             </div>
         </div>
         

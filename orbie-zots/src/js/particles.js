@@ -360,23 +360,9 @@ const ParticleSystem = (function() {
         const preset = Presets.swarmPresets[presetName];
         if (!preset) return null;
         
-        // Map preset names to specific color themes
-        const presetColorThemes = {
-            murmuration: 'colorblind',
-            lavaLamp: 'fire',
-            cookingOil: 'gold',
-            jellyOrbs: 'green',
-            atomic: 'sparkle',
-            fizzyPop: 'neon'
-        };
-        
-        // Use the mapped color theme or fallback to blue
-        const colorTheme = presetColorThemes[presetName] || 'blue';
-        
         return {
             ...Presets.defaults.zotSwarm,
-            ...preset,
-            colorTheme: colorTheme
+            ...preset
         };
     }
     

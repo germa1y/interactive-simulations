@@ -2,15 +2,27 @@
 const Presets = {
     // Swarm behavior presets
     swarmPresets: {
-        murmuration: {
-            name: "Murmuration",
+        torrential: {
+            name: "Torrential",
             zotCount: 25,
-            speed: 3,
-            separation: 0.1,
-            alignment: 2,
-            cohesion: 5,
-            perception: 200,
-            trailLength: 0
+            speed: 6,
+            separation: 1,
+            alignment: 0.25,
+            cohesion: 2,
+            perception: 50,
+            trailLength: 0,
+            colorTheme: 'blue'  // Default color theme for this preset
+        },
+        murmuration: {
+            name: "Bird Flock",
+            zotCount: 25,
+            speed: 5,
+            separation: 0.3,
+            alignment: .25,
+            cohesion: 2.5,
+            perception: 75,
+            trailLength: 0,
+            colorTheme: 'rainbow'  // Default color theme for this preset
         },
         lavaLamp: {
             name: "Lava Lamp",
@@ -20,7 +32,8 @@ const Presets = {
             alignment: 0.5,
             cohesion: 5,
             perception: 20,
-            trailLength: 0
+            trailLength: 0,
+            colorTheme: 'fire'  // Default color theme for this preset
         },
         cookingOil: {
             name: "Cooking Oil",
@@ -30,27 +43,41 @@ const Presets = {
             alignment: 0.1,
             cohesion: 3,
             perception: 50,
-            trailLength: 0
+            trailLength: 0,
+            colorTheme: 'gold'  // Default color theme for this preset
         },
         jellyOrbs: {
             name: "Jelly Orbs",
             zotCount: 25,
-            speed: 3,
+            speed: 2,
             separation: 0.1,
             alignment: 0.1,
             cohesion: 5,
             perception: 100,
-            trailLength: 0
+            trailLength: 0,
+            colorTheme: 'green'  // Default color theme for this preset
         },
-        atomic: {
-            name: "Atomic",
+        bubble: {
+            name: "Bubble",
             zotCount: 25,
             speed: 3,
             separation: 0.1,
             alignment: 0.1,
             cohesion: 5,
             perception: 200,
-            trailLength: 0
+            trailLength: 0,
+            colorTheme: 'sparkle'  // Default color theme for this preset
+        },
+        atomic: {
+            name: "Atomic",
+            zotCount: 25,
+            speed: 3.5,
+            separation: 0,
+            alignment: -2,
+            cohesion: 10,
+            perception: 100,
+            trailLength: 0,
+            colorTheme: 'neon'  // Default color theme for this preset
         },
         fizzyPop: {
             name: "Fizzy Pop",
@@ -60,7 +87,8 @@ const Presets = {
             alignment: 0,
             cohesion: 3.5,
             perception: 50,
-            trailLength: 0
+            trailLength: 0,
+            colorTheme: 'rainbow'  // Default color theme for this preset
         }
     },
     

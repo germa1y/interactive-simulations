@@ -1,7 +1,7 @@
 /**
  * Orbie Zots - Particle Swarm Simulation
  * Copyright (c) 2025
- * Built: 2025-03-24T05:32:09.394Z
+ * Built: 2025-03-26T04:01:12.474Z
  */
 
 // colors.js - Color themes and generators for particles
@@ -218,15 +218,27 @@ if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
 const Presets = {
     // Swarm behavior presets
     swarmPresets: {
-        murmuration: {
-            name: "Murmuration",
+        torrential: {
+            name: "Torrential",
             zotCount: 25,
-            speed: 3,
-            separation: 0.1,
-            alignment: 2,
-            cohesion: 5,
-            perception: 200,
-            trailLength: 0
+            speed: 6,
+            separation: 1,
+            alignment: 0.25,
+            cohesion: 2,
+            perception: 50,
+            trailLength: 0,
+            colorTheme: 'blue'  // Default color theme for this preset
+        },
+        murmuration: {
+            name: "Bird Flock",
+            zotCount: 25,
+            speed: 5,
+            separation: 0.3,
+            alignment: .25,
+            cohesion: 2.5,
+            perception: 75,
+            trailLength: 0,
+            colorTheme: 'rainbow'  // Default color theme for this preset
         },
         lavaLamp: {
             name: "Lava Lamp",
@@ -236,7 +248,8 @@ const Presets = {
             alignment: 0.5,
             cohesion: 5,
             perception: 20,
-            trailLength: 0
+            trailLength: 0,
+            colorTheme: 'fire'  // Default color theme for this preset
         },
         cookingOil: {
             name: "Cooking Oil",
@@ -246,27 +259,41 @@ const Presets = {
             alignment: 0.1,
             cohesion: 3,
             perception: 50,
-            trailLength: 0
+            trailLength: 0,
+            colorTheme: 'gold'  // Default color theme for this preset
         },
         jellyOrbs: {
             name: "Jelly Orbs",
             zotCount: 25,
-            speed: 3,
+            speed: 2,
             separation: 0.1,
             alignment: 0.1,
             cohesion: 5,
             perception: 100,
-            trailLength: 0
+            trailLength: 0,
+            colorTheme: 'green'  // Default color theme for this preset
         },
-        atomic: {
-            name: "Atomic",
+        bubble: {
+            name: "Bubble",
             zotCount: 25,
             speed: 3,
             separation: 0.1,
             alignment: 0.1,
             cohesion: 5,
             perception: 200,
-            trailLength: 0
+            trailLength: 0,
+            colorTheme: 'sparkle'  // Default color theme for this preset
+        },
+        atomic: {
+            name: "Atomic",
+            zotCount: 25,
+            speed: 3.5,
+            separation: 0,
+            alignment: -2,
+            cohesion: 10,
+            perception: 100,
+            trailLength: 0,
+            colorTheme: 'neon'  // Default color theme for this preset
         },
         fizzyPop: {
             name: "Fizzy Pop",
@@ -276,7 +303,8 @@ const Presets = {
             alignment: 0,
             cohesion: 3.5,
             perception: 50,
-            trailLength: 0
+            trailLength: 0,
+            colorTheme: 'rainbow'  // Default color theme for this preset
         }
     },
     
@@ -1550,23 +1578,9 @@ const ParticleSystem = (function() {
         const preset = Presets.swarmPresets[presetName];
         if (!preset) return null;
         
-        // Map preset names to specific color themes
-        const presetColorThemes = {
-            murmuration: 'colorblind',
-            lavaLamp: 'fire',
-            cookingOil: 'gold',
-            jellyOrbs: 'green',
-            atomic: 'sparkle',
-            fizzyPop: 'neon'
-        };
-        
-        // Use the mapped color theme or fallback to blue
-        const colorTheme = presetColorThemes[presetName] || 'blue';
-        
         return {
             ...Presets.defaults.zotSwarm,
-            ...preset,
-            colorTheme: colorTheme
+            ...preset
         };
     }
     
@@ -2996,8 +3010,8 @@ const SwipeSplitSystem = (function() {
     let isAttractMode = false; // Track if we're in attract (pull) or repel (push) mode
     
     // Force field parameters
-    let forceRadius = 150;         // How far the force extends from the path
-    let forceIntensity = 2.5;     // Base intensity of the force
+    let forceRadius = 50;         // How far the force extends from the path
+    let forceIntensity = 1.5;     // Base intensity of the force
     let attractMultiplier = 0.2;  // Multiplier for attract force strength
     let repelMultiplier = 3.0;    // Multiplier for repel force strength
     let forceDecayFactor = 0.98;  // How quickly force decays per frame
@@ -3488,12 +3502,12 @@ const DemoMode = (function() {
     
     // Configuration for demo mode
     const DEMO_CONFIG = {
-        swarmCount: 6,         // Number of swarms to create
-        zotsPerSwarm: 50,      // Number of zots in each swarm
+        swarmCount: 8,         // Increased from 6 to 8 to handle all mixed swarm types
+        zotsPerSwarm: 40,      // Number of zots in each swarm
         presetName: 'jellyOrbs', // Preset behavior to use
         colorTheme: 'green',   // Color theme to use (forest-like) - fallback only
-        minSize: 1,            // Minimum zot size
-        maxSize: 8,            // Maximum zot size
+        minSize: 2.5,            // Minimum zot size
+        maxSize: 7.5,            // Maximum zot size
         circleRadius: 150,     // Fixed pixel value for swarm positioning (was 0.35 - a fraction of screen)
         cycleInterval: 10000,  // Cycle through presets every 10 seconds
         idleTimeout: 5000     // Show prompt after 5 seconds of inactivity
@@ -3506,7 +3520,7 @@ const DemoMode = (function() {
             name: "Jelly Orbs",
             configs: Array(6).fill({
                 presetName: 'jellyOrbs',
-                zotCount: 50
+                zotCount: 40
             })
         },
         // Fizzy Pop, Neon
@@ -3514,7 +3528,15 @@ const DemoMode = (function() {
             name: "Fizzy Pop",
             configs: Array(6).fill({
                 presetName: 'fizzyPop',
-                zotCount: 50
+                zotCount: 40
+            })
+        },
+        // Torrential, Blue
+        {
+            name: "Torrential",
+            configs: Array(6).fill({
+                presetName: 'torrential',
+                zotCount: 40
             })
         },
         // Cooking Oil, Gold
@@ -3530,7 +3552,7 @@ const DemoMode = (function() {
             name: "Bird Flock",
             configs: Array(6).fill({
                 presetName: 'murmuration',
-                zotCount: 150
+                zotCount: 75
             })
         },
         // Lava Lamp, Fire, zotCount=150
@@ -3538,33 +3560,45 @@ const DemoMode = (function() {
             name: "Lava Lamp",
             configs: Array(6).fill({
                 presetName: 'lavaLamp',
-                zotCount: 150
+                zotCount: 100
             })
         },
-        // Atomic, Sparkle
+        // Bubble, Sparkle
+        {
+            name: "Bubble",
+            configs: Array(6).fill({
+                presetName: 'bubble',
+                zotCount: 40
+            })
+        },
+        // Atomic, Neon
         {
             name: "Atomic",
             configs: Array(6).fill({
                 presetName: 'atomic',
-                zotCount: 50
+                zotCount: 40
             })
         },
-        // 2 of each - Mix of all presets
+        // Mix of 2 presets
+        {
+            name: "Dual Swarms",
+            configs: [
+                { presetName: 'atomic', zotCount: 100 },
+                { presetName: 'torrential', zotCount: 5 },
+            ]
+        },
+        // Mix of all presets
         {
             name: "Mixed Swarms",
             configs: [
                 { presetName: 'fizzyPop', zotCount: 50 },
-                { presetName: 'fizzyPop', zotCount: 50 },
-                { presetName: 'cookingOil', zotCount: 50 },
                 { presetName: 'cookingOil', zotCount: 50 },
                 { presetName: 'murmuration', zotCount: 50 },
-                { presetName: 'murmuration', zotCount: 50 },
-                { presetName: 'lavaLamp', zotCount: 50 },
-                { presetName: 'lavaLamp', zotCount: 50 },
-                { presetName: 'atomic', zotCount: 50 },
-                { presetName: 'atomic', zotCount: 50 },
+                { presetName: 'lavaLamp', zotCount: 100 },
+                { presetName: 'bubble', zotCount: 50 },
                 { presetName: 'jellyOrbs', zotCount: 50 },
-                { presetName: 'jellyOrbs', zotCount: 50 }
+                { presetName: 'atomic', zotCount: 100 },
+                { presetName: 'torrential', zotCount: 50 }
             ]
         }
     ];
@@ -3608,10 +3642,17 @@ const DemoMode = (function() {
         const centerY = canvas.height / 2;
         const radius = DEMO_CONFIG.circleRadius; // Use fixed radius value directly
         
+        // Determine number of swarms to create based on initial preset
+        const initialPreset = PRESET_CYCLES[0];
+        const swarmCount = Math.max(
+            DEMO_CONFIG.swarmCount,
+            Math.max(...PRESET_CYCLES.map(cycle => cycle.configs.length))
+        );
+        
         // Create swarms in a circular pattern
-        for (let i = 0; i < DEMO_CONFIG.swarmCount; i++) {
+        for (let i = 0; i < swarmCount; i++) {
             // Calculate position on circle
-            const angle = (i / DEMO_CONFIG.swarmCount) * Math.PI * 2;
+            const angle = (i / swarmCount) * Math.PI * 2;
             const x = centerX + Math.cos(angle) * radius;
             const y = centerY + Math.sin(angle) * radius;
             
@@ -4046,7 +4087,7 @@ const DemoMode = (function() {
             if (!promptActive) return; // Stop if no longer active
             
             // Add the "T-T-T-Touch Me" text
-            secondPart.textContent = 'T-T-T-Touch \'em';
+            secondPart.textContent = 'Touch \'em';
             
             // Apply zoom fade-in to second part
             zoomAnimation = txtZoomFadeIn(secondPart, 2, 1, 1000, () => {
@@ -4055,7 +4096,7 @@ const DemoMode = (function() {
                 secondPart.innerHTML = ''; // Clear for individual chars
                 
                 // Content for the second part with hyphens
-                const text = 'T-T-T-Touch \'em';
+                const text = 'Touch \'em';
                 
                 // Animation variables
                 let letterIndex = 0;
@@ -4125,7 +4166,10 @@ const DemoMode = (function() {
         if (isCycling) return;
         
         isCycling = true;
-        cycleIndex = 0; // Start with the first preset (after the initial one)
+        cycleIndex = -1; // Start at -1 so first increment goes to 0
+        
+        // Cycle immediately to first preset
+        cycleToNextPreset();
         
         // Set up interval to cycle through presets
         cycleInterval = setInterval(() => {
@@ -4162,19 +4206,6 @@ const DemoMode = (function() {
             // Get preset parameters
             const preset = Presets.swarmPresets[config.presetName] || {};
             
-            // Map preset names to specific color themes
-            const presetColorThemes = {
-                murmuration: 'rainbow',
-                lavaLamp: 'fire',
-                cookingOil: 'gold',
-                jellyOrbs: 'green',
-                atomic: 'sparkle',
-                fizzyPop: 'neon'
-            };
-            
-            // Use the mapped color theme based on preset name or fallback
-            const colorTheme = presetColorThemes[config.presetName] || DEMO_CONFIG.colorTheme;
-            
             // Create update config with behavior parameters
             const updateConfig = {
                 zotCount: config.zotCount || DEMO_CONFIG.zotsPerSwarm,
@@ -4183,13 +4214,13 @@ const DemoMode = (function() {
                 alignment: preset.alignment !== undefined ? preset.alignment : 0.1,
                 cohesion: preset.cohesion !== undefined ? preset.cohesion : 5,
                 perception: preset.perception !== undefined ? preset.perception : 100,
-                colorTheme: colorTheme
+                colorTheme: preset.colorTheme || DEMO_CONFIG.colorTheme
             };
             
             // Update the swarm
             if (ParticleSystem.updateZotSwarm) {
                 ParticleSystem.updateZotSwarm(swarmId, updateConfig);
-                console.log(`Demo Mode: Updated swarm ${swarmId} to ${config.presetName} - ${colorTheme}`);
+                console.log(`Demo Mode: Updated swarm ${swarmId} to ${config.presetName} - ${updateConfig.colorTheme}`);
             }
         } catch (error) {
             console.error(`Demo Mode: Error updating swarm ${swarmId}:`, error);
@@ -4613,20 +4644,40 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Apply preset values to UI
                 const preset = ParticleSystem.applyPresetToNewSwarm(this.value);
                 if (preset) {
-                    document.getElementById('newSwarmZotCount').value = preset.zotCount;
+                    // Keep the current zot count
+                    const currentZotCount = document.getElementById('newSwarmZotCount').value;
+                    
+                    // Apply preset values but preserve zot count
                     document.getElementById('newSwarmSpeed').value = preset.speed;
                     document.getElementById('newSwarmSeparation').value = preset.separation;
                     document.getElementById('newSwarmAlignment').value = preset.alignment;
                     document.getElementById('newSwarmCohesion').value = preset.cohesion;
                     document.getElementById('newSwarmPerception').value = preset.perception;
                     
-                    // Update displayed values
-                    document.getElementById('newSwarmZotCountValue').textContent = preset.zotCount;
+                    // Update displayed values, keeping the current zot count
+                    document.getElementById('newSwarmZotCountValue').textContent = currentZotCount;
                     document.getElementById('newSwarmSpeedValue').textContent = preset.speed.toFixed(1);
                     document.getElementById('newSwarmSeparationValue').textContent = preset.separation.toFixed(1);
                     document.getElementById('newSwarmAlignmentValue').textContent = preset.alignment.toFixed(2);
                     document.getElementById('newSwarmCohesionValue').textContent = preset.cohesion.toFixed(1);
                     document.getElementById('newSwarmPerceptionValue').textContent = preset.perception;
+
+                    // Update color theme selector
+                    if (preset.colorTheme) {
+                        const colorPresets = document.querySelectorAll('.color-preset');
+                        colorPresets.forEach(themeBtn => {
+                            if (themeBtn.dataset.theme === preset.colorTheme) {
+                                // Remove active class from all presets
+                                colorPresets.forEach(p => p.classList.remove('active'));
+                                // Add active class to matching preset
+                                themeBtn.classList.add('active');
+                                // Update the color theme
+                                if (ColorThemes && typeof ColorThemes.setTheme === 'function') {
+                                    ColorThemes.setTheme(preset.colorTheme);
+                                }
+                            }
+                        });
+                    }
                 }
             });
         }

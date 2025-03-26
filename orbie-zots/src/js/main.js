@@ -323,20 +323,40 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Apply preset values to UI
                 const preset = ParticleSystem.applyPresetToNewSwarm(this.value);
                 if (preset) {
-                    document.getElementById('newSwarmZotCount').value = preset.zotCount;
+                    // Keep the current zot count
+                    const currentZotCount = document.getElementById('newSwarmZotCount').value;
+                    
+                    // Apply preset values but preserve zot count
                     document.getElementById('newSwarmSpeed').value = preset.speed;
                     document.getElementById('newSwarmSeparation').value = preset.separation;
                     document.getElementById('newSwarmAlignment').value = preset.alignment;
                     document.getElementById('newSwarmCohesion').value = preset.cohesion;
                     document.getElementById('newSwarmPerception').value = preset.perception;
                     
-                    // Update displayed values
-                    document.getElementById('newSwarmZotCountValue').textContent = preset.zotCount;
+                    // Update displayed values, keeping the current zot count
+                    document.getElementById('newSwarmZotCountValue').textContent = currentZotCount;
                     document.getElementById('newSwarmSpeedValue').textContent = preset.speed.toFixed(1);
                     document.getElementById('newSwarmSeparationValue').textContent = preset.separation.toFixed(1);
                     document.getElementById('newSwarmAlignmentValue').textContent = preset.alignment.toFixed(2);
                     document.getElementById('newSwarmCohesionValue').textContent = preset.cohesion.toFixed(1);
                     document.getElementById('newSwarmPerceptionValue').textContent = preset.perception;
+
+                    // Update color theme selector
+                    if (preset.colorTheme) {
+                        const colorPresets = document.querySelectorAll('.color-preset');
+                        colorPresets.forEach(themeBtn => {
+                            if (themeBtn.dataset.theme === preset.colorTheme) {
+                                // Remove active class from all presets
+                                colorPresets.forEach(p => p.classList.remove('active'));
+                                // Add active class to matching preset
+                                themeBtn.classList.add('active');
+                                // Update the color theme
+                                if (ColorThemes && typeof ColorThemes.setTheme === 'function') {
+                                    ColorThemes.setTheme(preset.colorTheme);
+                                }
+                            }
+                        });
+                    }
                 }
             });
         }
