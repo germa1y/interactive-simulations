@@ -599,7 +599,7 @@ const DemoMode = (function() {
                 secondPart.innerHTML = ''; // Clear for individual chars
                 
                 // Content for the second part with hyphens
-                const text = 'Touch \'em';
+                const text = 'Poke \'em';
                 
                 // Animation variables
                 let letterIndex = 0;
