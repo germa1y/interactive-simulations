@@ -1,7 +1,7 @@
 /**
  * Orbie Zots - Particle Swarm Simulation
  * Copyright (c) 2025
- * Built: 2025-03-26T22:45:21.937Z
+ * Built: 2025-03-27T01:17:56.227Z
  */
 
 // colors.js - Color themes and generators for particles
@@ -966,14 +966,6 @@ const MenuSystem = (function() {
         setupRangeInput('zotsPerception', value => updateSetting('zotSwarms', 'perception', value));
         setupRangeInput('zotsTouchForce', value => updateSetting('zotSwarms', 'touchForce', value));
         
-        // Exterior stroke toggle for zot swarms
-        const exteriorStrokeToggle = document.getElementById('zotsExteriorStrokeEnabled');
-        if (exteriorStrokeToggle) {
-            exteriorStrokeToggle.addEventListener('change', function() {
-                updateSetting('zotSwarms', 'showExteriorStroke', this.checked);
-            });
-        }
-        
         // Force controls
         setupRangeInput('touchForce', value => updateSetting('forces', 'touchForce', value));
         setupRangeInput('wallForce', value => updateSetting('forces', 'wallForce', value));
@@ -1285,19 +1277,6 @@ const ParticleSystem = (function() {
         wallForce: 1.0,
         zotTouchEnabled: true,  // New setting for zot touch interaction
         zotSwarmInteractionEnabled: true  // New setting for zot swarm interaction
-    };
-    
-    // Zot swarm settings
-    let zotSwarmSettings = {
-        particleCount: 50,
-        speed: 2,
-        separation: 2,
-        alignment: 1,
-        cohesion: 2.5,
-        perception: 100,
-        touchForce: 1.5,
-        showExteriorStroke: false, // New setting to toggle the exterior stroke
-        exteriorStrokeWidth: 3 // Width of the exterior stroke in pixels
     };
     
     // Collection of all particles (regular background particles)
@@ -2003,11 +1982,6 @@ const ParticleSystem = (function() {
     
     // Draw a group of particles
     function drawParticleGroup(particles) {
-        // Check if particles is a swarm and if exterior stroke is enabled
-        const isSwarm = particles.length > 0 && particles[0].swarmId !== undefined;
-        const shouldDrawExteriorStroke = isSwarm && zotSwarmSettings.showExteriorStroke;
-        
-        // First, draw all particles
         for (let i = 0; i < particles.length; i++) {
             const particle = particles[i];
             
@@ -2040,233 +2014,6 @@ const ParticleSystem = (function() {
             ctx.fillStyle = particleColor;
             ctx.fill();
         }
-        
-        // Draw exterior stroke if enabled and has enough particles
-        if (shouldDrawExteriorStroke && particles.length >= 3) {
-            drawExteriorStroke(particles);
-        }
-    }
-    
-    // Draw a stroke around the exterior of a swarm
-    function drawExteriorStroke(particles) {
-        // Filter out stray zots that are too far from the main group
-        const filteredParticles = filterStrayParticles(particles, 50);
-        
-        // If we don't have enough particles after filtering, don't draw the stroke
-        if (filteredParticles.length < 3) return;
-        
-        // Find particles on the exterior of the swarm using convex hull algorithm
-        const exteriorPoints = findConvexHull(filteredParticles);
-        
-        if (exteriorPoints.length < 3) return; // Need at least 3 points for a polygon
-        
-        // Calculate the center of the swarm to create padding
-        let centerX = 0, centerY = 0;
-        for (let i = 0; i < exteriorPoints.length; i++) {
-            centerX += exteriorPoints[i].x;
-            centerY += exteriorPoints[i].y;
-        }
-        centerX /= exteriorPoints.length;
-        centerY /= exteriorPoints.length;
-        
-        // Create a new array with padded points
-        const paddedPoints = [];
-        const padding = 10; // 10px padding
-        
-        for (let i = 0; i < exteriorPoints.length; i++) {
-            const point = exteriorPoints[i];
-            // Calculate vector from center to point
-            const dx = point.x - centerX;
-            const dy = point.y - centerY;
-            // Calculate distance
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            // Normalize the vector
-            const nx = dx / distance;
-            const ny = dy / distance;
-            // Add padding along the normalized vector
-            paddedPoints.push({
-                x: point.x + nx * padding,
-                y: point.y + ny * padding
-            });
-        }
-        
-        // Save the current context state
-        ctx.save();
-        
-        // Set inner glow effect properties
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = 'rgba(94, 157, 230, 0.7)'; // Light blue inner glow
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 0;
-        
-        // Draw the stroke path with padded points and rounded corners
-        ctx.beginPath();
-        
-        // If we have at least 3 points, use quadratic curves for rounded corners
-        if (paddedPoints.length >= 3) {
-            // Calculate the first control point (middle between the last and first point)
-            const lastPoint = paddedPoints[paddedPoints.length - 1];
-            const firstPoint = paddedPoints[0];
-            const secondPoint = paddedPoints[1];
-            
-            // Start at the midpoint between last and first point for a smooth start
-            const startX = (lastPoint.x + firstPoint.x) / 2;
-            const startY = (lastPoint.y + firstPoint.y) / 2;
-            ctx.moveTo(startX, startY);
-            
-            // Draw quadratic curve to the midpoint of current and next point,
-            // using the current point as control point
-            for (let i = 0; i < paddedPoints.length; i++) {
-                const current = paddedPoints[i];
-                const next = paddedPoints[(i + 1) % paddedPoints.length];
-                
-                // Midpoint to next point
-                const midX = (current.x + next.x) / 2;
-                const midY = (current.y + next.y) / 2;
-                
-                // Use the current point as the control point
-                ctx.quadraticCurveTo(current.x, current.y, midX, midY);
-            }
-        } else {
-            // Fallback for fewer points
-            ctx.moveTo(paddedPoints[0].x, paddedPoints[0].y);
-            for (let i = 1; i < paddedPoints.length; i++) {
-                ctx.lineTo(paddedPoints[i].x, paddedPoints[i].y);
-            }
-        }
-        
-        // Close the path
-        ctx.closePath();
-        
-        // Draw the exterior stroke
-        ctx.strokeStyle = '#5e9de6'; // Light blue color
-        ctx.lineWidth = zotSwarmSettings.exteriorStrokeWidth;
-        ctx.stroke();
-        
-        // Restore the context to remove shadow effect for other drawings
-        ctx.restore();
-    }
-    
-    // Filter out stray particles that are too far from the main group
-    function filterStrayParticles(particles, maxDistance) {
-        if (particles.length <= 3) return particles;
-        
-        // Calculate the center of mass of all particles
-        let centerX = 0, centerY = 0;
-        for (let i = 0; i < particles.length; i++) {
-            centerX += particles[i].x;
-            centerY += particles[i].y;
-        }
-        centerX /= particles.length;
-        centerY /= particles.length;
-        
-        // Count how many particles are within the maxDistance of the center
-        let withinRangeCount = 0;
-        for (let i = 0; i < particles.length; i++) {
-            const dx = particles[i].x - centerX;
-            const dy = particles[i].y - centerY;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            if (distance <= maxDistance) {
-                withinRangeCount++;
-            }
-        }
-        
-        // If all particles are within range, no need to filter
-        if (withinRangeCount === particles.length) {
-            return particles;
-        }
-        
-        // If more than 80% of particles are within range, use them as the main group
-        // and recalculate the center of mass
-        if (withinRangeCount >= particles.length * 0.8) {
-            const mainGroup = [];
-            
-            // First pass - collect particles within maxDistance of center of mass
-            for (let i = 0; i < particles.length; i++) {
-                const dx = particles[i].x - centerX;
-                const dy = particles[i].y - centerY;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                if (distance <= maxDistance) {
-                    mainGroup.push(particles[i]);
-                }
-            }
-            
-            // Recalculate center of mass for the main group
-            let newCenterX = 0, newCenterY = 0;
-            for (let i = 0; i < mainGroup.length; i++) {
-                newCenterX += mainGroup[i].x;
-                newCenterY += mainGroup[i].y;
-            }
-            newCenterX /= mainGroup.length;
-            newCenterY /= mainGroup.length;
-            
-            // Second pass - filter based on distance from new center
-            return particles.filter(particle => {
-                const dx = particle.x - newCenterX;
-                const dy = particle.y - newCenterY;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                return distance <= maxDistance;
-            });
-        }
-        
-        // If less than 80% are within range, it might be multiple clusters
-        // Just return all particles and let the convex hull algorithm handle it
-        return particles;
-    }
-    
-    // Find convex hull of particles (Graham scan algorithm)
-    function findConvexHull(particles) {
-        if (particles.length < 3) return particles;
-        
-        // Find the point with the lowest y-coordinate
-        // If tied, the one with the lowest x-coordinate
-        let lowestPoint = particles[0];
-        for (let i = 1; i < particles.length; i++) {
-            if (particles[i].y > lowestPoint.y || 
-                (particles[i].y === lowestPoint.y && particles[i].x < lowestPoint.x)) {
-                lowestPoint = particles[i];
-            }
-        }
-        
-        // Sort points by polar angle
-        const sortedPoints = particles.slice().sort((a, b) => {
-            if (a === lowestPoint) return -1;
-            if (b === lowestPoint) return 1;
-            
-            // Compute the polar angle
-            const angleA = Math.atan2(a.y - lowestPoint.y, a.x - lowestPoint.x);
-            const angleB = Math.atan2(b.y - lowestPoint.y, b.x - lowestPoint.x);
-            
-            // If angles are the same, sort by distance (farther points first)
-            if (angleA === angleB) {
-                const distA = (a.x - lowestPoint.x) * (a.x - lowestPoint.x) + 
-                              (a.y - lowestPoint.y) * (a.y - lowestPoint.y);
-                const distB = (b.x - lowestPoint.x) * (b.x - lowestPoint.x) + 
-                              (b.y - lowestPoint.y) * (b.y - lowestPoint.y);
-                return distB - distA;
-            }
-            
-            return angleA - angleB;
-        });
-        
-        // Graham scan algorithm
-        const hull = [];
-        for (let i = 0; i < sortedPoints.length; i++) {
-            while (hull.length >= 2 && 
-                  !isCounterClockwise(hull[hull.length - 2], hull[hull.length - 1], sortedPoints[i])) {
-                hull.pop();
-            }
-            hull.push(sortedPoints[i]);
-        }
-        
-        return hull;
-    }
-    
-    // Check if three points form a counter-clockwise turn
-    function isCounterClockwise(p1, p2, p3) {
-        return (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x) > 0;
     }
     
     // Animation loop
@@ -2452,25 +2199,8 @@ const ParticleSystem = (function() {
         
         // Update settings (generic method)
         updateSettings: function(group, property, value) {
-            if (group === 'orbie') {
-                this.updateOrbieSettings(property, value);
-            } else if (group === 'orbieSwarm') {
-                this.updateOrbieSwarmSettings(property, value);
-            } else if (group === 'forces') {
+            if (group === 'forces' && property in forceSettings) {
                 forceSettings[property] = value;
-                console.log(`Updated Force ${property} to ${value}`);
-            } else if (group === 'zotSwarms') {
-                // Handle update to global zot swarm settings
-                if (property === 'showExteriorStroke') {
-                    zotSwarmSettings.showExteriorStroke = value;
-                    console.log(`Updated Zot Swarms exterior stroke to ${value ? 'enabled' : 'disabled'}`);
-                } else if (property === 'exteriorStrokeWidth') {
-                    zotSwarmSettings.exteriorStrokeWidth = value;
-                    console.log(`Updated Zot Swarms exterior stroke width to ${value}px`);
-                } else {
-                    zotSwarmSettings[property] = value;
-                    console.log(`Updated Zot Swarms ${property} to ${value}`);
-                }
             }
         },
         
@@ -2566,11 +2296,6 @@ const ParticleSystem = (function() {
         // Update an existing ZotSwarm with new parameters
         updateZotSwarm: function(swarmId, config) {
             return updateZotSwarm(swarmId, config);
-        },
-        
-        // Get current zot swarm settings
-        getZotSwarmSettings: function() {
-            return {...zotSwarmSettings};
         }
     };
 })();
@@ -4591,6 +4316,308 @@ if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
     module.exports = DemoMode;
 } 
 
+// submitSwarms.js - Handle zot swarm submission
+
+const SubmitSwarms = (function() {
+    // Track popup state
+    let isPopupOpen = false;
+    let popupOverlay = null;
+    let popupContainer = null;
+    
+    // Initialize the submit button in the UI
+    function init() {
+        // Find the button group container
+        const buttonGroup = document.querySelector('#zotSwarmsParams .button-group');
+        if (!buttonGroup) return;
+        
+        // Create the submit button
+        const submitButton = document.createElement('button');
+        submitButton.id = 'submitSwarmsButton';
+        submitButton.textContent = 'Submit Your Zots';
+        submitButton.className = 'submit-swarms-btn';
+        
+        // Insert between Create and Clear buttons
+        const clearButton = document.getElementById('clearSwarmsButton');
+        if (clearButton) {
+            buttonGroup.insertBefore(submitButton, clearButton);
+        } else {
+            buttonGroup.appendChild(submitButton);
+        }
+        
+        // Add click event to the submit button
+        submitButton.addEventListener('click', showSubmitPopup);
+        
+        // Create and add styles for the popup
+        addPopupStyles();
+    }
+    
+    // Add CSS styles for the popup
+    function addPopupStyles() {
+        const styleEl = document.createElement('style');
+        styleEl.textContent = `
+            .popup-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+            }
+            
+            .popup-container {
+                background: #333;
+                border-radius: 8px;
+                padding: 20px;
+                width: 300px;
+                max-width: 90%;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+                position: relative;
+                color: white;
+            }
+            
+            .popup-title {
+                margin-top: 0;
+                font-size: 18px;
+                border-bottom: 1px solid #444;
+                padding-bottom: 10px;
+                margin-bottom: 15px;
+            }
+            
+            .popup-content {
+                margin-bottom: 20px;
+            }
+            
+            .popup-buttons {
+                display: flex;
+                justify-content: flex-end;
+                gap: 10px;
+            }
+            
+            .popup-button {
+                padding: 8px 16px;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-weight: bold;
+                transition: background-color 0.2s;
+            }
+            
+            .popup-button.submit {
+                background-color: #4CAF50;
+                color: white;
+            }
+            
+            .popup-button.submit:hover {
+                background-color: #388E3C;
+            }
+            
+            .popup-button.cancel {
+                background-color: #9e9e9e;
+                color: white;
+            }
+            
+            .popup-button.cancel:hover {
+                background-color: #757575;
+            }
+            
+            .submit-swarms-btn {
+                background-color: #4CAF50;
+                color: white;
+            }
+            
+            .submit-swarms-btn:hover {
+                background-color: #388E3C;
+            }
+            
+            .error-message {
+                color: #ff6b6b;
+                margin-top: 10px;
+                font-size: 14px;
+            }
+        `;
+        document.head.appendChild(styleEl);
+    }
+    
+    // Show the submit popup
+    function showSubmitPopup() {
+        if (isPopupOpen) return;
+        
+        // Create overlay
+        popupOverlay = document.createElement('div');
+        popupOverlay.className = 'popup-overlay';
+        
+        // Create popup container
+        popupContainer = document.createElement('div');
+        popupContainer.className = 'popup-container';
+        
+        // Popup content
+        popupContainer.innerHTML = `
+            <h3 class="popup-title">Submit Your Zots</h3>
+            <div class="popup-content">
+                Are you ready to submit your zot swarms?
+            </div>
+            <div id="submitError" class="error-message" style="display: none;"></div>
+            <div class="popup-buttons">
+                <button class="popup-button submit">Submit</button>
+                <button class="popup-button cancel">Cancel</button>
+            </div>
+        `;
+        
+        // Add to DOM
+        popupOverlay.appendChild(popupContainer);
+        document.body.appendChild(popupOverlay);
+        
+        // Set state
+        isPopupOpen = true;
+        
+        // Add event listeners
+        const submitBtn = popupContainer.querySelector('.popup-button.submit');
+        const cancelBtn = popupContainer.querySelector('.popup-button.cancel');
+        const errorElement = popupContainer.querySelector('#submitError');
+        
+        submitBtn.addEventListener('click', function() {
+            console.log('[SUBMIT] Submit button clicked');
+            
+            // Validate if there are particles on screen
+            if (typeof ParticleSystem !== 'undefined' && ParticleSystem.getZotSwarms) {
+                console.log('[SUBMIT] ParticleSystem is available');
+                
+                const swarms = ParticleSystem.getZotSwarms();
+                console.log(`[SUBMIT] Found ${swarms ? swarms.length : 0} swarms`);
+                
+                if (!swarms || swarms.length === 0) {
+                    // Show error message if no particles
+                    console.error('[SUBMIT] No swarms found');
+                    errorElement.textContent = "No zot swarms found! Please create at least one swarm.";
+                    errorElement.style.display = "block";
+                    return;
+                }
+                
+                // Try to save the data, but we'll show an error if it fails
+                try {
+                    // Create and save the JSON file
+                    const result = saveZotSwarms(swarms);
+                    
+                    // Show error message about filesystem limitations
+                    errorElement.innerHTML = "Browser security prevents saving directly to the feedback folder.<br>Check the browser console (F12) for more details.";
+                    errorElement.style.display = "block";
+                    
+                    // Don't close the popup so user can see the error
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = "Error";
+                } catch (error) {
+                    console.error('[SUBMIT] Error during save:', error);
+                    errorElement.textContent = "An error occurred: " + error.message;
+                    errorElement.style.display = "block";
+                }
+            } else {
+                console.error('[SUBMIT] ParticleSystem not available');
+                errorElement.textContent = "Error: ParticleSystem not available.";
+                errorElement.style.display = "block";
+            }
+        });
+        
+        cancelBtn.addEventListener('click', closePopup);
+        
+        // Stop propagation of clicks inside the popup
+        popupContainer.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+        
+        // Clicking outside the popup should not close it (events are blocked)
+        popupOverlay.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
+    
+    // Save zot swarms data as JSON file
+    function saveZotSwarms(swarms) {
+        try {
+            // Create data object with swarm settings and metadata
+            const data = {
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent,
+                screenSize: {
+                    width: window.innerWidth,
+                    height: window.innerHeight
+                },
+                swarms: swarms.map(swarm => ({
+                    id: swarm.id,
+                    zotCount: swarm.zotCount,
+                    settings: swarm.settings,
+                    // Get particles position data
+                    particles: swarm.particles ? swarm.particles.map(p => ({
+                        x: p.x,
+                        y: p.y,
+                        size: p.size,
+                        color: p.color
+                    })) : []
+                }))
+            };
+            
+            // Convert to JSON string
+            const jsonString = JSON.stringify(data, null, 2);
+            
+            // Create a Blob with the JSON data
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            
+            // Create a unique timestamp filename (no underscores or spaces)
+            const timestamp = new Date().toISOString().replace(/[-:T.Z]/g, '');
+            const filename = `preset${timestamp}.json`;
+            
+            console.log(`[SUBMIT] Attempting to save data to ${filename}`);
+            console.log(`[SUBMIT] Data size: ${Math.round(jsonString.length / 1024)} KB`);
+            console.log(`[SUBMIT] Number of swarms: ${swarms.length}`);
+            
+            // Important: Browser JavaScript cannot directly write to server filesystem
+            // We need to inform the user of this limitation
+            console.error(`[SUBMIT] ERROR: Cannot save directly to feedback folder`);
+            console.error(`[SUBMIT] Browser security restrictions prevent JavaScript from writing directly to the server filesystem`);
+            console.error(`[SUBMIT] This would require a server-side API endpoint to handle file uploads`);
+            
+            // Log the data we would have saved (limited to prevent console flooding)
+            console.log(`[SUBMIT] Data that would be saved (truncated):`, {
+                timestamp: data.timestamp,
+                screenSize: data.screenSize,
+                swarmCount: data.swarms.length
+            });
+            
+            return false;
+        } catch (error) {
+            console.error(`[SUBMIT] ERROR: Failed to process swarm data`);
+            console.error(`[SUBMIT] Error details:`, error);
+            console.error(`[SUBMIT] Error name: ${error.name}`);
+            console.error(`[SUBMIT] Error message: ${error.message}`);
+            console.error(`[SUBMIT] Error stack:`, error.stack);
+            return false;
+        }
+    }
+    
+    // Close the popup
+    function closePopup() {
+        if (!isPopupOpen || !popupOverlay) return;
+        
+        document.body.removeChild(popupOverlay);
+        popupOverlay = null;
+        popupContainer = null;
+        isPopupOpen = false;
+    }
+    
+    // Public API
+    return {
+        init: init
+    };
+})();
+
+// Export for use in other modules
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = SubmitSwarms;
+} 
+
 // main.js - Application initialization
 document.addEventListener('DOMContentLoaded', function() {
     const canvas = document.getElementById('canvas');
@@ -4867,21 +4894,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Min/Max size range slider
         setupDualRangeSlider('newSwarmMinSize', 'newSwarmMaxSize');
-        
-        // Initialize exterior stroke toggle
-        const exteriorStrokeToggle = document.getElementById('zotsExteriorStrokeEnabled');
-        if (exteriorStrokeToggle) {
-            // Initialize toggle from settings if available
-            const zotSwarmSettings = ParticleSystem.getZotSwarmSettings();
-            if (zotSwarmSettings && zotSwarmSettings.showExteriorStroke !== undefined) {
-                exteriorStrokeToggle.checked = zotSwarmSettings.showExteriorStroke;
-            }
-            
-            // Add event listener
-            exteriorStrokeToggle.addEventListener('change', function() {
-                ParticleSystem.updateSettings('zotSwarms', 'showExteriorStroke', this.checked);
-            });
-        }
         
         // Preset selector
         const presetSelect = document.getElementById('swarmPreset');
@@ -5537,6 +5549,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 WallSystem.clearWalls();
             });
         }
+    }
+
+    // Initialize SubmitSwarms module
+    if (typeof SubmitSwarms !== 'undefined' && SubmitSwarms.init) {
+        SubmitSwarms.init();
     }
 });
 

@@ -16,6 +16,7 @@ const jsFiles = [
     'walls.js',      // Wall system should be after particles.js
     'swipeSplitSystem.js', // Include SwipeSplitSystem before it's used in main.js
     'demoMode.js',   // Demo mode needs to be before main.js
+    'submitSwarms.js', // Include submitSwarms.js before main.js
     'main.js'        // Main.js should always be last as it uses all the above
 ];
 

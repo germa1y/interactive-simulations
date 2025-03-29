@@ -172,8 +172,8 @@ select:focus {
 .slider-overlay-label {
     position: absolute;
     top: 50%;
-    transform: translateY(-50%);
-    left: 0.6rem;
+    transform: translate(-50%, -50%);
+    left: 50%;
     color: white;
     font-size: 0.75rem;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
@@ -194,6 +194,7 @@ select:focus {
     pointer-events: none;
     z-index: 2;
     line-height: 1;
+    display: none; /* Hide slider values to protect IP */
 }
 
 /* Custom styling for the slider with label overlay */
@@ -268,8 +269,8 @@ select:focus {
 .range-slider-container .slider-overlay-label {
     position: absolute;
     top: 50%;
-    transform: translateY(-50%);
-    left: 0.6rem;
+    transform: translate(-50%, -50%);
+    left: 50%;
     color: white;
     font-size: 0.75rem;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
@@ -288,8 +289,8 @@ select:focus {
     font-weight: bold;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
     pointer-events: none;
-    z-index: 3;
-    line-height: 1;
+    z-index: 10;
+    display: none; /* Hide range slider values to protect IP */
 }
 
 .range-slider-min, .range-slider-max {
@@ -773,4 +774,9 @@ input:focus + .toggle-slider {
 
 input:checked + .toggle-slider:before {
     transform: translateX(16px);
+}
+
+/* Also hide min slider value by ID */
+#newSwarmMinSizeValue {
+    display: none !important; /* Hide to protect IP */
 }

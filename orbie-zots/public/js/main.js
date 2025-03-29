@@ -1175,6 +1175,11 @@ document.addEventListener('DOMContentLoaded', function() {
             membraneParamsDiv.appendChild(infoDiv);
         }
     }
+
+    // Initialize SubmitSwarms module
+    if (typeof SubmitSwarms !== 'undefined' && SubmitSwarms.init) {
+        SubmitSwarms.init();
+    }
 });
 
 // Initialize the simulation
