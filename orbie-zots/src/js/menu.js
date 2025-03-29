@@ -358,7 +358,8 @@ const MenuSystem = (function() {
         const svgFiles = [
             { name: 'Sample Walls', path: './sample-walls.svg' },
             { name: 'Sample Walls with Curves', path: './sample-walls-curves.svg' },
-            { name: 'Curves Sample', path: './curves-sample.svg' }
+            { name: 'Curves Sample', path: './curves-sample.svg' },
+            { name: 'Maze', path: './maze_20250329_060553.svg' }
         ];
         
         // Add options for each SVG file

@@ -1,7 +1,7 @@
 /**
  * Orbie Zots - Particle Swarm Simulation
  * Copyright (c) 2025
- * Built: 2025-03-27T01:17:56.227Z
+ * Built: 2025-03-29T11:11:25.062Z
  */
 
 // colors.js - Color themes and generators for particles
@@ -1112,18 +1112,20 @@ const MenuSystem = (function() {
         const valueDisplay = document.getElementById(id + 'Value');
         
         if (input && valueDisplay) {
-            // Set initial value from settings if provided
+            // Set initial value if provided
             if (initialValue !== undefined) {
                 input.value = initialValue;
             }
             
             // Set initial value display
-            valueDisplay.textContent = parseFloat(input.value).toFixed(input.step.includes('.') ? 2 : 0);
+            // HIDDEN: All slider values are hidden to protect IP
+            // valueDisplay.textContent = parseFloat(input.value).toFixed(input.step.includes('.') ? 2 : 0);
             
             // Add event listeners for input changes
             input.addEventListener('input', function() {
                 const value = parseFloat(this.value);
-                valueDisplay.textContent = value.toFixed(this.step.includes('.') ? 2 : 0);
+                // HIDDEN: All slider values are hidden to protect IP
+                // valueDisplay.textContent = value.toFixed(this.step.includes('.') ? 2 : 0);
                 
                 // Call the callback with the new value
                 if (changeCallback) {
@@ -1165,7 +1167,8 @@ const MenuSystem = (function() {
         const svgFiles = [
             { name: 'Sample Walls', path: './sample-walls.svg' },
             { name: 'Sample Walls with Curves', path: './sample-walls-curves.svg' },
-            { name: 'Curves Sample', path: './curves-sample.svg' }
+            { name: 'Curves Sample', path: './curves-sample.svg' },
+            { name: 'Maze', path: './maze_20250329_060553.svg' }
         ];
         
         // Add options for each SVG file
@@ -1188,14 +1191,16 @@ const MenuSystem = (function() {
                 if (parseFloat(this.value) > parseFloat(maxSlider.value)) {
                     this.value = maxSlider.value;
                 }
-                minValue.textContent = parseFloat(this.value).toFixed(1);
+                // HIDDEN: All slider values are hidden to protect IP
+                // minValue.textContent = parseFloat(this.value).toFixed(1);
             });
 
             maxSlider.addEventListener('input', function() {
                 if (parseFloat(this.value) < parseFloat(minSlider.value)) {
                     this.value = minSlider.value;
                 }
-                maxValue.textContent = parseFloat(this.value).toFixed(1);
+                // HIDDEN: All slider values are hidden to protect IP
+                // maxValue.textContent = parseFloat(this.value).toFixed(1);
             });
         }
     }
@@ -4925,6 +4930,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('newSwarmMaxSize').value = maxSize;
                     
                     // Update displayed values
+                    // HIDDEN: All slider values are hidden to protect IP
+                    /*
                     document.getElementById('newSwarmZotCountValue').textContent = randomConfig.zotCount;
                     document.getElementById('newSwarmSpeedValue').textContent = randomConfig.speed.toFixed(1);
                     document.getElementById('newSwarmSeparationValue').textContent = randomConfig.separation.toFixed(1);
@@ -4933,6 +4940,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('newSwarmPerceptionValue').textContent = randomConfig.perception;
                     document.getElementById('newSwarmMinSizeValue').textContent = minSize.toFixed(1);
                     document.getElementById('newSwarmMaxSizeValue').textContent = maxSize.toFixed(1);
+                    */
                     
                     // Also update the dual slider visuals
                     updateDualSliderVisuals('newSwarmMinSize', 'newSwarmMaxSize');
@@ -4954,12 +4962,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('newSwarmPerception').value = preset.perception;
                     
                     // Update displayed values, keeping the current zot count
+                    // HIDDEN: All slider values are hidden to protect IP
+                    /*
                     document.getElementById('newSwarmZotCountValue').textContent = currentZotCount;
                     document.getElementById('newSwarmSpeedValue').textContent = preset.speed.toFixed(1);
                     document.getElementById('newSwarmSeparationValue').textContent = preset.separation.toFixed(1);
                     document.getElementById('newSwarmAlignmentValue').textContent = preset.alignment.toFixed(2);
                     document.getElementById('newSwarmCohesionValue').textContent = preset.cohesion.toFixed(1);
                     document.getElementById('newSwarmPerceptionValue').textContent = preset.perception;
+                    */
 
                     // Update color theme selector
                     if (preset.colorTheme) {
@@ -5204,12 +5215,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const precision = shouldRound ? 0 : 
                              input.step.includes('.01') ? 2 : 1;
             
-            valueDisplay.textContent = parseFloat(input.value).toFixed(precision);
+            // HIDDEN: All slider values are hidden to protect IP
+            // valueDisplay.textContent = parseFloat(input.value).toFixed(precision);
             
             // Add event listeners for input changes
             input.addEventListener('input', function() {
                 const value = parseFloat(this.value);
-                valueDisplay.textContent = value.toFixed(precision);
+                // HIDDEN: All slider values are hidden to protect IP
+                // valueDisplay.textContent = value.toFixed(precision);
                 
                 // Call the callback with the new value
                 if (changeCallback) {
@@ -5232,8 +5245,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const minVal = parseFloat(minSlider.value);
                 const maxVal = parseFloat(maxSlider.value);
                 
-                minValueDisplay.textContent = minVal.toFixed(1);
-                maxValueDisplay.textContent = maxVal.toFixed(1);
+                // HIDDEN: All slider values are hidden to protect IP
+                // minValueDisplay.textContent = minVal.toFixed(1);
+                // maxValueDisplay.textContent = maxVal.toFixed(1);
                 
                 // Ensure thumb positions are visually reflecting the values
                 updateThumbPositions();
@@ -5420,38 +5434,39 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateAllUIValues() {
         // Set Orbie parameter values
         document.getElementById('orbieSize').value = ParticleSystem.getOrbieSettings().size || 12;
-        document.getElementById('orbieSizeValue').textContent = parseFloat(document.getElementById('orbieSize').value).toFixed(1);
+        // HIDDEN: All slider values are hidden to protect IP
+        // document.getElementById('orbieSizeValue').textContent = parseFloat(document.getElementById('orbieSize').value).toFixed(1);
         
         document.getElementById('orbieGlowSize').value = ParticleSystem.getOrbieSettings().glowSize || 1.5;
-        document.getElementById('orbieGlowSizeValue').textContent = parseFloat(document.getElementById('orbieGlowSize').value).toFixed(1);
+        // document.getElementById('orbieGlowSizeValue').textContent = parseFloat(document.getElementById('orbieGlowSize').value).toFixed(1);
         
         document.getElementById('orbieGlowOpacity').value = ParticleSystem.getOrbieSettings().glowOpacity || 0.2;
-        document.getElementById('orbieGlowOpacityValue').textContent = parseFloat(document.getElementById('orbieGlowOpacity').value).toFixed(2);
+        // document.getElementById('orbieGlowOpacityValue').textContent = parseFloat(document.getElementById('orbieGlowOpacity').value).toFixed(2);
         
         document.getElementById('orbiePulseSpeed').value = ParticleSystem.getOrbieSettings().pulseSpeed || 0.05;
-        document.getElementById('orbiePulseSpeedValue').textContent = parseFloat(document.getElementById('orbiePulseSpeed').value).toFixed(2);
+        // document.getElementById('orbiePulseSpeedValue').textContent = parseFloat(document.getElementById('orbiePulseSpeed').value).toFixed(2);
         
         document.getElementById('orbiePulseIntensity').value = ParticleSystem.getOrbieSettings().pulseIntensity || 0.4;
-        document.getElementById('orbiePulseIntensityValue').textContent = parseFloat(document.getElementById('orbiePulseIntensity').value).toFixed(2);
+        // document.getElementById('orbiePulseIntensityValue').textContent = parseFloat(document.getElementById('orbiePulseIntensity').value).toFixed(2);
         
         document.getElementById('orbieInfluenceRadius').value = ParticleSystem.getOrbieSettings().influenceRadius || 100;
-        document.getElementById('orbieInfluenceRadiusValue').textContent = parseFloat(document.getElementById('orbieInfluenceRadius').value).toFixed(0);
+        // document.getElementById('orbieInfluenceRadiusValue').textContent = parseFloat(document.getElementById('orbieInfluenceRadius').value).toFixed(0);
         
         document.getElementById('orbieInfluenceIntensity').value = ParticleSystem.getOrbieSettings().influenceIntensity || 0.5;
-        document.getElementById('orbieInfluenceIntensityValue').textContent = parseFloat(document.getElementById('orbieInfluenceIntensity').value).toFixed(2);
+        // document.getElementById('orbieInfluenceIntensityValue').textContent = parseFloat(document.getElementById('orbieInfluenceIntensity').value).toFixed(2);
         
         document.getElementById('orbieTouchMultiplier').value = ParticleSystem.getOrbieSettings().touchMultiplier || 0.15;
-        document.getElementById('orbieTouchMultiplierValue').textContent = parseFloat(document.getElementById('orbieTouchMultiplier').value).toFixed(2);
+        // document.getElementById('orbieTouchMultiplierValue').textContent = parseFloat(document.getElementById('orbieTouchMultiplier').value).toFixed(2);
         
         // Set OrbieSwarm parameter values
         // ... (existing code)
         
         // Set Forces parameter values
         document.getElementById('touchForce').value = ParticleSystem.getForceSettingValue('touchForce') || 3;
-        document.getElementById('touchForceValue').textContent = parseFloat(document.getElementById('touchForce').value).toFixed(1);
+        // document.getElementById('touchForceValue').textContent = parseFloat(document.getElementById('touchForce').value).toFixed(1);
         
         document.getElementById('wallForce').value = ParticleSystem.getForceSettingValue('wallForce') || 1;
-        document.getElementById('wallForceValue').textContent = parseFloat(document.getElementById('wallForce').value).toFixed(1);
+        // document.getElementById('wallForceValue').textContent = parseFloat(document.getElementById('wallForce').value).toFixed(1);
         
         // Set ZotTouchEnabled checkbox
         const zotTouchEnabled = document.getElementById('zotTouchEnabled');
@@ -5617,5 +5632,21 @@ function initializeSimulation() {
     }
     
     // ... existing code ...
+}
+
+// Helper function to handle input events on sliders
+function updateSliderValue(input, valueDisplay, precision = 1) {
+    // Don't update text content for sliders since we've hidden them to protect IP
+    // valueDisplay.textContent = parseFloat(input.value).toFixed(precision);
+}
+
+// Event handler for slider input events
+function handleSliderInput(event, precision = 1) {
+    const value = parseFloat(this.value);
+    const valueDisplay = document.getElementById(this.id + 'Value');
+    if (valueDisplay) {
+        // Don't update text content for sliders since we've hidden them to protect IP
+        // valueDisplay.textContent = value.toFixed(precision);
+    }
 }
 
