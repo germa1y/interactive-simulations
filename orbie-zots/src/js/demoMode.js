@@ -28,7 +28,7 @@ const DemoMode = (function() {
         maxSize: 7.5,            // Maximum zot size
         circleRadius: 150,     // Fixed pixel value for swarm positioning (was 0.35 - a fraction of screen)
         cycleInterval: 10000,  // Cycle through presets every 10 seconds
-        idleTimeout: 5000     // Show prompt after 5 seconds of inactivity
+        idleTimeout: 2000     // Show prompt after 2 seconds of inactivity
     };
     
     // Preset configurations to cycle through
