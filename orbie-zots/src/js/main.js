@@ -2,10 +2,11 @@
 document.addEventListener('DOMContentLoaded', function() {
     const canvas = document.getElementById('canvas');
     const menuToggle = document.getElementById('menuToggle');
+    const homeButton = document.getElementById('homeButton');
     const fpsDisplay = document.getElementById('fps');
     const controlsPanel = document.getElementById('controls');
     
-    console.log("DOM loaded - Menu elements:", menuToggle ? "✓" : "✗", controlsPanel ? "✓" : "✗");
+    console.log("DOM loaded - Menu elements:", menuToggle ? "✓" : "✗", controlsPanel ? "✓" : "✗", homeButton ? "✓" : "✗");
     
     // Initialize the particle system
     ParticleSystem.init(canvas, fpsDisplay);
@@ -39,14 +40,50 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log("Menu toggle clicked");
             e.preventDefault();
             controlsPanel.classList.toggle('collapsed');
+            updateHomeButtonVisibility();
         });
         
         menuToggle.addEventListener('touchstart', function(e) {
             console.log("Menu toggle touched");
             e.preventDefault();
             controlsPanel.classList.toggle('collapsed');
+            updateHomeButtonVisibility();
             e.stopPropagation();
         }, { passive: false });
+    }
+    
+    // Set up home button event listener
+    if (homeButton) {
+        console.log("Setting up home button");
+        
+        // Set initial state of home button based on menu state
+        updateHomeButtonVisibility();
+        
+        // Add click event listener to navigate to home page
+        homeButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log("Home button clicked, navigating to home page");
+            window.location.href = 'https://interactive-simulations.com/';
+        });
+        
+        // Add touch event listener for mobile
+        homeButton.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            console.log("Home button touched, navigating to home page");
+            window.location.href = 'https://interactive-simulations.com/';
+            e.stopPropagation();
+        }, { passive: false });
+    }
+    
+    // Function to update home button visibility based on menu state
+    function updateHomeButtonVisibility() {
+        if (homeButton) {
+            if (controlsPanel.classList.contains('collapsed')) {
+                homeButton.classList.add('visible');
+            } else {
+                homeButton.classList.remove('visible');
+            }
+        }
     }
     
     // Initialize touch handler with callback
@@ -135,12 +172,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event handlers for menu interactions
     menuToggle.addEventListener('click', function() {
         controlsPanel.classList.toggle('collapsed');
+        updateHomeButtonVisibility();
     });
     
     // Properly handle touch behavior on menu toggle button
     menuToggle.addEventListener('touchstart', function(e) {
         e.preventDefault();
         controlsPanel.classList.toggle('collapsed');
+        updateHomeButtonVisibility();
         e.stopPropagation();
     }, { passive: false });
     
@@ -148,6 +187,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             controlsPanel.classList.add('collapsed');
+            updateHomeButtonVisibility();
         }
     });
     
@@ -155,6 +195,7 @@ document.addEventListener('DOMContentLoaded', function() {
     controlsPanel.addEventListener('transitionend', function(e) {
         if (e.propertyName === 'right' && 
             controlsPanel.classList.contains('collapsed')) {
+            updateHomeButtonVisibility();
         }
     });
     

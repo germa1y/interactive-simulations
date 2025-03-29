@@ -46,6 +46,9 @@ const MenuSystem = (function() {
         // Setup dual range sliders for min/max values
         setupRangeSliders();
         
+        // Set initial home button visibility based on menu state
+        updateHomeButtonVisibility();
+        
         isMenuInitialized = true;
     }
     
@@ -56,12 +59,14 @@ const MenuSystem = (function() {
             menuToggle.addEventListener('click', function(e) {
                 e.preventDefault();
                 controlsPanel.classList.toggle('collapsed');
+                updateHomeButtonVisibility();
             });
             
             // Handle touch for mobile - fixed to use touchstart instead of touchend
             menuToggle.addEventListener('touchstart', function(e) {
                 e.preventDefault();
                 controlsPanel.classList.toggle('collapsed');
+                updateHomeButtonVisibility();
                 e.stopPropagation();
             }, { passive: false });
             
@@ -71,6 +76,7 @@ const MenuSystem = (function() {
                     !controlsPanel.contains(e.target) && 
                     e.target !== menuToggle) {
                     controlsPanel.classList.add('collapsed');
+                    updateHomeButtonVisibility();
                 }
             });
             
@@ -79,8 +85,21 @@ const MenuSystem = (function() {
                     !controlsPanel.contains(e.target) && 
                     e.target !== menuToggle) {
                     controlsPanel.classList.add('collapsed');
+                    updateHomeButtonVisibility();
                 }
             });
+        }
+    }
+    
+    // Helper function to update home button visibility
+    function updateHomeButtonVisibility() {
+        const homeButton = document.getElementById('homeButton');
+        if (homeButton) {
+            if (controlsPanel.classList.contains('collapsed')) {
+                homeButton.classList.add('visible');
+            } else {
+                homeButton.classList.remove('visible');
+            }
         }
     }
     
