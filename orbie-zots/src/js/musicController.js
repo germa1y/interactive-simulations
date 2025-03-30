@@ -695,6 +695,39 @@ const MusicController = (function() {
         }
     }
     
+    /**
+     * Check if browser autoplay is supported and if explicit user interaction is needed
+     */
+    function checkAutoplaySupport() {
+        // Create a temporary audio element for testing
+        const testAudio = document.createElement('audio');
+        testAudio.volume = 0;
+        
+        // Try to play it
+        try {
+            const playPromise = testAudio.play();
+            
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    console.log('Music Controller: Browser supports autoplay without user interaction');
+                }).catch(err => {
+                    if (err.name === 'NotAllowedError') {
+                        console.log('Music Controller: Browser requires user interaction for autoplay');
+                        // Set a data attribute so all components know user interaction is needed
+                        document.documentElement.setAttribute('data-needs-user-interaction', 'true');
+                    } else {
+                        console.error('Music Controller: Error in autoplay test:', err);
+                    }
+                });
+            }
+        } catch (e) {
+            console.error('Music Controller: Exception during autoplay test:', e);
+        }
+    }
+
+    // Call the autoplay check during initialization
+    setTimeout(checkAutoplaySupport, 100);
+    
     // Self-initialize when script loads
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
         // Document already ready, initialize immediately

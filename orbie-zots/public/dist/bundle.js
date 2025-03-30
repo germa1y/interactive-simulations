@@ -1,7 +1,7 @@
 /**
  * Orbie Zots - Particle Swarm Simulation
  * Copyright (c) 2025
- * Built: 2025-03-30T19:35:53.664Z
+ * Built: 2025-03-30T19:41:47.453Z
  */
 
 // config.js - Environment-specific configuration
@@ -11,23 +11,32 @@ const Config = (function() {
                    window.location.hostname === '127.0.0.1' ||
                    window.location.hostname === '';
 
+    // Get base path - handles GitHub Pages and other hosting environments
+    const getBasePath = function() {
+        if (isLocal) {
+            return 'D:\\.apps\\interactive-simulations\\orbie-zots\\src\\music\\';
+        } else {
+            // Check if we're on GitHub Pages or another hosting platform
+            const path = window.location.pathname;
+            // If we're at the root or a direct path, use relative path
+            if (path === '/' || path.indexOf('.html') > -1) {
+                return './music/';
+            } else {
+                // For deeper paths or subdirectories, ensure we go to the right place
+                return './music/';
+            }
+        }
+    };
+
+    const basePath = getBasePath();
+
     // Audio paths
     const audioPaths = {
-        demoIntro: isLocal 
-            ? 'D:\\.apps\\interactive-simulations\\orbie-zots\\src\\music\\DemoIntro.mp3'
-            : './music/DemoIntro.mp3',
-        demoPulse: isLocal
-            ? 'D:\\.apps\\interactive-simulations\\orbie-zots\\src\\music\\DemoPulse.mp3'
-            : './music/DemoPulse.mp3',
-        demoOrchestra: isLocal
-            ? 'D:\\.apps\\interactive-simulations\\orbie-zots\\src\\music\\DemoOrchestra.mp3'
-            : './music/DemoOrchestra.mp3',
-        demoDubstep: isLocal
-            ? 'D:\\.apps\\interactive-simulations\\orbie-zots\\src\\music\\DemoDubstep.mp3'
-            : './music/DemoDubstep.mp3',
-        demoGlassandi: isLocal
-            ? 'D:\\.apps\\interactive-simulations\\orbie-zots\\src\\music\\DemoGlassandi.mp3'
-            : './music/DemoGlassandi.mp3'
+        demoIntro: `${basePath}DemoIntro.mp3`,
+        demoPulse: `${basePath}DemoPulse.mp3`,
+        demoOrchestra: `${basePath}DemoOrchestra.mp3`,
+        demoDubstep: `${basePath}DemoDubstep.mp3`,
+        demoGlassandi: `${basePath}DemoGlassandi.mp3`
     };
 
     // Public API
@@ -4884,15 +4893,40 @@ const DemoMode = (function() {
      * Play the next song in the shuffled playlist
      */
     function playNextSong() {
+        // Don't proceed if we don't have any songs
+        if (!shuffledSongKeys || shuffledSongKeys.length === 0) {
+            console.error('Demo Mode: No songs in playlist, randomizing songs first');
+            randomizeSongs();
+            if (!shuffledSongKeys || shuffledSongKeys.length === 0) {
+                console.error('Demo Mode: Failed to get songs, cannot play music');
+                return;
+            }
+        }
+        
         currentSongIndex = (currentSongIndex + 1) % shuffledSongKeys.length;
         const nextSongKey = shuffledSongKeys[currentSongIndex];
+        
+        console.log(`Demo Mode: Preparing to play next song: ${nextSongKey}`);
         
         // Create new audio element
         if (demoAudio) {
             demoAudio.pause();
         }
+        
         demoAudio = new Audio();
-        demoAudio.src = Config.getAudioPath(nextSongKey);
+        const audioPath = Config.getAudioPath(nextSongKey);
+        console.log(`Demo Mode: Creating audio element with path: ${audioPath}`);
+        
+        // Preload setting
+        demoAudio.preload = 'auto';
+        
+        // Set source
+        demoAudio.src = audioPath;
+        
+        // Add load event handler
+        demoAudio.onloadeddata = function() {
+            console.log(`Demo Mode: Song ${nextSongKey} loaded successfully`);
+        };
         
         // Set up ended event for continuous playback
         demoAudio.onended = playNextSong;
@@ -4900,27 +4934,44 @@ const DemoMode = (function() {
         // Add error handling
         demoAudio.onerror = function(err) {
             console.error(`Demo Mode: Error loading audio ${nextSongKey}:`, err);
+            console.error('Demo Mode: Audio error code:', demoAudio.error ? demoAudio.error.code : 'unknown');
             demoAudio = null;
             // Try to play next song on error
             setTimeout(playNextSong, 1000);
         };
         
-        // Play the audio
-        try {
-            const playPromise = demoAudio.play();
-            
-            // Handle the promise properly
-            if (playPromise !== undefined) {
-                playPromise.catch(err => {
-                    console.error(`Demo Mode: Error playing audio ${nextSongKey}:`, err);
-                    // Try to play next song on error
-                    setTimeout(playNextSong, 1000);
-                });
+        // Play the audio with a short delay to ensure loading starts
+        setTimeout(() => {
+            try {
+                console.log(`Demo Mode: Attempting to play song: ${nextSongKey}`);
+                
+                // Make sure user interaction has been recorded for autoplay policies
+                if (typeof document !== 'undefined' && document.documentElement && 
+                    typeof document.documentElement.hasAttribute === 'function' &&
+                    !document.documentElement.hasAttribute('data-user-interacted')) {
+                    document.documentElement.setAttribute('data-user-interacted', 'true');
+                    console.log('Demo Mode: Setting user interaction flag for autoplay');
+                }
+                
+                const playPromise = demoAudio.play();
+                
+                // Handle the promise properly
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        console.log(`Demo Mode: Song ${nextSongKey} playing successfully`);
+                    }).catch(err => {
+                        console.error(`Demo Mode: Error playing audio ${nextSongKey}:`, err);
+                        // Try to play next song on error
+                        setTimeout(playNextSong, 1000);
+                    });
+                } else {
+                    console.log('Demo Mode: Audio play did not return a promise');
+                }
+            } catch (err) {
+                console.error(`Demo Mode: Error initiating audio playback for ${nextSongKey}:`, err);
+                setTimeout(playNextSong, 1000);
             }
-        } catch (err) {
-            console.error(`Demo Mode: Error initiating audio playback for ${nextSongKey}:`, err);
-            setTimeout(playNextSong, 1000);
-        }
+        }, 300);
         
         console.log(`Demo Mode: Playing song ${currentSongIndex + 1}/${shuffledSongKeys.length}: ${nextSongKey}`);
     }
@@ -4929,14 +4980,25 @@ const DemoMode = (function() {
      * Play the demo intro audio
      */
     function playDemoAudio() {
+        console.log('Demo Mode: Attempting to play demo intro audio');
+        
         try {
             // Create audio element if it doesn't exist
             if (!demoAudio) {
+                const audioPath = Config.getAudioPath('demoIntro');
+                console.log(`Demo Mode: Creating audio element with path: ${audioPath}`);
+                
                 demoAudio = new Audio();
-                demoAudio.src = Config.getAudioPath('demoIntro');
+                
+                // Preload the audio
+                demoAudio.preload = 'auto';
+                
+                // Set source
+                demoAudio.src = audioPath;
                 
                 // Set up ended event to start random playlist
                 demoAudio.onended = function() {
+                    console.log('Demo Mode: Intro audio ended, starting random playlist');
                     randomizeSongs();
                     playNextSong();
                 };
@@ -4944,31 +5006,52 @@ const DemoMode = (function() {
                 // Add error handling
                 demoAudio.onerror = function(err) {
                     console.error('Demo Mode: Error loading intro audio:', err);
+                    console.error('Demo Mode: Audio error code:', demoAudio.error ? demoAudio.error.code : 'unknown');
                     demoAudio = null;
                     // Start random playlist immediately on error
                     randomizeSongs();
                     playNextSong();
                 };
+                
+                // Add load event handler
+                demoAudio.onloadeddata = function() {
+                    console.log('Demo Mode: Intro audio loaded successfully');
+                };
             }
             
-            // Play the audio
-            try {
-                const playPromise = demoAudio.play();
-                
-                // Handle the promise properly
-                if (playPromise !== undefined) {
-                    playPromise.catch(err => {
-                        console.error('Demo Mode: Error playing intro audio:', err);
-                        // Start random playlist immediately on error
-                        randomizeSongs();
-                        playNextSong();
-                    });
+            // Play the audio - but first check if it's already loaded
+            setTimeout(() => {
+                try {
+                    console.log('Demo Mode: Attempting to play intro audio now');
+                    // Add a user interaction check
+                    if (typeof document !== 'undefined' && document.documentElement && 
+                        typeof document.documentElement.hasAttribute === 'function' &&
+                        !document.documentElement.hasAttribute('data-user-interacted')) {
+                        document.documentElement.setAttribute('data-user-interacted', 'true');
+                        console.log('Demo Mode: Setting user interaction flag for autoplay');
+                    }
+                    
+                    const playPromise = demoAudio.play();
+                    
+                    // Handle the promise properly
+                    if (playPromise !== undefined) {
+                        playPromise.then(() => {
+                            console.log('Demo Mode: Intro audio playing successfully');
+                        }).catch(err => {
+                            console.error('Demo Mode: Error playing intro audio:', err);
+                            // Start random playlist immediately on error
+                            randomizeSongs();
+                            playNextSong();
+                        });
+                    } else {
+                        console.log('Demo Mode: Audio play did not return a promise');
+                    }
+                } catch (err) {
+                    console.error('Demo Mode: Error initiating intro audio playback:', err);
+                    randomizeSongs();
+                    playNextSong();
                 }
-            } catch (err) {
-                console.error('Demo Mode: Error initiating intro audio playback:', err);
-                randomizeSongs();
-                playNextSong();
-            }
+            }, 500); // Short delay to ensure audio element is fully initialized
         } catch (err) {
             console.error('Demo Mode: Error setting up audio:', err);
             // Start random playlist immediately on error
@@ -4993,30 +5076,53 @@ const DemoMode = (function() {
      * @returns {boolean} true if audio is now playing, false if paused
      */
     function togglePauseAudio() {
-        if (!demoAudio) return false;
+        if (!demoAudio) {
+            console.log('Demo Mode: No audio element exists to toggle');
+            return false;
+        }
         
         if (demoAudio.paused) {
             // Resume playback
+            console.log('Demo Mode: Attempting to resume paused audio');
+            
             try {
+                // Make sure user interaction has been recorded for autoplay policies
+                if (typeof document !== 'undefined' && document.documentElement && 
+                    typeof document.documentElement.hasAttribute === 'function' &&
+                    !document.documentElement.hasAttribute('data-user-interacted')) {
+                    document.documentElement.setAttribute('data-user-interacted', 'true');
+                    console.log('Demo Mode: Setting user interaction flag for autoplay');
+                }
+                
                 const playPromise = demoAudio.play();
                 
                 // Handle the promise properly
                 if (playPromise !== undefined) {
-                    playPromise.catch(err => {
-                        console.error('Demo Mode: Error resuming audio:', err);
+                    playPromise.then(() => {
+                        console.log('Demo Mode: Audio resumed successfully on toggle');
+                    }).catch(err => {
+                        console.error('Demo Mode: Error resuming audio on toggle:', err);
+                        console.error('Demo Mode: Audio error code:', demoAudio.error ? demoAudio.error.code : 'unknown');
+                        
+                        // If we get a "NotAllowedError", it's likely due to autoplay policy
+                        if (err.name === 'NotAllowedError') {
+                            console.error('Demo Mode: Autoplay policy prevented playback - user interaction required');
+                        }
                     });
+                } else {
+                    console.log('Demo Mode: Audio play did not return a promise, assuming success');
                 }
                 
-                console.log('Demo Mode: Resumed demo audio');
+                console.log('Demo Mode: Toggle - audio now playing (requested)');
                 return true;
             } catch (err) {
-                console.error('Demo Mode: Error initiating audio resume:', err);
+                console.error('Demo Mode: Error initiating audio resume on toggle:', err);
                 return false;
             }
         } else {
             // Pause playback
             demoAudio.pause();
-            console.log('Demo Mode: Paused demo audio');
+            console.log('Demo Mode: Toggle - audio now paused');
             return false;
         }
     }
@@ -5026,21 +5132,54 @@ const DemoMode = (function() {
      * @returns {boolean} true if successfully resumed, false otherwise
      */
     function resumeAudio() {
-        if (!demoAudio || !demoAudio.paused) return false;
+        if (!demoAudio) {
+            console.log('Demo Mode: No audio element exists to resume');
+            return false;
+        }
+        
+        if (!demoAudio.paused) {
+            console.log('Demo Mode: Audio is already playing, no need to resume');
+            return false;
+        }
+        
+        console.log('Demo Mode: Attempting to resume audio playback');
         
         try {
+            // Make sure user interaction has been recorded for autoplay policies
+            if (typeof document !== 'undefined' && document.documentElement && 
+                typeof document.documentElement.hasAttribute === 'function' &&
+                !document.documentElement.hasAttribute('data-user-interacted')) {
+                document.documentElement.setAttribute('data-user-interacted', 'true');
+                console.log('Demo Mode: Setting user interaction flag for autoplay');
+            }
+            
             const playPromise = demoAudio.play();
             
             // Handle the promise properly
             if (playPromise !== undefined) {
-                playPromise.catch(err => {
+                playPromise.then(() => {
+                    console.log('Demo Mode: Audio resumed successfully');
+                    return true;
+                }).catch(err => {
                     console.error('Demo Mode: Error resuming audio:', err);
+                    console.error('Demo Mode: Audio error code:', demoAudio.error ? demoAudio.error.code : 'unknown');
+                    
+                    // If we get a "NotAllowedError", it's likely due to autoplay policy
+                    if (err.name === 'NotAllowedError') {
+                        console.error('Demo Mode: Autoplay policy prevented playback - user interaction required');
+                    }
+                    
                     return false;
                 });
+                
+                // For immediate return value consistency, we'll return true here
+                // The actual success/failure will be logged asynchronously
+                console.log('Demo Mode: Resume audio requested (pending)');
+                return true;
+            } else {
+                console.log('Demo Mode: Audio play did not return a promise, assuming success');
+                return true;
             }
-            
-            console.log('Demo Mode: Resumed demo audio');
-            return true;
         } catch (err) {
             console.error('Demo Mode: Error initiating audio resume:', err);
             return false;
