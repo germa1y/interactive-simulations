@@ -8,20 +8,20 @@ const Config = (function() {
     // Audio paths
     const audioPaths = {
         demoIntro: isLocal 
-            ? '/music/DemoIntro.mp3'
-            : '/music/DemoIntro.mp3',
+            ? 'D:\\.apps\\interactive-simulations\\orbie-zots\\src\\music\\DemoIntro.mp3'
+            : './music/DemoIntro.mp3',
         demoPulse: isLocal
-            ? '/music/DemoPulse.mp3'
-            : '/music/DemoPulse.mp3',
+            ? 'D:\\.apps\\interactive-simulations\\orbie-zots\\src\\music\\DemoPulse.mp3'
+            : './music/DemoPulse.mp3',
         demoOrchestra: isLocal
-            ? '/music/DemoOrchestra.mp3'
-            : '/music/DemoOrchestra.mp3',
+            ? 'D:\\.apps\\interactive-simulations\\orbie-zots\\src\\music\\DemoOrchestra.mp3'
+            : './music/DemoOrchestra.mp3',
         demoDubstep: isLocal
-            ? '/music/DemoDubstep.mp3'
-            : '/music/DemoDubstep.mp3',
+            ? 'D:\\.apps\\interactive-simulations\\orbie-zots\\src\\music\\DemoDubstep.mp3'
+            : './music/DemoDubstep.mp3',
         demoGlassandi: isLocal
-            ? '/music/DemoGlassandi.mp3'
-            : '/music/DemoGlassandi.mp3'
+            ? 'D:\\.apps\\interactive-simulations\\orbie-zots\\src\\music\\DemoGlassandi.mp3'
+            : './music/DemoGlassandi.mp3'
     };
 
     // Public API

@@ -1,7 +1,7 @@
 /**
  * Orbie Zots - Particle Swarm Simulation
  * Copyright (c) 2025
- * Built: 2025-03-30T19:30:35.205Z
+ * Built: 2025-03-30T19:35:53.664Z
  */
 
 // config.js - Environment-specific configuration
@@ -14,20 +14,20 @@ const Config = (function() {
     // Audio paths
     const audioPaths = {
         demoIntro: isLocal 
-            ? '/music/DemoIntro.mp3'
-            : '/music/DemoIntro.mp3',
+            ? 'D:\\.apps\\interactive-simulations\\orbie-zots\\src\\music\\DemoIntro.mp3'
+            : './music/DemoIntro.mp3',
         demoPulse: isLocal
-            ? '/music/DemoPulse.mp3'
-            : '/music/DemoPulse.mp3',
+            ? 'D:\\.apps\\interactive-simulations\\orbie-zots\\src\\music\\DemoPulse.mp3'
+            : './music/DemoPulse.mp3',
         demoOrchestra: isLocal
-            ? '/music/DemoOrchestra.mp3'
-            : '/music/DemoOrchestra.mp3',
+            ? 'D:\\.apps\\interactive-simulations\\orbie-zots\\src\\music\\DemoOrchestra.mp3'
+            : './music/DemoOrchestra.mp3',
         demoDubstep: isLocal
-            ? '/music/DemoDubstep.mp3'
-            : '/music/DemoDubstep.mp3',
+            ? 'D:\\.apps\\interactive-simulations\\orbie-zots\\src\\music\\DemoDubstep.mp3'
+            : './music/DemoDubstep.mp3',
         demoGlassandi: isLocal
-            ? '/music/DemoGlassandi.mp3'
-            : '/music/DemoGlassandi.mp3'
+            ? 'D:\\.apps\\interactive-simulations\\orbie-zots\\src\\music\\DemoGlassandi.mp3'
+            : './music/DemoGlassandi.mp3'
     };
 
     // Public API
@@ -4906,11 +4906,21 @@ const DemoMode = (function() {
         };
         
         // Play the audio
-        demoAudio.play().catch(err => {
-            console.error(`Demo Mode: Error playing audio ${nextSongKey}:`, err);
-            // Try to play next song on error
+        try {
+            const playPromise = demoAudio.play();
+            
+            // Handle the promise properly
+            if (playPromise !== undefined) {
+                playPromise.catch(err => {
+                    console.error(`Demo Mode: Error playing audio ${nextSongKey}:`, err);
+                    // Try to play next song on error
+                    setTimeout(playNextSong, 1000);
+                });
+            }
+        } catch (err) {
+            console.error(`Demo Mode: Error initiating audio playback for ${nextSongKey}:`, err);
             setTimeout(playNextSong, 1000);
-        });
+        }
         
         console.log(`Demo Mode: Playing song ${currentSongIndex + 1}/${shuffledSongKeys.length}: ${nextSongKey}`);
     }
@@ -4942,12 +4952,23 @@ const DemoMode = (function() {
             }
             
             // Play the audio
-            demoAudio.play().catch(err => {
-                console.error('Demo Mode: Error playing intro audio:', err);
-                // Start random playlist immediately on error
+            try {
+                const playPromise = demoAudio.play();
+                
+                // Handle the promise properly
+                if (playPromise !== undefined) {
+                    playPromise.catch(err => {
+                        console.error('Demo Mode: Error playing intro audio:', err);
+                        // Start random playlist immediately on error
+                        randomizeSongs();
+                        playNextSong();
+                    });
+                }
+            } catch (err) {
+                console.error('Demo Mode: Error initiating intro audio playback:', err);
                 randomizeSongs();
                 playNextSong();
-            });
+            }
         } catch (err) {
             console.error('Demo Mode: Error setting up audio:', err);
             // Start random playlist immediately on error
@@ -4976,11 +4997,22 @@ const DemoMode = (function() {
         
         if (demoAudio.paused) {
             // Resume playback
-            demoAudio.play().catch(err => {
-                console.error('Demo Mode: Error resuming audio:', err);
-            });
-            console.log('Demo Mode: Resumed demo audio');
-            return true;
+            try {
+                const playPromise = demoAudio.play();
+                
+                // Handle the promise properly
+                if (playPromise !== undefined) {
+                    playPromise.catch(err => {
+                        console.error('Demo Mode: Error resuming audio:', err);
+                    });
+                }
+                
+                console.log('Demo Mode: Resumed demo audio');
+                return true;
+            } catch (err) {
+                console.error('Demo Mode: Error initiating audio resume:', err);
+                return false;
+            }
         } else {
             // Pause playback
             demoAudio.pause();
@@ -4996,12 +5028,23 @@ const DemoMode = (function() {
     function resumeAudio() {
         if (!demoAudio || !demoAudio.paused) return false;
         
-        demoAudio.play().catch(err => {
-            console.error('Demo Mode: Error resuming audio:', err);
+        try {
+            const playPromise = demoAudio.play();
+            
+            // Handle the promise properly
+            if (playPromise !== undefined) {
+                playPromise.catch(err => {
+                    console.error('Demo Mode: Error resuming audio:', err);
+                    return false;
+                });
+            }
+            
+            console.log('Demo Mode: Resumed demo audio');
+            return true;
+        } catch (err) {
+            console.error('Demo Mode: Error initiating audio resume:', err);
             return false;
-        });
-        console.log('Demo Mode: Resumed demo audio');
-        return true;
+        }
     }
     
     /**
