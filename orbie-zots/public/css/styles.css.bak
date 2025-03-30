@@ -1,0 +1,879 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #111;
+    font-family: Arial, sans-serif;
+    color: white;
+    touch-action: none;
+}
+
+canvas {
+    display: block;
+    will-change: transform;
+}
+
+#menuToggle {
+    position: fixed;
+    z-index: 2000;
+    top: 1rem;
+    right: 1rem;
+    background-color: rgba(40, 40, 40, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 3rem;
+    height: 3rem;
+    font-size: 1.8rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+}
+
+#homeButton {
+    position: fixed;
+    z-index: 2000;
+    top: 1rem;
+    left: 1rem;
+    background-color: rgba(40, 40, 40, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 3rem;
+    height: 3rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+    opacity: 0;
+    pointer-events: none;
+    padding: 0;
+}
+
+#homeButton svg {
+    width: 1.8rem;
+    height: 1.8rem;
+}
+
+#homeButton.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#homeButton:hover {
+    background-color: rgba(60, 60, 60, 0.9);
+}
+
+#homeButton:hover svg path {
+    fill: #ffffff;
+}
+
+#menuToggle.attract-mode {
+    background-color: rgba(100, 149, 237, 0.9);
+}
+
+.fps {
+    position: absolute;
+    bottom: 0.6rem;
+    right: 0.6rem;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 0.3rem;
+    border-radius: 0.2rem;
+    font-size: 0.8rem;
+}
+
+/* Controls panel styling */
+.controls {
+    position: absolute;
+    top: 0.6rem;
+    left: 0.6rem;
+    background-color: rgba(0, 0, 0, 0.35);
+    padding: 0.7rem;
+    border-radius: 0.3rem;
+    user-select: none;
+    transition: opacity 0.3s ease;
+    width: 18rem;
+    max-height: 85vh;
+    overflow-y: auto;
+    overflow-x: visible;
+    z-index: 1000;
+}
+
+.controls.collapsed {
+    width: 0;
+    height: 0;
+    padding: 0;
+    border: none;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.controls h1 {
+    margin-top: 0;
+    font-size: 1.1rem;
+    margin-bottom: 0.6rem;
+}
+
+.control-group {
+    margin-bottom: 0.2rem;
+    position: relative;
+}
+
+label {
+    display: inline-block;
+    width: 100%;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+input[type="range"] {
+    width: 100%;
+    vertical-align: middle;
+    margin-top: 0.2rem;
+    margin-bottom: 0.2rem;
+}
+
+.value-display {
+    display: inline-block;
+    min-width: 2rem;
+    font-size: 0.9rem;
+    padding-left: 0.2rem;
+}
+
+button {
+    margin-top: 0.4rem;
+    padding: 0.4rem 0.75rem;
+    background-color: #4CAF50;
+    border: none;
+    border-radius: 0.3rem;
+    color: white;
+    cursor: pointer;
+    margin-right: 0.5rem;
+    font-size: 0.9rem;
+}
+
+button:hover {
+    background-color: #3e8e41;
+}
+
+.section-divider {
+    border-top: 1px solid #444;
+    margin: 0.6rem 0;
+}
+
+.section-title {
+    font-size: 0.85rem;
+    margin: 0.4rem 0;
+    color: #aaa;
+}
+
+select {
+    padding: 0.3rem;
+    border-radius: 0.3rem;
+    background-color: #222;
+    color: white;
+    border: 1px solid #444;
+    width: 100%;
+    font-size: 0.9rem;
+    height: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+select:focus {
+    outline: none;
+    border-color: #4CAF50;
+}
+
+/* Parameter group styles */
+.param-group {
+    display: none;
+}
+
+.param-group.active {
+    display: block;
+}
+
+/* Enhanced slider appearance based on SourceCodeBase */
+.slider-overlay-container {
+    position: relative;
+    margin-bottom: 0.8rem;
+    height: 2.2rem;
+    display: flex;
+    align-items: center;
+}
+
+.slider-overlay-label {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    left: 50%;
+    color: white;
+    font-size: 0.75rem;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    pointer-events: none;
+    z-index: 2;
+    line-height: 1;
+}
+
+.slider-overlay-value {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 0.6rem;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    pointer-events: none;
+    z-index: 2;
+    line-height: 1;
+    display: none; /* Hide slider values to protect IP */
+}
+
+/* Custom styling for the slider with label overlay */
+.slider-with-overlay {
+    width: 100%;
+    height: 2.2rem !important;
+    background-color: transparent !important;
+    border-radius: 0.3rem;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-appearance: none;
+    appearance: none;
+    position: relative;
+}
+
+/* Track styling */
+.slider-with-overlay::-webkit-slider-runnable-track {
+    height: 0.875rem !important;
+    background: #444;
+    border-radius: 0.25rem;
+}
+
+.slider-with-overlay::-moz-range-track {
+    height: 0.875rem !important;
+    background: #444;
+    border-radius: 0.25rem;
+}
+
+/* Thumb styling */
+.slider-with-overlay::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 50%;
+    background: #4CAF50;
+    border: none;
+    margin-top: calc(-0.7rem + 0.4375rem);
+    cursor: pointer;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+.slider-with-overlay::-moz-range-thumb {
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 50%;
+    background: #4CAF50;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+/* Double range slider for min/max values */
+.range-slider-container {
+    position: relative;
+    height: 2.2rem;
+    margin-bottom: 0.8rem;
+    display: flex;
+    align-items: center;
+}
+
+.range-slider {
+    position: absolute;
+    width: 100%;
+    height: 0.875rem;
+    background: #444;
+    border-radius: 0.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.range-slider-container .slider-overlay-label {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    left: 50%;
+    color: white;
+    font-size: 0.75rem;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    pointer-events: none;
+    z-index: 3;
+    line-height: 1;
+}
+
+.range-slider-container .slider-overlay-value {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 0.6rem;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    pointer-events: none;
+    z-index: 10;
+    display: none; /* Hide range slider values to protect IP */
+}
+
+.range-slider-min, .range-slider-max {
+    position: absolute;
+    width: 100%;
+    background: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+    pointer-events: none;
+    z-index: 2;
+    height: 2.2rem;
+}
+
+.range-slider-min::-webkit-slider-thumb, .range-slider-max::-webkit-slider-thumb {
+    pointer-events: all;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 50%;
+    background: #4CAF50;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+.range-slider-min::-moz-range-thumb, .range-slider-max::-moz-range-thumb {
+    pointer-events: all;
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 50%;
+    background: #4CAF50;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+/* ZotSwarm creation UI */
+.swarm-creation {
+    margin-top: 1rem;
+    padding: 0.5rem;
+    background-color: rgba(50, 50, 50, 0.35);
+    border-radius: 0.3rem;
+}
+
+.swarm-letter {
+    position: absolute;
+    font-family: Arial, sans-serif;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+    user-select: none;
+    pointer-events: none;
+    z-index: 100;
+    transition: opacity 0.5s ease;
+}
+
+.swarm-list {
+    max-height: 10rem;
+    overflow-y: auto;
+    margin-top: 0.5rem;
+    padding: 0.3rem;
+    background-color: rgba(30, 30, 30, 0.35);
+    border-radius: 0.3rem;
+}
+
+.swarm-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.3rem 0.5rem;
+    border-bottom: 1px solid #444;
+}
+
+.swarm-list-item:last-child {
+    border-bottom: none;
+}
+
+.swarm-list-item span {
+    font-size: 0.85rem;
+}
+
+.swarm-list-item button {
+    padding: 0.2rem 0.4rem;
+    margin: 0;
+    background-color: #d9534f;
+    font-size: 0.8rem;
+}
+
+.swarm-list-item button:hover {
+    background-color: #c9302c;
+}
+
+/* Color picker */
+.color-presets-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.8rem;
+}
+
+.color-preset {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    display: inline-block;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.15s ease-out;
+}
+
+.color-preset:hover {
+    transform: scale(1.1);
+}
+
+.color-preset.active {
+    border-color: white;
+}
+
+/* Touch effect styles */
+.touch-ripple {
+    position: absolute;
+    border-radius: 50%;
+    transform: scale(0);
+    background-color: rgba(255, 255, 255, 0.3);
+    pointer-events: none;
+    z-index: 1000;
+    animation: ripple-animation 0.4s linear;
+}
+
+.touch-ripple-attract {
+    background-color: rgba(100, 149, 237, 0.4);
+}
+
+.touch-ripple-repel {
+    background-color: rgba(255, 165, 0, 0.4);
+}
+
+@keyframes ripple-animation {
+    0% {
+        transform: scale(0);
+        opacity: 0.5;
+    }
+    100% {
+        transform: scale(3);
+        opacity: 0;
+    }
+}
+
+.touch-pulse {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 1000;
+    width: 30px;
+    height: 30px;
+    margin-left: -15px;
+    margin-top: -15px;
+    background-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    animation: pulse-animation 1s infinite ease-in-out;
+}
+
+.touch-pulse-attract {
+    background-color: rgba(100, 149, 237, 0.25);
+    box-shadow: 0 0 20px rgba(100, 149, 237, 0.6);
+}
+
+.touch-pulse-repel {
+    background-color: rgba(255, 165, 0, 0.25);
+    box-shadow: 0 0 20px rgba(255, 165, 0, 0.6);
+}
+
+@keyframes pulse-animation {
+    0% {
+        transform: scale(0.8);
+        opacity: 0.7;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.5;
+    }
+    100% {
+        transform: scale(0.8);
+        opacity: 0.7;
+    }
+}
+
+.mode-change-ripple {
+    animation: mode-change-animation 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@keyframes mode-change-animation {
+    0% {
+        transform: scale(0);
+        opacity: 0.7;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .controls {
+        width: 16rem;
+    }
+    
+    /* Enhance touch targets on sliders */
+    .slider-with-overlay {
+        height: 2.8rem !important;
+    }
+    
+    .slider-with-overlay::-webkit-slider-thumb {
+        width: 1.8rem;
+        height: 1.8rem;
+    }
+    
+    .slider-with-overlay::-moz-range-thumb {
+        width: 1.8rem;
+        height: 1.8rem;
+    }
+    
+    /* Enhance size range sliders */
+    .range-slider-min::-webkit-slider-thumb, 
+    .range-slider-max::-webkit-slider-thumb {
+        width: 1.8rem;
+        height: 1.8rem;
+    }
+    
+    .range-slider-min::-moz-range-thumb, 
+    .range-slider-max::-moz-range-thumb {
+        width: 1.8rem;
+        height: 1.8rem;
+    }
+    
+    /* Make color presets larger for touch */
+    .color-preset {
+        width: 2rem;
+        height: 2rem;
+    }
+}
+
+/* Toggle Switch */
+.toggle-control {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin-bottom: 0.8rem;
+    width: 100%;
+    min-width: 16rem;
+}
+
+.toggle-control label {
+    width: auto;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 100px;
+    height: 24px;
+    overflow: visible;
+}
+
+.switch input {
+    opacity: 0;
+    width: 54px;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #444;
+    transition: .4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+}
+
+input:checked + .slider {
+    background-color: #4CAF50;
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px #4CAF50;
+}
+
+input:checked + .slider:before {
+    transform: translateX(36px);
+}
+
+.slider.round {
+    border-radius: 24px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+.control-description {
+    font-size: 0.8rem;
+    color: #999;
+    margin-top: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Swarm management styles */
+.swarm-management {
+    margin-bottom: 1rem;
+}
+
+.dropdown-with-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.swarm-dropdown {
+    flex: 1;
+    height: 2.2rem;
+    margin: 0;
+}
+
+/* New styles for swarm list layout */
+.swarm-list-container {
+    width: 100%;
+}
+
+.swarm-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 0.4rem;
+}
+
+.swarm-list-header label {
+    width: auto;
+    margin: 0;
+}
+
+.full-width {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.remove-swarm-btn {
+    background-color: #d32f2f;
+    border: none;
+    color: white;
+    padding: 0.3rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background-color 0.2s;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: auto;
+}
+
+.remove-swarm-btn:hover {
+    background-color: #b71c1c;
+}
+
+.remove-swarm-btn:disabled {
+    background-color: #666;
+    cursor: not-allowed;
+}
+
+/* Centered overlay label for slider */
+.slider-overlay-center {
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    font-weight: bold;
+    z-index: 4;
+    padding: 0.15rem 0.5rem;
+    border-radius: 0.2rem;
+}
+
+/* Button group styles */
+.button-group {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.button-group button {
+    flex: 1;
+    margin-top: 0;
+}
+
+/* Clear Swarms button styles */
+.clear-swarms-btn {
+    background-color: #d32f2f;
+    color: white;
+}
+
+.clear-swarms-btn:hover {
+    background-color: #b71c1c;
+}
+
+.clear-swarms-btn.disabled {
+    background-color: #666;
+    cursor: not-allowed;
+}
+
+/* Toggle Switch styles */
+.toggle-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    width: 100%;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 24px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #444;
+    transition: .4s;
+    border-radius: 24px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+    background-color: #4CAF50;
+}
+
+input:focus + .toggle-slider {
+    box-shadow: 0 0 1px #4CAF50;
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(16px);
+}
+
+/* Also hide min slider value by ID */
+#newSwarmMinSizeValue {
+    display: none !important; /* Hide to protect IP */
+}
+
+/* Load Local Map button styling */
+#loadLocalMapButton {
+    background-color: #3a8ee6;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+}
+
+#loadLocalMapButton:hover {
+    background-color: #2a7dd6;
+}
+
+#loadLocalMapButton:active {
+    background-color: #1a6cc6;
+}
+
+/* Joystick Controls */
+#joystickParams {
+    display: none;
+}
+
+#joystickParams.active {
+    display: block;
+}
+
+#joystickParams .range-slider-container {
+    margin: 0.75rem 0;
+    position: relative;
+}
+
+#joystickParams .range-slider-container label {
+    display: inline-block;
+    width: 60%;
+    margin-bottom: 0.25rem;
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+#joystickParams .range-slider-container span {
+    float: right;
+    font-size: 0.85rem;
+    font-weight: bold;
+    opacity: 0.9;
+}
+
+#joystickParams input[type=range] {
+    width: 100%;
+    margin-top: 0.25rem;
+}

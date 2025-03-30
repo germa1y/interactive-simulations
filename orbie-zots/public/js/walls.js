@@ -433,6 +433,44 @@ const WallSystem = (function() {
         // Clear existing walls
         walls = [];
         
+        // Extract SVG dimensions if available
+        const svgRoot = svgDoc.querySelector('svg');
+        const svgWidth = svgRoot ? parseFloat(svgRoot.getAttribute('width') || 800) : 800;
+        const svgHeight = svgRoot ? parseFloat(svgRoot.getAttribute('height') || 600) : 600;
+        
+        // Enable ZotCentricMobility if available
+        if (typeof ZotCentricMobility !== 'undefined') {
+            ZotCentricMobility.enable({
+                width: svgWidth,
+                height: svgHeight
+            });
+        }
+        
+        // Create a 200 jellyorb zot swarm
+        setTimeout(() => {
+            if (typeof ParticleSystem !== 'undefined' && ParticleSystem.createZotSwarm) {
+                // Get the jellyOrbs preset parameters
+                const preset = Presets.swarmPresets.jellyOrbs;
+                
+                // Use the jellyOrbs preset with 200 zots
+                const config = {
+                    presetName: 'jellyOrbs',
+                    zotCount: 200,
+                    speed: preset.speed,
+                    separation: preset.separation,
+                    alignment: preset.alignment,
+                    cohesion: preset.cohesion,
+                    perception: preset.perception,
+                    colorTheme: preset.colorTheme,
+                    centerX: window.innerWidth / 2,
+                    centerY: window.innerHeight / 2
+                };
+                
+                console.log("Creating 200 jellyorb zot swarm for the new map");
+                ParticleSystem.createZotSwarm(config);
+            }
+        }, 100); // Short delay to ensure the map is fully loaded
+        
         paths.forEach(path => {
             const pathData = path.getAttribute('d');
             const wallColor = path.getAttribute('stroke') || wallSettings.color;
@@ -513,7 +551,17 @@ const WallSystem = (function() {
     function renderWalls(ctx) {
         if (walls.length === 0) return;
         
+        // Apply ZotCentricMobility offset if available and enabled
+        const hasMobility = typeof ZotCentricMobility !== 'undefined';
+        
+        // Save context state before any transformations
         ctx.save();
+        
+        if (hasMobility && ZotCentricMobility.isEnabled()) {
+            // Apply the offset - translate the context
+            const offset = ZotCentricMobility.getOffset();
+            ctx.translate(offset.x, offset.y);
+        }
         
         walls.forEach(wall => {
             // Set wall styles based on properties
@@ -542,23 +590,41 @@ const WallSystem = (function() {
             ctx.stroke();
         });
         
+        // Restore the context to remove all transformations
         ctx.restore();
     }
     
     // Apply wall forces to a particle based on interaction type
-    function applyWallForces(particle, prevX, prevY, wallCollisionEnabled = true) {
-        if (walls.length === 0) return false;
+    function applyWallForces(particle, prevX, prevY, collisionEnabled = true) {
+        // Skip processing if there are no walls or collision is disabled
+        if (walls.length === 0 || !collisionEnabled) return false;
+        
+        // Apply ZotCentricMobility offset if available and enabled
+        const hasMobility = typeof ZotCentricMobility !== 'undefined';
+        let adjustedParticle = particle;
+        
+        if (hasMobility && ZotCentricMobility.isEnabled()) {
+            // Adjust particle position to account for camera offset
+            adjustedParticle = ZotCentricMobility.applyOffsetToPoint(particle);
+            
+            // If prevX and prevY are provided, adjust them too
+            if (prevX !== undefined && prevY !== undefined) {
+                const adjustedPrev = ZotCentricMobility.applyOffsetToPoint({x: prevX, y: prevY});
+                prevX = adjustedPrev.x;
+                prevY = adjustedPrev.y;
+            }
+        }
         
         let hasCollided = false;
         
         // Determine entity type for interaction filtering
         let entityType = INTERACTION_TYPES.ZOT; // Default to ZOT
         
-        if (particle.isOrbie) {
+        if (adjustedParticle.isOrbie) {
             entityType = INTERACTION_TYPES.ORBIE;
-        } else if (particle.isOrbieSwarm) {
+        } else if (adjustedParticle.isOrbieSwarm) {
             entityType = INTERACTION_TYPES.ORBIE_SWARM;
-        } else if (particle.isZotSwarm) {
+        } else if (adjustedParticle.isZotSwarm) {
             entityType = INTERACTION_TYPES.ZOT_SWARM;
         }
         
@@ -576,40 +642,43 @@ const WallSystem = (function() {
             }
             
             // First check for collisions if enabled
-            if (wallCollisionEnabled && lineSegmentsIntersect(
-                prevX, prevY, particle.x, particle.y, 
+            if (collisionEnabled && lineSegmentsIntersect(
+                prevX, prevY, adjustedParticle.x, adjustedParticle.y, 
                 wall.x1, wall.y1, wall.x2, wall.y2
             )) {
                 // Particle has crossed through wall, perform reflection
-                const normal = normalToSegment(particle.x, particle.y, wall.x1, wall.y1, wall.x2, wall.y2);
-                const dot = particle.vx * normal.x + particle.vy * normal.y;
+                const normal = normalToSegment(adjustedParticle.x, adjustedParticle.y, wall.x1, wall.y1, wall.x2, wall.y2);
+                const dot = adjustedParticle.vx * normal.x + adjustedParticle.vy * normal.y;
                 
                 // Reflect velocity vector around the normal vector
-                particle.vx -= 2 * dot * normal.x;
-                particle.vy -= 2 * dot * normal.y;
+                adjustedParticle.vx -= 2 * dot * normal.x;
+                adjustedParticle.vy -= 2 * dot * normal.y;
                 
                 // Move particle slightly away from the wall
-                particle.x = prevX + particle.vx * 0.5;
-                particle.y = prevY + particle.vy * 0.5;
+                adjustedParticle.x = prevX + adjustedParticle.vx * 0.5;
+                adjustedParticle.y = prevY + adjustedParticle.vy * 0.5;
                 
                 // Apply some energy loss on collision
-                particle.vx *= 0.8;
-                particle.vy *= 0.8;
+                adjustedParticle.vx *= 0.8;
+                adjustedParticle.vy *= 0.8;
                 
                 hasCollided = true;
             }
             
             // Apply repulsion force when close to the wall
-            const dist = distToSegment(particle.x, particle.y, wall.x1, wall.y1, wall.x2, wall.y2);
+            const dist = distToSegment(adjustedParticle.x, adjustedParticle.y, wall.x1, wall.y1, wall.x2, wall.y2);
             if (dist < wallSettings.wallPerception) {
-                const normal = normalToSegment(particle.x, particle.y, wall.x1, wall.y1, wall.x2, wall.y2);
+                const normal = normalToSegment(adjustedParticle.x, adjustedParticle.y, wall.x1, wall.y1, wall.x2, wall.y2);
                 const force = (wallSettings.wallPerception - dist) / wallSettings.wallPerception * wallForce;
                 
-                particle.vx += normal.x * force;
-                particle.vy += normal.y * force;
+                adjustedParticle.vx += normal.x * force;
+                adjustedParticle.vy += normal.y * force;
             }
         }
         
+        // Collision handling will use adjustedParticle but apply forces to original particle
+        
+        // Return collision status
         return hasCollided;
     }
     
@@ -671,6 +740,11 @@ const WallSystem = (function() {
         // Clear all walls
         clearWalls: function() {
             walls = [];
+            
+            // Disable ZotCentricMobility if available
+            if (typeof ZotCentricMobility !== 'undefined') {
+                ZotCentricMobility.disable();
+            }
         },
         
         // Apply wall forces to a particle

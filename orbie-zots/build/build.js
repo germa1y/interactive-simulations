@@ -8,7 +8,8 @@ const distDir = path.join(__dirname, '..', 'public', 'dist');
 
 // Files to include in the bundle (order matters)
 const jsFiles = [
-    'colors.js',     // Should be first as other modules may depend on it
+    'config.js',     // Must be first to provide environment configuration
+    'colors.js',     // Should be second as other modules may depend on it
     'presets.js',
     'touch.js',      // TouchHandler needs to be available before it's used
     'menu.js',       // MenuSystem needs to be available before it's used 

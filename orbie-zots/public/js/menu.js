@@ -46,6 +46,9 @@ const MenuSystem = (function() {
         // Setup dual range sliders for min/max values
         setupRangeSliders();
         
+        // Set initial home button visibility based on menu state
+        updateHomeButtonVisibility();
+        
         isMenuInitialized = true;
     }
     
@@ -56,12 +59,14 @@ const MenuSystem = (function() {
             menuToggle.addEventListener('click', function(e) {
                 e.preventDefault();
                 controlsPanel.classList.toggle('collapsed');
+                updateHomeButtonVisibility();
             });
             
             // Handle touch for mobile - fixed to use touchstart instead of touchend
             menuToggle.addEventListener('touchstart', function(e) {
                 e.preventDefault();
                 controlsPanel.classList.toggle('collapsed');
+                updateHomeButtonVisibility();
                 e.stopPropagation();
             }, { passive: false });
             
@@ -71,6 +76,7 @@ const MenuSystem = (function() {
                     !controlsPanel.contains(e.target) && 
                     e.target !== menuToggle) {
                     controlsPanel.classList.add('collapsed');
+                    updateHomeButtonVisibility();
                 }
             });
             
@@ -79,8 +85,21 @@ const MenuSystem = (function() {
                     !controlsPanel.contains(e.target) && 
                     e.target !== menuToggle) {
                     controlsPanel.classList.add('collapsed');
+                    updateHomeButtonVisibility();
                 }
             });
+        }
+    }
+    
+    // Helper function to update home button visibility
+    function updateHomeButtonVisibility() {
+        const homeButton = document.getElementById('homeButton');
+        if (homeButton) {
+            if (controlsPanel.classList.contains('collapsed')) {
+                homeButton.classList.add('visible');
+            } else {
+                homeButton.classList.remove('visible');
+            }
         }
     }
     
@@ -156,14 +175,6 @@ const MenuSystem = (function() {
         setupRangeInput('zotsCohesion', value => updateSetting('zotSwarms', 'cohesion', value));
         setupRangeInput('zotsPerception', value => updateSetting('zotSwarms', 'perception', value));
         setupRangeInput('zotsTouchForce', value => updateSetting('zotSwarms', 'touchForce', value));
-        
-        // Exterior stroke toggle for zot swarms
-        const exteriorStrokeToggle = document.getElementById('zotsExteriorStrokeEnabled');
-        if (exteriorStrokeToggle) {
-            exteriorStrokeToggle.addEventListener('change', function() {
-                updateSetting('zotSwarms', 'showExteriorStroke', this.checked);
-            });
-        }
         
         // Force controls
         setupRangeInput('touchForce', value => updateSetting('forces', 'touchForce', value));
@@ -311,18 +322,20 @@ const MenuSystem = (function() {
         const valueDisplay = document.getElementById(id + 'Value');
         
         if (input && valueDisplay) {
-            // Set initial value from settings if provided
+            // Set initial value if provided
             if (initialValue !== undefined) {
                 input.value = initialValue;
             }
             
             // Set initial value display
-            valueDisplay.textContent = parseFloat(input.value).toFixed(input.step.includes('.') ? 2 : 0);
+            // HIDDEN: All slider values are hidden to protect IP
+            // valueDisplay.textContent = parseFloat(input.value).toFixed(input.step.includes('.') ? 2 : 0);
             
             // Add event listeners for input changes
             input.addEventListener('input', function() {
                 const value = parseFloat(this.value);
-                valueDisplay.textContent = value.toFixed(this.step.includes('.') ? 2 : 0);
+                // HIDDEN: All slider values are hidden to protect IP
+                // valueDisplay.textContent = value.toFixed(this.step.includes('.') ? 2 : 0);
                 
                 // Call the callback with the new value
                 if (changeCallback) {
@@ -364,7 +377,8 @@ const MenuSystem = (function() {
         const svgFiles = [
             { name: 'Sample Walls', path: './sample-walls.svg' },
             { name: 'Sample Walls with Curves', path: './sample-walls-curves.svg' },
-            { name: 'Curves Sample', path: './curves-sample.svg' }
+            { name: 'Curves Sample', path: './curves-sample.svg' },
+            { name: 'Maze', path: './maze_20250329_060553.svg' }
         ];
         
         // Add options for each SVG file
@@ -387,14 +401,16 @@ const MenuSystem = (function() {
                 if (parseFloat(this.value) > parseFloat(maxSlider.value)) {
                     this.value = maxSlider.value;
                 }
-                minValue.textContent = parseFloat(this.value).toFixed(1);
+                // HIDDEN: All slider values are hidden to protect IP
+                // minValue.textContent = parseFloat(this.value).toFixed(1);
             });
 
             maxSlider.addEventListener('input', function() {
                 if (parseFloat(this.value) < parseFloat(minSlider.value)) {
                     this.value = minSlider.value;
                 }
-                maxValue.textContent = parseFloat(this.value).toFixed(1);
+                // HIDDEN: All slider values are hidden to protect IP
+                // maxValue.textContent = parseFloat(this.value).toFixed(1);
             });
         }
     }

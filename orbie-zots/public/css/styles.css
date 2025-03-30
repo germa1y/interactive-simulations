@@ -80,6 +80,59 @@ canvas {
     background-color: rgba(100, 149, 237, 0.9);
 }
 
+/* Music Button */
+#musicButton {
+    position: fixed;
+    z-index: 2000;
+    bottom: 2.6rem; /* Position above zotsCounter */
+    left: 0.6rem;
+    background-color: rgba(40, 40, 40, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 3rem;
+    height: 3rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+    opacity: 0;
+    pointer-events: none;
+    padding: 0;
+}
+
+#musicButton svg {
+    width: 1.8rem;
+    height: 1.8rem;
+}
+
+#musicButton.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#musicButton:hover {
+    background-color: rgba(60, 60, 60, 0.9);
+}
+
+#musicButton:hover svg path {
+    fill: #ffffff;
+}
+
+/* Active state - when music is playing */
+#musicButton.active {
+    background-color: rgba(76, 175, 80, 0.9); /* Green when active */
+}
+
+/* Muted state - when music is muted */
+#musicButton.muted {
+    background-color: rgba(244, 67, 54, 0.9); /* Red when muted */
+}
+
 .fps {
     position: absolute;
     bottom: 0.6rem;
@@ -236,7 +289,7 @@ select:focus {
     pointer-events: none;
     z-index: 2;
     line-height: 1;
-    display: none; /* Hide slider values to protect IP */
+    display: block; /* Show slider values */
 }
 
 /* Custom styling for the slider with label overlay */
@@ -332,7 +385,7 @@ select:focus {
     text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
     pointer-events: none;
     z-index: 10;
-    display: none; /* Hide range slider values to protect IP */
+    display: block; /* Show range slider values */
 }
 
 .range-slider-min, .range-slider-max {
@@ -820,5 +873,12 @@ input:checked + .toggle-slider:before {
 
 /* Also hide min slider value by ID */
 #newSwarmMinSizeValue {
-    display: none !important; /* Hide to protect IP */
+    display: block !important; /* Show min size value */
+    position: absolute;
+    left: 0.6rem !important;
+    transform: translateY(-50%) !important;
+    text-align: left;
+    color: white;
+    font-weight: bold;
+    z-index: 10;
 }

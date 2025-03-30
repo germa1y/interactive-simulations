@@ -1,67 +1,35 @@
 // main.js - Application initialization
 document.addEventListener('DOMContentLoaded', function() {
-    // Debug log to check which modules are loaded
-    console.log('DEBUG - Checking available modules:');
-    console.log('ParticleSystem:', typeof ParticleSystem !== 'undefined' ? 'LOADED' : 'MISSING');
-    console.log('WallSystem:', typeof WallSystem !== 'undefined' ? 'LOADED' : 'MISSING');
-    console.log('MembraneSystem:', typeof MembraneSystem !== 'undefined' ? 'LOADED' : 'MISSING');
-    console.log('SwipeSplitSystem:', typeof SwipeSplitSystem !== 'undefined' ? 'LOADED' : 'MISSING');
-    console.log('DemoMode:', typeof DemoMode !== 'undefined' ? 'LOADED' : 'MISSING');
-    console.log('TouchHandler:', typeof TouchHandler !== 'undefined' ? 'LOADED' : 'MISSING');
-    console.log('MenuSystem:', typeof MenuSystem !== 'undefined' ? 'LOADED' : 'MISSING');
-    console.log('ColorThemes:', typeof ColorThemes !== 'undefined' ? 'LOADED' : 'MISSING');
-    console.log('Presets:', typeof Presets !== 'undefined' ? 'LOADED' : 'MISSING');
-    
     const canvas = document.getElementById('canvas');
     const menuToggle = document.getElementById('menuToggle');
+    const homeButton = document.getElementById('homeButton');
     const fpsDisplay = document.getElementById('fps');
     const controlsPanel = document.getElementById('controls');
     
-    console.log("DOM elements:", {
-        canvas: canvas ? "✓" : "✗",
-        menuToggle: menuToggle ? "✓" : "✗", 
-        fpsDisplay: fpsDisplay ? "✓" : "✗",
-        controlsPanel: controlsPanel ? "✓" : "✗"
-    });
+    console.log("DOM loaded - Menu elements:", menuToggle ? "✓" : "✗", controlsPanel ? "✓" : "✗", homeButton ? "✓" : "✗");
     
     // Initialize the particle system
-    try {
-        ParticleSystem.init(canvas, fpsDisplay);
-        console.log("ParticleSystem initialized successfully");
-    } catch (error) {
-        console.error("Error initializing ParticleSystem:", error);
-    }
-
-    // Initialize wall system
-    try {
-        WallSystem.init();
-        console.log("WallSystem initialized successfully");
-    } catch (error) {
-        console.error("Error initializing WallSystem:", error);
-    }
+    ParticleSystem.init(canvas, fpsDisplay);
     
-    // Initialize membrane system if available
-    if (typeof MembraneSystem !== 'undefined') {
-        try {
-            console.log("Initializing MembraneSystem...");
-            MembraneSystem.init(window.innerWidth, window.innerHeight);
-            console.log("MembraneSystem initialized successfully");
-        } catch (error) {
-            console.error("Error initializing MembraneSystem:", error);
-        }
+    // Initialize wall system
+    WallSystem.init();
+    
+    // Initialize zot-centric mobility system
+    if (typeof ZotCentricMobility !== 'undefined') {
+        console.log("Initializing ZotCentricMobility...");
+        ZotCentricMobility.init({
+            particleSystem: ParticleSystem,
+            wallSystem: WallSystem,
+            canvas: canvas
+        });
     } else {
-        console.warn("MembraneSystem module not available");
+        console.error("ZotCentricMobility module not available");
     }
     
     // Initialize swipe split system
     if (typeof SwipeSplitSystem !== 'undefined') {
-        try {
-            console.log("Initializing SwipeSplitSystem...");
-            SwipeSplitSystem.init(canvas);
-            console.log("SwipeSplitSystem initialized successfully");
-        } catch (error) {
-            console.error("Error initializing SwipeSplitSystem:", error);
-        }
+        console.log("Initializing SwipeSplitSystem...");
+        SwipeSplitSystem.init(canvas);
     } else {
         console.error("SwipeSplitSystem module not available");
     }
@@ -70,12 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof DemoMode !== 'undefined') {
         console.log("Starting zot swarm demo mode...");
         setTimeout(() => {
-            try {
-                DemoMode.start();
-                console.log("DemoMode started successfully");
-            } catch (error) {
-                console.error("Error starting DemoMode:", error);
-            }
+            DemoMode.start();
         }, 200); // Short delay to ensure all systems are fully initialized
     } else {
         console.error("Demo Mode module not available");
@@ -89,14 +52,50 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log("Menu toggle clicked");
             e.preventDefault();
             controlsPanel.classList.toggle('collapsed');
+            updateHomeButtonVisibility();
         });
         
         menuToggle.addEventListener('touchstart', function(e) {
             console.log("Menu toggle touched");
             e.preventDefault();
             controlsPanel.classList.toggle('collapsed');
+            updateHomeButtonVisibility();
             e.stopPropagation();
         }, { passive: false });
+    }
+    
+    // Set up home button event listener
+    if (homeButton) {
+        console.log("Setting up home button");
+        
+        // Set initial state of home button based on menu state
+        updateHomeButtonVisibility();
+        
+        // Add click event listener to navigate to home page
+        homeButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log("Home button clicked, navigating to home page");
+            window.location.href = 'https://interactive-simulations.com/';
+        });
+        
+        // Add touch event listener for mobile
+        homeButton.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            console.log("Home button touched, navigating to home page");
+            window.location.href = 'https://interactive-simulations.com/';
+            e.stopPropagation();
+        }, { passive: false });
+    }
+    
+    // Function to update home button visibility based on menu state
+    function updateHomeButtonVisibility() {
+        if (homeButton) {
+            if (controlsPanel.classList.contains('collapsed')) {
+                homeButton.classList.add('visible');
+            } else {
+                homeButton.classList.remove('visible');
+            }
+        }
     }
     
     // Initialize touch handler with callback
@@ -185,12 +184,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event handlers for menu interactions
     menuToggle.addEventListener('click', function() {
         controlsPanel.classList.toggle('collapsed');
+        updateHomeButtonVisibility();
     });
     
     // Properly handle touch behavior on menu toggle button
     menuToggle.addEventListener('touchstart', function(e) {
         e.preventDefault();
         controlsPanel.classList.toggle('collapsed');
+        updateHomeButtonVisibility();
         e.stopPropagation();
     }, { passive: false });
     
@@ -198,6 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             controlsPanel.classList.add('collapsed');
+            updateHomeButtonVisibility();
         }
     });
     
@@ -205,6 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
     controlsPanel.addEventListener('transitionend', function(e) {
         if (e.propertyName === 'right' && 
             controlsPanel.classList.contains('collapsed')) {
+            updateHomeButtonVisibility();
         }
     });
     
@@ -230,7 +233,6 @@ document.addEventListener('DOMContentLoaded', function() {
         setupOrbieSwarmControls();
         setupZotSwarmControls();
         setupForceControls();
-        setupMembraneControls();
         
         // Setup reset buttons
         document.getElementById('resetOrbieButton').addEventListener('click', function() {
@@ -326,21 +328,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Min/Max size range slider
         setupDualRangeSlider('newSwarmMinSize', 'newSwarmMaxSize');
         
-        // Initialize exterior stroke toggle
-        const exteriorStrokeToggle = document.getElementById('zotsExteriorStrokeEnabled');
-        if (exteriorStrokeToggle) {
-            // Initialize toggle from settings if available
-            const zotSwarmSettings = ParticleSystem.getZotSwarmSettings();
-            if (zotSwarmSettings && zotSwarmSettings.showExteriorStroke !== undefined) {
-                exteriorStrokeToggle.checked = zotSwarmSettings.showExteriorStroke;
-            }
-            
-            // Add event listener
-            exteriorStrokeToggle.addEventListener('change', function() {
-                ParticleSystem.updateSettings('zotSwarms', 'showExteriorStroke', this.checked);
-            });
-        }
-        
         // Preset selector
         const presetSelect = document.getElementById('swarmPreset');
         if (presetSelect) {
@@ -371,6 +358,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('newSwarmMaxSize').value = maxSize;
                     
                     // Update displayed values
+                    // HIDDEN: All slider values are hidden to protect IP
+                    /*
                     document.getElementById('newSwarmZotCountValue').textContent = randomConfig.zotCount;
                     document.getElementById('newSwarmSpeedValue').textContent = randomConfig.speed.toFixed(1);
                     document.getElementById('newSwarmSeparationValue').textContent = randomConfig.separation.toFixed(1);
@@ -379,6 +368,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('newSwarmPerceptionValue').textContent = randomConfig.perception;
                     document.getElementById('newSwarmMinSizeValue').textContent = minSize.toFixed(1);
                     document.getElementById('newSwarmMaxSizeValue').textContent = maxSize.toFixed(1);
+                    */
                     
                     // Also update the dual slider visuals
                     updateDualSliderVisuals('newSwarmMinSize', 'newSwarmMaxSize');
@@ -400,12 +390,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('newSwarmPerception').value = preset.perception;
                     
                     // Update displayed values, keeping the current zot count
+                    // HIDDEN: All slider values are hidden to protect IP
+                    /*
                     document.getElementById('newSwarmZotCountValue').textContent = currentZotCount;
                     document.getElementById('newSwarmSpeedValue').textContent = preset.speed.toFixed(1);
                     document.getElementById('newSwarmSeparationValue').textContent = preset.separation.toFixed(1);
                     document.getElementById('newSwarmAlignmentValue').textContent = preset.alignment.toFixed(2);
                     document.getElementById('newSwarmCohesionValue').textContent = preset.cohesion.toFixed(1);
                     document.getElementById('newSwarmPerceptionValue').textContent = preset.perception;
+                    */
 
                     // Update color theme selector
                     if (preset.colorTheme) {
@@ -650,12 +643,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const precision = shouldRound ? 0 : 
                              input.step.includes('.01') ? 2 : 1;
             
-            valueDisplay.textContent = parseFloat(input.value).toFixed(precision);
+            // HIDDEN: All slider values are hidden to protect IP
+            // valueDisplay.textContent = parseFloat(input.value).toFixed(precision);
             
             // Add event listeners for input changes
             input.addEventListener('input', function() {
                 const value = parseFloat(this.value);
-                valueDisplay.textContent = value.toFixed(precision);
+                // HIDDEN: All slider values are hidden to protect IP
+                // valueDisplay.textContent = value.toFixed(precision);
                 
                 // Call the callback with the new value
                 if (changeCallback) {
@@ -678,8 +673,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const minVal = parseFloat(minSlider.value);
                 const maxVal = parseFloat(maxSlider.value);
                 
-                minValueDisplay.textContent = minVal.toFixed(1);
-                maxValueDisplay.textContent = maxVal.toFixed(1);
+                // HIDDEN: All slider values are hidden to protect IP
+                // minValueDisplay.textContent = minVal.toFixed(1);
+                // maxValueDisplay.textContent = maxVal.toFixed(1);
                 
                 // Ensure thumb positions are visually reflecting the values
                 updateThumbPositions();
@@ -866,38 +862,39 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateAllUIValues() {
         // Set Orbie parameter values
         document.getElementById('orbieSize').value = ParticleSystem.getOrbieSettings().size || 12;
-        document.getElementById('orbieSizeValue').textContent = parseFloat(document.getElementById('orbieSize').value).toFixed(1);
+        // HIDDEN: All slider values are hidden to protect IP
+        // document.getElementById('orbieSizeValue').textContent = parseFloat(document.getElementById('orbieSize').value).toFixed(1);
         
         document.getElementById('orbieGlowSize').value = ParticleSystem.getOrbieSettings().glowSize || 1.5;
-        document.getElementById('orbieGlowSizeValue').textContent = parseFloat(document.getElementById('orbieGlowSize').value).toFixed(1);
+        // document.getElementById('orbieGlowSizeValue').textContent = parseFloat(document.getElementById('orbieGlowSize').value).toFixed(1);
         
         document.getElementById('orbieGlowOpacity').value = ParticleSystem.getOrbieSettings().glowOpacity || 0.2;
-        document.getElementById('orbieGlowOpacityValue').textContent = parseFloat(document.getElementById('orbieGlowOpacity').value).toFixed(2);
+        // document.getElementById('orbieGlowOpacityValue').textContent = parseFloat(document.getElementById('orbieGlowOpacity').value).toFixed(2);
         
         document.getElementById('orbiePulseSpeed').value = ParticleSystem.getOrbieSettings().pulseSpeed || 0.05;
-        document.getElementById('orbiePulseSpeedValue').textContent = parseFloat(document.getElementById('orbiePulseSpeed').value).toFixed(2);
+        // document.getElementById('orbiePulseSpeedValue').textContent = parseFloat(document.getElementById('orbiePulseSpeed').value).toFixed(2);
         
         document.getElementById('orbiePulseIntensity').value = ParticleSystem.getOrbieSettings().pulseIntensity || 0.4;
-        document.getElementById('orbiePulseIntensityValue').textContent = parseFloat(document.getElementById('orbiePulseIntensity').value).toFixed(2);
+        // document.getElementById('orbiePulseIntensityValue').textContent = parseFloat(document.getElementById('orbiePulseIntensity').value).toFixed(2);
         
         document.getElementById('orbieInfluenceRadius').value = ParticleSystem.getOrbieSettings().influenceRadius || 100;
-        document.getElementById('orbieInfluenceRadiusValue').textContent = parseFloat(document.getElementById('orbieInfluenceRadius').value).toFixed(0);
+        // document.getElementById('orbieInfluenceRadiusValue').textContent = parseFloat(document.getElementById('orbieInfluenceRadius').value).toFixed(0);
         
         document.getElementById('orbieInfluenceIntensity').value = ParticleSystem.getOrbieSettings().influenceIntensity || 0.5;
-        document.getElementById('orbieInfluenceIntensityValue').textContent = parseFloat(document.getElementById('orbieInfluenceIntensity').value).toFixed(2);
+        // document.getElementById('orbieInfluenceIntensityValue').textContent = parseFloat(document.getElementById('orbieInfluenceIntensity').value).toFixed(2);
         
         document.getElementById('orbieTouchMultiplier').value = ParticleSystem.getOrbieSettings().touchMultiplier || 0.15;
-        document.getElementById('orbieTouchMultiplierValue').textContent = parseFloat(document.getElementById('orbieTouchMultiplier').value).toFixed(2);
+        // document.getElementById('orbieTouchMultiplierValue').textContent = parseFloat(document.getElementById('orbieTouchMultiplier').value).toFixed(2);
         
         // Set OrbieSwarm parameter values
         // ... (existing code)
         
         // Set Forces parameter values
         document.getElementById('touchForce').value = ParticleSystem.getForceSettingValue('touchForce') || 3;
-        document.getElementById('touchForceValue').textContent = parseFloat(document.getElementById('touchForce').value).toFixed(1);
+        // document.getElementById('touchForceValue').textContent = parseFloat(document.getElementById('touchForce').value).toFixed(1);
         
         document.getElementById('wallForce').value = ParticleSystem.getForceSettingValue('wallForce') || 1;
-        document.getElementById('wallForceValue').textContent = parseFloat(document.getElementById('wallForce').value).toFixed(1);
+        // document.getElementById('wallForceValue').textContent = parseFloat(document.getElementById('wallForce').value).toFixed(1);
         
         // Set ZotTouchEnabled checkbox
         const zotTouchEnabled = document.getElementById('zotTouchEnabled');
@@ -933,6 +930,59 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
+        // Setup joystick controls
+        setupJoystickControls();
+        
+        // Function to create jellyorb preset swarm
+        function createJellyorbSwarm() {
+            const config = {
+                zotCount: 200,
+                speed: 2,
+                separation: 0.5,
+                alignment: 0.3,
+                cohesion: 0.8,
+                perception: 100,
+                minSize: 2,
+                maxSize: 4,
+                colorTheme: 'jellyorb',
+                presetName: 'jellyorb'
+            };
+            
+            // Create the swarm at the center of the canvas
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            // Add position to config
+            config.centerX = centerX;
+            config.centerY = centerY;
+            
+            // Create the swarm
+            const swarmId = ParticleSystem.createZotSwarm(config);
+            
+            if (swarmId) {
+                console.log('Created jellyorb swarm with ID:', swarmId);
+                updateSwarmList();
+            }
+        }
+        
+        // Function to show joystick controls after map loading
+        function showJoystickControls() {
+            const joystickControls = document.getElementById('joystickControls');
+            if (joystickControls) {
+                joystickControls.style.display = 'block';
+                
+                // Switch to Walls tab to make the joystick controls visible
+                const paramGroupSelect = document.getElementById('paramGroup');
+                if (paramGroupSelect) {
+                    paramGroupSelect.value = 'walls';
+                    
+                    // Trigger change event to update the displayed panel
+                    const event = new Event('change');
+                    paramGroupSelect.dispatchEvent(event);
+                }
+            }
+        }
+        
         // Setup wall SVG dropdown
         const wallSVGSelector = document.getElementById('wallSVG');
         if (wallSVGSelector) {
@@ -949,6 +999,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         .then(svgText => {
                             const wallCount = WallSystem.loadFromSVG(svgText);
                             console.log(`Loaded ${wallCount} wall segments from SVG`);
+                            
+                            // Create jellyorb swarm after loading the map
+                            createJellyorbSwarm();
+                            
+                            // Show the joystick controls
+                            showJoystickControls();
                         })
                         .catch(error => {
                             console.error('Error loading SVG file:', error);
@@ -976,6 +1032,67 @@ document.addEventListener('DOMContentLoaded', function() {
                             const svgText = event.target.result;
                             const wallCount = WallSystem.loadFromSVG(svgText);
                             console.log(`Loaded ${wallCount} wall segments from SVG`);
+                            
+                            // Create jellyorb swarm after loading the map
+                            createJellyorbSwarm();
+                            
+                            // Show the joystick controls
+                            showJoystickControls();
+                        };
+                        
+                        reader.readAsText(file);
+                    }
+                    
+                    // Clean up
+                    document.body.removeChild(fileInput);
+                });
+                
+                fileInput.click();
+            });
+        }
+        
+        // Add Load Local Map button
+        const wallControlsContainer = document.getElementById('wallsParams');
+        if (wallControlsContainer) {
+            // Create the Load Local Map button
+            const loadLocalMapButton = document.createElement('button');
+            loadLocalMapButton.id = 'loadLocalMapButton';
+            loadLocalMapButton.className = 'control-button';
+            loadLocalMapButton.textContent = 'Load Local Map';
+            
+            // Insert the button before the clearWallsButton if it exists
+            const clearWallsButton = document.getElementById('clearWallsButton');
+            if (clearWallsButton) {
+                clearWallsButton.parentNode.insertBefore(loadLocalMapButton, clearWallsButton);
+            } else {
+                wallControlsContainer.appendChild(loadLocalMapButton);
+            }
+            
+            // Add event listener for the Load Local Map button
+            loadLocalMapButton.addEventListener('click', function() {
+                // Create file input dynamically
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.accept = '.svg';
+                fileInput.style.display = 'none';
+                
+                document.body.appendChild(fileInput);
+                
+                fileInput.addEventListener('change', function(e) {
+                    if (e.target.files.length > 0) {
+                        const file = e.target.files[0];
+                        const reader = new FileReader();
+                        
+                        reader.onload = function(event) {
+                            const svgText = event.target.result;
+                            const wallCount = WallSystem.loadFromSVG(svgText);
+                            console.log(`Loaded ${wallCount} wall segments from SVG`);
+                            
+                            // Create jellyorb swarm after loading the map
+                            createJellyorbSwarm();
+                            
+                            // Show the joystick controls
+                            showJoystickControls();
                         };
                         
                         reader.readAsText(file);
@@ -993,186 +1110,83 @@ document.addEventListener('DOMContentLoaded', function() {
         if (clearWallsButton) {
             clearWallsButton.addEventListener('click', function() {
                 WallSystem.clearWalls();
+                
+                // Hide joystick controls when walls are cleared
+                const joystickControls = document.getElementById('joystickControls');
+                if (joystickControls) {
+                    joystickControls.style.display = 'none';
+                }
             });
         }
     }
     
-    // Add a new function to setup membrane controls
-    function setupMembraneControls() {
-        // Skip if MembraneSystem is not loaded
-        if (typeof MembraneSystem === 'undefined') {
-            console.warn("Skipping membrane controls setup - MembraneSystem not loaded");
+    // Setup joystick controls
+    function setupJoystickControls() {
+        if (typeof ZotCentricMobility === 'undefined') {
+            console.error("ZotCentricMobility system not available for joystick controls");
             return;
         }
         
-        // Add a new parameter group in the UI for membrane settings
-        const paramGroupSelect = document.getElementById('paramGroup');
-        if (paramGroupSelect) {
-            // Create a new option for membranes
-            const option = document.createElement('option');
-            option.value = 'membrane';
-            option.textContent = 'Membrane';
-            paramGroupSelect.appendChild(option);
-            
-            // Create the membrane param group container
-            const controlsPanel = document.getElementById('controls');
-            const membraneParamsDiv = document.createElement('div');
-            membraneParamsDiv.id = 'membraneParams';
-            membraneParamsDiv.className = 'param-group';
-            controlsPanel.appendChild(membraneParamsDiv);
-            
-            // Add membrane controls
-            const controls = [
-                {
-                    id: 'membranePermeabilityBase',
-                    label: 'Base Permeability',
-                    min: 0,
-                    max: 1,
-                    step: 0.05,
-                    value: 0.5,
-                    callback: (value) => MembraneSystem.updateSettings({ permeabilityBase: parseFloat(value) })
-                },
-                {
-                    id: 'membranePermeabilityVariance',
-                    label: 'Permeability Variance',
-                    min: 0,
-                    max: 0.5,
-                    step: 0.05,
-                    value: 0.2,
-                    callback: (value) => MembraneSystem.updateSettings({ permeabilityVariance: parseFloat(value) })
-                },
-                {
-                    id: 'membranePermeabilityDecay',
-                    label: 'Permeability Decay',
-                    min: 0,
-                    max: 0.2,
-                    step: 0.01,
-                    value: 0.05,
-                    callback: (value) => MembraneSystem.updateSettings({ permeabilityDecay: parseFloat(value) })
-                },
-                {
-                    id: 'membraneEnergyTransfer',
-                    label: 'Energy Transfer',
-                    min: 0,
-                    max: 0.3,
-                    step: 0.01,
-                    value: 0.1,
-                    callback: (value) => MembraneSystem.updateSettings({ energyTransfer: parseFloat(value) })
-                },
-                {
-                    id: 'membraneEnergyLoss',
-                    label: 'Energy Loss',
-                    min: 0,
-                    max: 0.5,
-                    step: 0.05,
-                    value: 0.1,
-                    callback: (value) => MembraneSystem.updateSettings({ energyLoss: parseFloat(value) })
-                },
-                {
-                    id: 'membraneToroidalWrapping',
-                    label: 'Toroidal Wrapping',
-                    type: 'checkbox',
-                    checked: true,
-                    callback: (value) => MembraneSystem.updateSettings({ toroidalWrapping: value })
+        // Setup sliders for different joystick parameters
+        setupRangeInput('deadZonePercent', function(value) {
+            ZotCentricMobility.updateSettings('deadZonePercent', value);
+            // Update the display value to show as percentage
+            const valueDisplay = document.getElementById('deadZonePercentValue');
+            if (valueDisplay) {
+                valueDisplay.textContent = `${Math.round(value * 100)}%`;
+            }
+        });
+        
+        setupRangeInput('responseCurvePower', function(value) {
+            ZotCentricMobility.updateSettings('responseCurvePower', value);
+        });
+        
+        setupRangeInput('maxSteeringForce', function(value) {
+            ZotCentricMobility.updateSettings('maxSteeringForce', value);
+        });
+        
+        setupRangeInput('maxCenteringForce', function(value) {
+            ZotCentricMobility.updateSettings('maxCenteringForce', value);
+            // Also update min centering force to be proportional
+            ZotCentricMobility.updateSettings('minCenteringForce', value / 3);
+        });
+        
+        setupRangeInput('smoothingFactor', function(value) {
+            ZotCentricMobility.updateSettings('smoothingFactor', value);
+        });
+        
+        setupRangeInput('swarmCenterAttraction', function(value) {
+            ZotCentricMobility.updateSettings('swarmCenterAttraction', value);
+        });
+        
+        // Set initial values from ZotCentricMobility
+        updateJoystickControlsFromSystem();
+    }
+    
+    // Update joystick control values from the current system settings
+    function updateJoystickControlsFromSystem() {
+        if (typeof ZotCentricMobility === 'undefined' || !ZotCentricMobility.getSettings) {
+            return;
+        }
+        
+        const settings = ZotCentricMobility.getSettings();
+        
+        // Update slider values
+        for (const [key, value] of Object.entries(settings)) {
+            const slider = document.getElementById(key);
+            if (slider) {
+                slider.value = value;
+                
+                // Update display value
+                const valueDisplay = document.getElementById(key + 'Value');
+                if (valueDisplay) {
+                    if (key === 'deadZonePercent') {
+                        valueDisplay.textContent = `${Math.round(value * 100)}%`;
+                    } else {
+                        valueDisplay.textContent = value.toFixed(value < 1 ? 2 : 1);
+                    }
                 }
-            ];
-            
-            // Create controls
-            controls.forEach(controlConfig => {
-                const controlWrapper = document.createElement('div');
-                controlWrapper.className = 'control-wrapper';
-                
-                const label = document.createElement('label');
-                label.htmlFor = controlConfig.id;
-                label.textContent = controlConfig.label;
-                controlWrapper.appendChild(label);
-                
-                if (controlConfig.type === 'checkbox') {
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.id = controlConfig.id;
-                    checkbox.checked = controlConfig.checked;
-                    checkbox.addEventListener('change', function() {
-                        controlConfig.callback(this.checked);
-                    });
-                    controlWrapper.appendChild(checkbox);
-                } else {
-                    // Default to range slider
-                    const input = document.createElement('input');
-                    input.type = 'range';
-                    input.id = controlConfig.id;
-                    input.min = controlConfig.min;
-                    input.max = controlConfig.max;
-                    input.step = controlConfig.step;
-                    input.value = controlConfig.value;
-                    
-                    const valueDisplay = document.createElement('span');
-                    valueDisplay.className = 'value-display';
-                    valueDisplay.textContent = controlConfig.value;
-                    
-                    input.addEventListener('input', function() {
-                        valueDisplay.textContent = parseFloat(this.value).toFixed(2);
-                    });
-                    
-                    input.addEventListener('change', function() {
-                        controlConfig.callback(this.value);
-                    });
-                    
-                    controlWrapper.appendChild(input);
-                    controlWrapper.appendChild(valueDisplay);
-                }
-                
-                membraneParamsDiv.appendChild(controlWrapper);
-            });
-            
-            // Add membrane preset buttons
-            const presetDiv = document.createElement('div');
-            presetDiv.className = 'membrane-presets';
-            presetDiv.innerHTML = '<h4>Membrane Presets</h4>';
-            
-            const presets = MembraneSystem.getPresets();
-            Object.keys(presets).forEach(presetName => {
-                const button = document.createElement('button');
-                button.textContent = presetName.charAt(0) + presetName.slice(1).toLowerCase().replace('_', ' ');
-                button.className = 'preset-button';
-                button.addEventListener('click', function() {
-                    // Create test membrane in the center of the screen
-                    const width = window.innerWidth;
-                    const height = window.innerHeight;
-                    const preset = presetName;
-                    
-                    // Create a membrane that spans horizontally across the screen
-                    MembraneSystem.createMembrane(
-                        width * 0.2, height * 0.5,
-                        width * 0.8, height * 0.5,
-                        preset
-                    );
-                });
-                presetDiv.appendChild(button);
-            });
-            
-            // Add button to clear all membranes
-            const clearButton = document.createElement('button');
-            clearButton.textContent = 'Clear All';
-            clearButton.className = 'clear-button';
-            clearButton.addEventListener('click', function() {
-                // Remove all membranes
-                while (MembraneSystem.removeMembrane(0)) {} // Remove membranes until none left
-            });
-            presetDiv.appendChild(clearButton);
-            
-            membraneParamsDiv.appendChild(presetDiv);
-            
-            // Add a section to explain what membranes do
-            const infoDiv = document.createElement('div');
-            infoDiv.className = 'membrane-info';
-            infoDiv.innerHTML = `
-                <h4>About Membranes</h4>
-                <p>Membranes create semi-permeable barriers that particles may pass through based on permeability settings.</p>
-                <p>Higher permeability allows more particles to pass through. Energy transfer affects how particles impact membrane permeability.</p>
-                <p>Toroidal wrapping allows particles to "warp" to the opposite side of the screen when crossing a membrane near the edge.</p>
-            `;
-            membraneParamsDiv.appendChild(infoDiv);
+            }
         }
     }
 
@@ -1242,4 +1256,36 @@ function initializeSimulation() {
     }
     
     // ... existing code ...
+}
+
+// Helper function to handle input events on sliders
+function updateSliderValue(input, valueDisplay, precision = 1) {
+    // Don't update text content for sliders since we've hidden them to protect IP
+    // valueDisplay.textContent = parseFloat(input.value).toFixed(precision);
+}
+
+// Event handler for slider input events
+function handleSliderInput(event, precision = 1) {
+    const value = parseFloat(this.value);
+    const valueDisplay = document.getElementById(this.id + 'Value');
+    if (valueDisplay) {
+        // Don't update text content for sliders since we've hidden them to protect IP
+        // valueDisplay.textContent = value.toFixed(precision);
+    }
+}
+
+// Update the animation loop to include ZotCentricMobility updates
+function updateAnimationLoop() {
+    // Check if ParticleSystem has an update override function for animation
+    if (typeof ParticleSystem !== 'undefined' && ParticleSystem.hasOwnProperty('updateAnimation')) {
+        // First update ZotCentricMobility if available
+        if (typeof ZotCentricMobility !== 'undefined') {
+            ZotCentricMobility.update();
+        }
+        
+        // Then update the particle system
+        requestAnimationFrame(ParticleSystem.updateAnimation);
+    } else {
+        console.error("ParticleSystem updateAnimation method not found");
+    }
 }

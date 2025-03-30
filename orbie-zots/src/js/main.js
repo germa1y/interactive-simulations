@@ -347,16 +347,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Update displayed values
                     // HIDDEN: All slider values are hidden to protect IP
-                    /*
+                    
                     document.getElementById('newSwarmZotCountValue').textContent = randomConfig.zotCount;
-                    document.getElementById('newSwarmSpeedValue').textContent = randomConfig.speed.toFixed(1);
-                    document.getElementById('newSwarmSeparationValue').textContent = randomConfig.separation.toFixed(1);
-                    document.getElementById('newSwarmAlignmentValue').textContent = randomConfig.alignment.toFixed(2);
-                    document.getElementById('newSwarmCohesionValue').textContent = randomConfig.cohesion.toFixed(1);
-                    document.getElementById('newSwarmPerceptionValue').textContent = randomConfig.perception;
                     document.getElementById('newSwarmMinSizeValue').textContent = minSize.toFixed(1);
                     document.getElementById('newSwarmMaxSizeValue').textContent = maxSize.toFixed(1);
-                    */
                     
                     // Also update the dual slider visuals
                     updateDualSliderVisuals('newSwarmMinSize', 'newSwarmMaxSize');
@@ -379,15 +373,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Update displayed values, keeping the current zot count
                     // HIDDEN: All slider values are hidden to protect IP
-                    /*
+                    
                     document.getElementById('newSwarmZotCountValue').textContent = currentZotCount;
-                    document.getElementById('newSwarmSpeedValue').textContent = preset.speed.toFixed(1);
-                    document.getElementById('newSwarmSeparationValue').textContent = preset.separation.toFixed(1);
-                    document.getElementById('newSwarmAlignmentValue').textContent = preset.alignment.toFixed(2);
-                    document.getElementById('newSwarmCohesionValue').textContent = preset.cohesion.toFixed(1);
-                    document.getElementById('newSwarmPerceptionValue').textContent = preset.perception;
-                    */
-
+                    
+                    // Also update min/max size if present in preset
+                    if (preset.minSize !== undefined && preset.maxSize !== undefined) {
+                        document.getElementById('newSwarmMinSize').value = preset.minSize;
+                        document.getElementById('newSwarmMaxSize').value = preset.maxSize;
+                        document.getElementById('newSwarmMinSizeValue').textContent = preset.minSize.toFixed(1);
+                        document.getElementById('newSwarmMaxSizeValue').textContent = preset.maxSize.toFixed(1);
+                        
+                        // Update the dual slider visuals
+                        updateDualSliderVisuals('newSwarmMinSize', 'newSwarmMaxSize');
+                    }
+                    
                     // Update color theme selector
                     if (preset.colorTheme) {
                         const colorPresets = document.querySelectorAll('.color-preset');
@@ -632,13 +631,13 @@ document.addEventListener('DOMContentLoaded', function() {
                              input.step.includes('.01') ? 2 : 1;
             
             // HIDDEN: All slider values are hidden to protect IP
-            // valueDisplay.textContent = parseFloat(input.value).toFixed(precision);
+            valueDisplay.textContent = parseFloat(input.value).toFixed(precision);
             
             // Add event listeners for input changes
             input.addEventListener('input', function() {
                 const value = parseFloat(this.value);
                 // HIDDEN: All slider values are hidden to protect IP
-                // valueDisplay.textContent = value.toFixed(precision);
+                valueDisplay.textContent = value.toFixed(precision);
                 
                 // Call the callback with the new value
                 if (changeCallback) {
@@ -656,14 +655,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const maxValueDisplay = document.getElementById(maxId + 'Value');
         
         if (minSlider && maxSlider && minValueDisplay && maxValueDisplay) {
+            // Set initial values display
+            const minVal = parseFloat(minSlider.value);
+            const maxVal = parseFloat(maxSlider.value);
+            minValueDisplay.textContent = minVal.toFixed(1);
+            maxValueDisplay.textContent = maxVal.toFixed(1);
+            
             // Update values displays
             function updateValues() {
                 const minVal = parseFloat(minSlider.value);
                 const maxVal = parseFloat(maxSlider.value);
                 
                 // HIDDEN: All slider values are hidden to protect IP
-                // minValueDisplay.textContent = minVal.toFixed(1);
-                // maxValueDisplay.textContent = maxVal.toFixed(1);
+                minValueDisplay.textContent = minVal.toFixed(1);
+                maxValueDisplay.textContent = maxVal.toFixed(1);
                 
                 // Ensure thumb positions are visually reflecting the values
                 updateThumbPositions();

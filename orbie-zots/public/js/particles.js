@@ -61,19 +61,6 @@ const ParticleSystem = (function() {
         zotSwarmInteractionEnabled: true  // New setting for zot swarm interaction
     };
     
-    // Zot swarm settings
-    let zotSwarmSettings = {
-        particleCount: 50,
-        speed: 2,
-        separation: 2,
-        alignment: 1,
-        cohesion: 2.5,
-        perception: 100,
-        touchForce: 1.5,
-        showExteriorStroke: false, // New setting to toggle the exterior stroke
-        exteriorStrokeWidth: 3 // Width of the exterior stroke in pixels
-    };
-    
     // Collection of all particles (regular background particles)
     let backgroundParticles = [];
     
@@ -158,29 +145,11 @@ const ParticleSystem = (function() {
     
     // Initialize background particles
     function initBackgroundParticles() {
-        // Reset the array
+        // Reset the array, but don't add any particles
         backgroundParticles = [];
         
-        // Create some initial particles to ensure the system works
-        createInitialParticles();
-    }
-    
-    // Create some initial particles to demonstrate the system is working
-    function createInitialParticles() {
-        console.log("Creating initial particles");
-        
-        // Create a simple test swarm
-        const testSwarmConfig = {
-            centerX: width / 2,
-            centerY: height / 2,
-            zotCount: 30,
-            minSize: 3,
-            maxSize: 6,
-            speed: 2,
-            colorTheme: 'rainbow'
-        };
-        
-        createZotSwarm(testSwarmConfig);
+        // No particles are created during initialization
+        // This ensures only Orbie is present after initializing
     }
     
     // Initialize Orbie
@@ -213,71 +182,82 @@ const ParticleSystem = (function() {
     
     // Create a new ZotSwarm
     function createZotSwarm(config) {
-        console.log("Creating ZotSwarm with config:", config);
+        console.log("Creating new zot swarm with config:", config);
         
-        try {
-            // Generate a unique ID for this swarm
-            const swarmId = generateSwarmId();
+        // Default values if not provided
+        config = {
+            centerX: width / 2,
+            centerY: height / 2,
+            zotCount: 25,
+            minSize: 1,
+            maxSize: 3,
+            colorTheme: 'blue',
+            ...config
+        };
+        
+        const swarm = {
+            id: generateSwarmId(),
+            zots: [],
+            settings: {...config},
+            originalSettings: {...config},
+            inOrbieInfluence: false
+        };
+        
+        // Get color generator
+        const getColor = Presets.colorThemes[config.colorTheme]?.getColor || 
+                         Presets.colorThemes.blue.getColor;
+        
+        // Adjust centerX and centerY if ZotCentricMobility is enabled
+        let centerX = config.centerX;
+        let centerY = config.centerY;
+        
+        console.log("Initial swarm center position:", centerX, centerY);
+        
+        if (typeof ZotCentricMobility !== 'undefined') {
+            // Check if ZotCentricMobility is enabled
+            const isMobilityEnabled = ZotCentricMobility.isEnabled();
+            console.log("ZotCentricMobility enabled:", isMobilityEnabled);
             
-            // Create swarm object with settings
-            const swarm = {
-                id: swarmId,
-                zots: [],
-                settings: {...config},
-                originalSettings: {...config},
-                inOrbieInfluence: false
+            if (isMobilityEnabled) {
+                try {
+                    // Convert screen position to world position
+                    const worldPos = ZotCentricMobility.removeOffsetFromPoint({ x: centerX, y: centerY });
+                    centerX = worldPos.x;
+                    centerY = worldPos.y;
+                    console.log("Adjusted swarm center for ZotCentricMobility:", centerX, centerY);
+                } catch (error) {
+                    console.error("Error adjusting position for ZotCentricMobility:", error);
+                }
+            }
+        }
+        
+        // Generate particles for this swarm
+        for (let i = 0; i < config.zotCount; i++) {
+            const zot = {
+                x: centerX + (Math.random() * 100 - 50), // Cluster around center
+                y: centerY + (Math.random() * 100 - 50), // Cluster around center
+                vx: (Math.random() * 2 - 1) * (config.speed || 2),
+                vy: (Math.random() * 2 - 1) * (config.speed || 2),
+                size: config.minSize + Math.random() * (config.maxSize - config.minSize),
+                color: getColor(),
+                history: [],
+                inOrbieSwarm: false,
+                swarmId: swarm.id,
+                fromGlobalTheme: false
             };
             
-            // Get the color generator function - try to handle missing Presets
-            let getColor;
-            
-            if (typeof Presets !== 'undefined' && Presets.colorThemes) {
-                const theme = config.colorTheme || 'rainbow';
-                getColor = Presets.colorThemes[theme]?.getColor || 
-                          Presets.colorThemes['rainbow']?.getColor ||
-                          function() { return 'rgba(200, 200, 200, 0.8)'; }; // Fallback color
-            } else {
-                // Simple fallback if Presets is not available
-                getColor = function() { return 'rgba(200, 200, 200, 0.8)'; };
-            }
-            
-            // Default configuration values if not specified
-            const zotCount = config.zotCount || 25;
-            const minSize = config.minSize || 2;
-            const maxSize = config.maxSize || 4;
-            const speed = config.speed || 2;
-            const centerX = config.centerX || (width / 2);
-            const centerY = config.centerY || (height / 2);
-            
-            console.log(`Creating ${zotCount} zots at position (${centerX}, ${centerY})`);
-            
-            // Generate particles for this swarm
-            for (let i = 0; i < zotCount; i++) {
-                const zot = {
-                    x: centerX + (Math.random() * 100 - 50), // Cluster around center
-                    y: centerY + (Math.random() * 100 - 50), // Cluster around center
-                    vx: (Math.random() * 2 - 1) * speed,
-                    vy: (Math.random() * 2 - 1) * speed,
-                    color: getColor(),
-                    size: minSize + Math.random() * (maxSize - minSize),
-                    history: [],
-                    inOrbieSwarm: false,
-                    swarmId: swarmId,
-                    fromGlobalTheme: false
-                };
-                
-                swarm.zots.push(zot);
-            }
-            
-            // Add the swarm to our collection
-            zotSwarms.push(swarm);
-            console.log(`Created ZotSwarm with ID ${swarmId} containing ${swarm.zots.length} zots`);
-            
-            return swarmId;
-        } catch (error) {
-            console.error("Error creating ZotSwarm:", error);
-            return null;
+            swarm.zots.push(zot);
         }
+        
+        console.log(`Created swarm with ID ${swarm.id} containing ${swarm.zots.length} zots`);
+        
+        // Add the new swarm to our collection
+        zotSwarms.push(swarm);
+        
+        // Update zot counter
+        updateZotsCounter();
+        
+        return swarm.id;
     }
     
     // Update an existing ZotSwarm with new parameters
@@ -398,8 +378,7 @@ const ParticleSystem = (function() {
     
     // Generate a unique ID for swarms
     function generateSwarmId() {
-        // Simple implementation - you could use a UUID library in production
-        return 'swarm-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+        return 'swarm-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
     }
     
     // Apply preset to new swarm settings
@@ -439,159 +418,332 @@ const ParticleSystem = (function() {
         return themes[Math.floor(Math.random() * themes.length)];
     }
     
-    // Update all particles in the simulation
+    // Update all particles in the system
     function updateParticles() {
-        // Get elapsed time since last update for time-based movement
-        const now = performance.now();
-        const delta = now - lastTime;
-        lastTime = now;
+        // Use worldX and worldY for physics when ZotCentricMobility is enabled
+        const touchX = touch.worldX !== undefined ? touch.worldX : touch.x;
+        const touchY = touch.worldY !== undefined ? touch.worldY : touch.y;
         
-        // Update FPS counter every 500ms
-        frameCount++;
-        if (now - lastFpsUpdate > 500) {
-            const fps = Math.round(frameCount / ((now - lastFpsUpdate) / 1000));
-            if (fpsDisplay) {
-                fpsDisplay.textContent = fps;
-            }
-            frameCount = 0;
-            lastFpsUpdate = now;
-            
-            // Also update the zots counter
-            updateZotsCounter();
-        }
-        
-        // Update Orbie pulsing effect
-        if (orbie) {
-            orbiePulsePhase += orbieSettings.pulseSpeed || 0.05;
-            if (orbiePulsePhase > Math.PI * 2) {
-                orbiePulsePhase = 0;
-            }
-        }
-        
-        // Update Orbie if it exists
+        // Update Orbie if enabled
         if (orbie && orbieSettings.enabled) {
-            console.log("Updating Orbie position");
-            // Store previous position for collision detection
+            // Update Orbie's pulse effect only if pulseSpeed is not zero
+            if (orbieSettings.pulseSpeed > 0) {
+                orbiePulsePhase += orbieSettings.pulseSpeed;
+                if (orbiePulsePhase > Math.PI * 2) {
+                    orbiePulsePhase = 0;
+                }
+            }
+            
+            // Store previous position for wall collision
             const prevX = orbie.x;
             const prevY = orbie.y;
             
-            // Apply inertia (drag/dampening)
-            orbie.vx *= 0.98;
-            orbie.vy *= 0.98;
-            
-            // Apply influence from user touch input if active
+            // Apply touch force to Orbie
             if (touch.active) {
-                // Calculate vector from orbie to touch point
-                const dx = touch.x - orbie.x;
-                const dy = touch.y - orbie.y;
+                const dx = touchX - orbie.x;
+                const dy = touchY - orbie.y;
+                const distSq = dx * dx + dy * dy;
+                const maxDistSq = orbieSettings.influenceRadius * orbieSettings.influenceRadius;
                 
-                // Calculate distance
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                if (distance > 0) {
-                    // Normalize the direction vector
-                    const nx = dx / distance;
-                    const ny = dy / distance;
+                // Only apply force if within influence radius and not too close
+                if (distSq > 1 && distSq < maxDistSq) {
+                    const dist = Math.sqrt(distSq);
+                    const force = touch.attract ? 
+                        forceSettings.touchForce * orbieSettings.touchMultiplier :
+                        -forceSettings.touchForce * orbieSettings.touchMultiplier;
                     
-                    // Apply force with falloff based on distance
-                    const forceFactor = Math.min(1, 120 / distance) * orbieSettings.touchMultiplier;
-                    const baseFactor = orbieSettings.speed;
+                    // Scale force by distance (stronger when closer)
+                    const scaledForce = force * (1 - dist / orbieSettings.influenceRadius);
                     
-                    // Update velocity based on touch input and orbie speed setting
-                    orbie.vx += nx * baseFactor * forceFactor;
-                    orbie.vy += ny * baseFactor * forceFactor;
+                    // Normalize direction vector and apply force
+                    orbie.vx += (dx / dist) * scaledForce;
+                    orbie.vy += (dy / dist) * scaledForce;
                 }
             }
             
-            // Update position
+            // Apply drag to Orbie's movement
+            orbie.vx *= 0.95;
+            orbie.vy *= 0.95;
+            
+            // Limit Orbie's velocity
+            const orbieSpeed = Math.sqrt(orbie.vx * orbie.vx + orbie.vy * orbie.vy);
+            const maxOrbieSpeed = orbieSettings.speed * 2;
+            if (orbieSpeed > maxOrbieSpeed) {
+                orbie.vx = (orbie.vx / orbieSpeed) * maxOrbieSpeed;
+                orbie.vy = (orbie.vy / orbieSpeed) * maxOrbieSpeed;
+            }
+            
+            // Update Orbie's position
             orbie.x += orbie.vx;
             orbie.y += orbie.vy;
             
-            // Apply boundary constraints
-            applyBoundaryConstraints(orbie);
+            // Keep Orbie within the screen bounds
+            if (orbie.x < orbie.size) orbie.x = orbie.size;
+            if (orbie.x > width - orbie.size) orbie.x = width - orbie.size;
+            if (orbie.y < orbie.size) orbie.y = orbie.size;
+            if (orbie.y > height - orbie.size) orbie.y = height - orbie.size;
             
-            // Update Orbie's history for trail effects
-            if (orbie.history) {
-                orbie.history.unshift({ x: orbie.x, y: orbie.y });
-                if (orbie.history.length > 20) { // Limit history length
-                    orbie.history.pop();
+            // Apply wall forces to Orbie
+            WallSystem.applyForces(orbie, prevX, prevY, true);
+        }
+        
+        // Update background particles
+        updateParticleGroup(backgroundParticles, Presets.defaults.zotSwarm, touchX, touchY);
+        
+        // Update all ZotSwarms
+        zotSwarms.forEach(swarm => {
+            updateParticleGroup(swarm.zots, swarm.settings, touchX, touchY);
+            
+            // Check if swarm is in Orbie's influence
+            const wasInInfluence = swarm.inOrbieInfluence;
+            
+            // Calculate average distance of swarm particles to Orbie
+            let particlesInInfluence = 0;
+            for (let i = 0; i < swarm.zots.length; i++) {
+                if (swarm.zots[i].inOrbieSwarm) {
+                    particlesInInfluence++;
                 }
             }
-        }
-        
-        // Update Zot swarms
-        if (zotSwarms.length > 0) {
-            console.log(`Updating ${zotSwarms.length} zot swarms`);
-            for (let i = 0; i < zotSwarms.length; i++) {
-                // Get the current swarm
-                const swarm = zotSwarms[i];
-                const swarmSettings = swarm.settings;
-                
-                // Update particles in this swarm
-                updateParticleGroup(swarm.zots, swarmSettings);
+            
+            // If more than 30% of particles are influenced, consider the swarm influenced
+            // Only apply influence if Orbie is enabled
+            swarm.inOrbieInfluence = orbieSettings.enabled && (particlesInInfluence / swarm.zots.length) > 0.3;
+            
+            // If just left Orbie's influence, restore original settings
+            if (wasInInfluence && !swarm.inOrbieInfluence) {
+                // Restore original settings
+                swarm.settings = {...swarm.originalSettings};
             }
-        } else {
-            console.log("No zot swarms to update");
-        }
-        
-        // Update membranes if available
-        if (typeof MembraneSystem !== 'undefined') {
-            MembraneSystem.updateMembranes();
-        }
+        });
     }
     
-    // Update a group of particles with boid-like behaviors
-    function updateParticleGroup(particles, settings) {
-        // No particles to update
-        if (!particles || particles.length === 0) {
-            return;
-        }
+    // Update a group of particles based on their settings
+    function updateParticleGroup(particles, settings, touchX, touchY) {
+        // Get current theme for color updates
+        const currentTheme = ColorThemes.getCurrentTheme();
+        const sparkleUpdateRate = 0.1; // Rate at which sparkle theme refreshes colors (increased for more visible effect)
         
-        console.log(`Updating ${particles.length} particles in group`);
-        
-        // Use default settings if none provided
-        const defaultSettings = {
-            speed: 2,
-            separation: 2,
-            alignment: 1,
-            cohesion: 2,
-            perception: 100,
-            dampening: 0.98
-        };
-        
-        // Merge with defaults
-        const finalSettings = {...defaultSettings, ...settings};
-        
+        // For each particle in the group
         for (let i = 0; i < particles.length; i++) {
             const particle = particles[i];
-            
-            // Skip particles that are already in Orbie's swarm
-            if (particle.inOrbieSwarm) continue;
-            
-            // Store previous position for collision detection
             const prevX = particle.x;
             const prevY = particle.y;
             
-            // Simple movement - just update position based on velocity
+            // Check if particle is in Orbie's influence zone
+            const dxOrbie = particle.x - orbie.x;
+            const dyOrbie = particle.y - orbie.y;
+            const distanceToOrbie = Math.sqrt(dxOrbie * dxOrbie + dyOrbie * dyOrbie);
+            
+            // Check if the particle is newly entering or leaving Orbie's swarm
+            const wasInSwarm = particle.inOrbieSwarm;
+            // Only consider particles to be in Orbie's influence if Orbie is enabled
+            particle.inOrbieSwarm = orbieSettings.enabled && distanceToOrbie < orbieSettings.influenceRadius;
+            
+            // Change particle color when it enters or leaves the swarm
+            if (particle.inOrbieSwarm && !wasInSwarm) {
+                // Store the original color before entering swarm
+                particle.originalColor = particle.color;
+                // Change color to sparkle when entering swarm
+                particle.color = getSparkleColor();
+                
+                // Give it a slightly larger size when in the swarm
+                particle.originalSize = particle.size;
+                particle.size *= 1.2;
+            } else if (!particle.inOrbieSwarm && wasInSwarm) {
+                // Revert to original color when leaving swarm
+                if (particle.originalColor) {
+                    particle.color = particle.originalColor;
+                    delete particle.originalColor;
+                }
+                
+                // Revert to original size
+                if (particle.originalSize) {
+                    particle.size = particle.originalSize;
+                    delete particle.originalSize;
+                }
+            } else if (particle.inOrbieSwarm && Math.random() < orbieSwarmSettings.sparkleRate) {
+                // Occasionally change the color of particles in the swarm based on sparkle rate
+                particle.color = getSparkleColor();
+            } else if (currentTheme === 'sparkle' && Math.random() < sparkleUpdateRate) {
+                // Only apply the sparkle effect to background particles (not to swarm zots)
+                // or if this is a zot swarm that uses the 'sparkle' theme
+                const isBackgroundParticle = particles === backgroundParticles;
+                const isSparkleTheme = particle.swarmId && 
+                    zotSwarms.find(s => s.id === particle.swarmId)?.settings.colorTheme === 'sparkle';
+                
+                if (isBackgroundParticle || isSparkleTheme) {
+                    particle.color = ColorThemes.getColor();
+                }
+            }
+            
+            // Use appropriate settings based on whether particle is in Orbie's swarm
+            const activeSettings = particle.inOrbieSwarm ? orbieSwarmSettings : settings;
+            
+            // Save position history for trail
+            if (activeSettings.trailLength > 0) {
+                particle.history.push({ x: particle.x, y: particle.y });
+                if (particle.history.length > activeSettings.trailLength) {
+                    particle.history.shift();
+                }
+            } else {
+                particle.history = [];
+            }
+            
+            // Calculate flocking forces
+            let separationX = 0, separationY = 0;
+            let alignmentX = 0, alignmentY = 0;
+            let cohesionX = 0, cohesionY = 0;
+            let neighborCount = 0;
+            
+            // Define which particle group to check for neighbors
+            let neighborsGroup;
+            if (particle.inOrbieSwarm) {
+                // If particle is in Orbie's swarm, only consider other particles in Orbie's swarm
+                neighborsGroup = particles.filter(p => p.inOrbieSwarm);
+            } else if (forceSettings.zotSwarmInteractionEnabled && particle.swarmId !== undefined && particle.swarmId !== null) {
+                // If zot swarm interaction is enabled and this is a zot particle with a valid swarmId, 
+                // consider particles from all zot swarms
+                const allZotParticles = [];
+                // Add particles from current group first
+                allZotParticles.push(...particles);
+                
+                // Add particles from other zot swarms
+                for (let s = 0; s < zotSwarms.length; s++) {
+                    // Skip the current swarm to avoid duplicates
+                    if (zotSwarms[s].id !== particle.swarmId) {
+                        allZotParticles.push(...zotSwarms[s].zots);
+                    }
+                }
+                
+                neighborsGroup = allZotParticles;
+            } else {
+                // Otherwise, just consider particles from the same group
+                neighborsGroup = particles;
+            }
+            
+            // For each potential neighbor, calculate influences
+            for (let j = 0; j < neighborsGroup.length; j += 2) { // Mobile optimization: check every other particle
+                if (i !== j || neighborsGroup !== particles) { // Skip self unless comparing across groups
+                    const other = neighborsGroup[j];
+                    const dx = particle.x - other.x;
+                    const dy = particle.y - other.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < activeSettings.perception && distance > 0) {
+                        // Separation - avoid crowding neighbors
+                        const force = (activeSettings.perception - distance) / activeSettings.perception;
+                        separationX += dx * force / distance;
+                        separationY += dy * force / distance;
+                        
+                        // Alignment - steer towards average heading of neighbors
+                        alignmentX += other.vx;
+                        alignmentY += other.vy;
+                        
+                        // Cohesion - steer towards center of mass of neighbors
+                        cohesionX += other.x;
+                        cohesionY += other.y;
+                        
+                        neighborCount++;
+                    }
+                }
+            }
+            
+            // Apply flocking forces if we have neighbors
+            if (neighborCount > 0) {
+                // Apply separation
+                separationX *= activeSettings.separation;
+                separationY *= activeSettings.separation;
+                
+                // Apply alignment
+                alignmentX = (alignmentX / neighborCount - particle.vx) * activeSettings.alignment;
+                alignmentY = (alignmentY / neighborCount - particle.vy) * activeSettings.alignment;
+                
+                // Apply cohesion
+                cohesionX = (cohesionX / neighborCount - particle.x) * activeSettings.cohesion * 0.01;
+                cohesionY = (cohesionY / neighborCount - particle.y) * activeSettings.cohesion * 0.01;
+                
+                // Sum forces
+                particle.vx += separationX + alignmentX + cohesionX;
+                particle.vy += separationY + alignmentY + cohesionY;
+            }
+            
+            // If in Orbie's swarm, add attraction to Orbie
+            if (particle.inOrbieSwarm && orbieSettings.influenceIntensity > 0 && orbieSettings.enabled) {
+                // Apply force towards Orbie based on influenceIntensity
+                particle.vx += (orbie.x - particle.x) * orbieSettings.influenceIntensity;
+                particle.vy += (orbie.y - particle.y) * orbieSettings.influenceIntensity;
+            }
+            
+            // Apply touch force if active AND (particle is in Orbie's swarm OR zot touch is enabled)
+            if (touch.active && (particle.inOrbieSwarm || forceSettings.zotTouchEnabled)) {
+                const dx = particle.x - touchX;
+                const dy = particle.y - touchY;
+                const distSq = dx * dx + dy * dy;
+                const maxDistSq = orbieSettings.influenceRadius * orbieSettings.influenceRadius;
+                
+                if (distSq < maxDistSq) {
+                    const distance = Math.sqrt(distSq);
+                    const force = ((orbieSettings.influenceRadius - distance) / orbieSettings.influenceRadius) * forceSettings.touchForce;
+                    
+                    if (touch.attract) {
+                        // Attract towards touch point
+                        particle.vx -= (dx / distance) * force;
+                        particle.vy -= (dy / distance) * force;
+                    } else {
+                        // Repel from touch point
+                        particle.vx += (dx / distance) * force;
+                        particle.vy += (dy / distance) * force;
+                    }
+                }
+            }
+            
+            // Apply wall forces
+            WallSystem.applyForces(particle, prevX, prevY, true);
+            
+            // Apply SwipeSplitSystem forces if active
+            if (typeof SwipeSplitSystem !== 'undefined' && SwipeSplitSystem.isSwipeActive()) {
+                const swipeForces = SwipeSplitSystem.applyForces(particle);
+                if (swipeForces.fx !== 0 || swipeForces.fy !== 0) {
+                    particle.vx += swipeForces.fx;
+                    particle.vy += swipeForces.fy;
+                }
+            }
+            
+            // Apply dampening to reduce wobble if particle is in orbieSwarm
+            if (particle.inOrbieSwarm && orbieSwarmSettings.dampening > 0) {
+                particle.vx *= orbieSwarmSettings.dampening;
+                particle.vy *= orbieSwarmSettings.dampening;
+            }
+            
+            // Limit velocity for stability
+            const speed = Math.sqrt(particle.vx * particle.vx + particle.vy * particle.vy);
+            const maxSpeed = 2 * activeSettings.speed;
+            if (speed > maxSpeed) {
+                particle.vx = (particle.vx / speed) * maxSpeed;
+                particle.vy = (particle.vy / speed) * maxSpeed;
+            }
+            
+            // Update position
             particle.x += particle.vx;
             particle.y += particle.vy;
             
-            // Apply dampening
-            particle.vx *= finalSettings.dampening;
-            particle.vy *= finalSettings.dampening;
-            
-            // Apply simple boundary wrapping
-            if (particle.x < 0) particle.x = width;
-            if (particle.x > width) particle.x = 0;
-            if (particle.y < 0) particle.y = height;
-            if (particle.y > height) particle.y = 0;
-            
-            // Update particle history for trails if present
-            if (particle.history && finalSettings.trailLength > 0) {
-                particle.history.unshift({ x: particle.x, y: particle.y });
-                while (particle.history.length > finalSettings.trailLength) {
-                    particle.history.pop();
-                }
+            // Boundary checking (no wrapping)
+            const radius = particle.size / 2;
+            if (particle.x - radius < 0) {
+                particle.x = radius;
+                particle.vx *= -0.8; // Bounce with energy loss
+            }
+            if (particle.x + radius > width) {
+                particle.x = width - radius;
+                particle.vx *= -0.8; // Bounce with energy loss
+            }
+            if (particle.y - radius < 0) {
+                particle.y = radius;
+                particle.vy *= -0.8; // Bounce with energy loss
+            }
+            if (particle.y + radius > height) {
+                particle.y = height - radius;
+                particle.vy *= -0.8; // Bounce with energy loss
             }
         }
     }
@@ -599,168 +751,240 @@ const ParticleSystem = (function() {
     // Draw particles, swarms, and Orbie
     function drawParticles() {
         // Clear canvas
-        if (ctx) {
-            ctx.clearRect(0, 0, width, height);
-            
-            console.log("Drawing particles...");
-            
-            // Draw all swarms
-            let totalParticles = 0;
-            for (const swarm of zotSwarms) {
-                if (swarm && swarm.zots) {
-                    totalParticles += swarm.zots.length;
-                    drawParticleGroup(swarm.zots);
-                }
-            }
-            console.log(`Drew ${totalParticles} particles from ${zotSwarms.length} swarms`);
-            
-            // Draw Orbie last (so it's on top of everything)
-            if (orbie && orbieSettings.enabled) {
-                // Calculate pulsating effect
-                const pulseAmount = Math.sin(orbiePulsePhase) * orbieSettings.pulseIntensity;
-                const scaledSize = orbie.size * (1 + pulseAmount);
+        ctx.clearRect(0, 0, width, height);
+        
+        // Draw walls if they exist
+        WallSystem.render(ctx);
+        
+        // Draw SwipeSplitSystem lines if available
+        if (typeof SwipeSplitSystem !== 'undefined') {
+            SwipeSplitSystem.draw();
+        }
+        
+        // Draw background particles
+        drawParticleGroup(backgroundParticles);
+        
+        // Draw all ZotSwarms
+        zotSwarms.forEach(swarm => {
+            drawParticleGroup(swarm.zots);
+        });
+        
+        // Draw Orbie (our main character) if enabled
+        if (orbie && orbieSettings.enabled) {
+            try {
+                // Ensure all required properties exist to prevent rendering errors
+                if (!orbie.size) orbie.size = orbieSettings.size || 12;
+                if (!orbie.glowSize) orbie.glowSize = orbie.size * (orbieSettings.glowSize || 3);
+                if (!orbie.glowOpacity) orbie.glowOpacity = orbieSettings.glowOpacity || 0.2;
+                if (!orbie.pulseSpeed) orbie.pulseSpeed = orbieSettings.pulseSpeed || 0.05;
+                if (!orbie.pulseIntensity) orbie.pulseIntensity = orbieSettings.pulseIntensity || 0.4;
                 
-                // Draw Orbie
+                // Calculate current glow size with outward radiation only if pulseSpeed > 0
+                const pulseFactor = orbie.pulseSpeed > 0 ? 1 + (orbiePulsePhase * orbie.pulseIntensity) : 1;
+                const currentGlowSize = orbie.glowSize * pulseFactor;
+                
+                // Draw Orbie's pulsating glow - using gradient for smoother effect
+                const glowGradient = ctx.createRadialGradient(
+                    orbie.x, orbie.y, orbie.size * 0.5,
+                    orbie.x, orbie.y, currentGlowSize
+                );
+                glowGradient.addColorStop(0, `rgba(255, 223, 0, ${orbie.glowOpacity})`); // Bright gold inner glow
+                glowGradient.addColorStop(0.5, `rgba(255, 215, 0, ${orbie.glowOpacity * 0.57})`); // Mid gold (scaled from 0.4/0.7)
+                glowGradient.addColorStop(1, 'rgba(255, 200, 0, 0)'); // Fade to transparent
+                
                 ctx.beginPath();
-                ctx.arc(orbie.x, orbie.y, scaledSize, 0, Math.PI * 2);
-                ctx.fillStyle = orbie.color || 'white';
+                ctx.arc(orbie.x, orbie.y, currentGlowSize, 0, Math.PI * 2);
+                ctx.fillStyle = glowGradient;
                 ctx.fill();
                 
-                // Debug - draw a red dot at Orbie's position
+                // Add a subtle outer ring to Orbie for better visibility
                 ctx.beginPath();
-                ctx.arc(orbie.x, orbie.y, 2, 0, Math.PI * 2);
-                ctx.fillStyle = 'red';
+                ctx.arc(orbie.x, orbie.y, orbie.size * 1.2, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(255, 215, 0, ${Math.min(0.6, orbie.glowOpacity * 0.8)})`; // Golden stroke proportional to glow opacity
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Draw Orbie's core with gradient for dimension
+                const coreGradient = ctx.createRadialGradient(
+                    orbie.x - orbie.size * 0.3, orbie.y - orbie.size * 0.3, 0,
+                    orbie.x, orbie.y, orbie.size
+                );
+                coreGradient.addColorStop(0, 'rgba(255, 255, 240, 0.6)'); // Warm white center with 40% reduced opacity
+                coreGradient.addColorStop(0.7, 'rgba(255, 233, 150, 0.54)'); // Pale gold middle with 40% reduced opacity
+                coreGradient.addColorStop(1, 'rgba(255, 215, 0, 0.42)'); // Gold edge with 40% reduced opacity
+                
+                ctx.beginPath();
+                ctx.arc(orbie.x, orbie.y, orbie.size, 0, Math.PI * 2);
+                ctx.fillStyle = coreGradient;
                 ctx.fill();
+            } catch (e) {
+                console.error("Error rendering Orbie:", e);
+                console.log("Orbie state:", orbie);
+                console.log("orbieSettings:", orbieSettings);
             }
-        } else {
-            console.error("Cannot draw particles - ctx is not defined");
         }
     }
     
     // Draw a group of particles
     function drawParticleGroup(particles) {
-        if (!ctx || !particles) return;
-        
-        // Draw each particle
         for (let i = 0; i < particles.length; i++) {
             const particle = particles[i];
+            
+            // Set color based on whether particle is in Orbie's swarm
+            const particleColor = particle.inOrbieSwarm 
+                ? particle.color.replace('hsl', 'hsla').replace(')', ', 0.9)') // Slight transparency for swarm
+                : particle.color;
+            
+            // Draw trail if enabled
+            if (particle.history.length > 1) {
+                // Draw fewer trail points on mobile for better performance
+                const step = 2; // Skip every other point 
+                
+                for (let j = 0; j < particle.history.length; j += step) {
+                    const point = particle.history[j];
+                    const alpha = j / particle.history.length * 0.3;
+                    const size = particle.size * (j / particle.history.length * 0.8);
+                    
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, size, 0, Math.PI * 2);
+                    // Convert HSL to HSLA for transparency
+                    ctx.fillStyle = particle.color.replace('hsl', 'hsla').replace(')', `, ${alpha})`);
+                    ctx.fill();
+                }
+            }
             
             // Draw the particle
             ctx.beginPath();
             ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-            ctx.fillStyle = particle.color || 'white';
+            ctx.fillStyle = particleColor;
             ctx.fill();
         }
     }
     
     // Animation loop
     function animate(timestamp) {
-        try {
-            // Clear the previous animation frame ID and request a new one first
-            // This ensures we continue the loop even if there's an error later
-            animationFrameId = null;
+        // Calculate delta time
+        const deltaTime = timestamp - lastTime;
+        lastTime = timestamp;
+        
+        // Skip if frame time is too high (likely tab was inactive)
+        if (deltaTime > 250) {
             animationFrameId = requestAnimationFrame(animate);
-            
-            // Update particle positions
-            updateParticles();
-            
-            // Draw particles
-            drawParticles();
-        } catch (error) {
-            console.error("Error in animation loop:", error);
-            // Try to continue the animation even after error
-            if (!animationFrameId) {
-                animationFrameId = requestAnimationFrame(animate);
-            }
+            return;
         }
+        
+        // Clear canvas
+        ctx.clearRect(0, 0, width, height);
+        
+        // Update ZotCentricMobility if available
+        if (typeof ZotCentricMobility !== 'undefined') {
+            ZotCentricMobility.update();
+        }
+        
+        // Update and draw particles
+        updateParticles();
+        drawParticles();
+        
+        // Request next frame
+        animationFrameId = requestAnimationFrame(animate);
     }
     
-    // Update the zots counter display
+    // Count and update the Zots counter
     function updateZotsCounter() {
-        const zotsCounterElement = document.getElementById('zotsCounter');
-        if (!zotsCounterElement) return;
-        
         let totalZots = 0;
         
         // Count zots in all swarms
-        for (const swarm of zotSwarms) {
-            totalZots += swarm.zots.length;
+        for (let i = 0; i < zotSwarms.length; i++) {
+            if (zotSwarms[i] && zotSwarms[i].zots) {
+                totalZots += zotSwarms[i].zots.length;
+            }
         }
         
-        // Update the display
-        zotsCounterElement.textContent = `Zots: ${totalZots}`;
-    }
-    
-    // Apply standard boundary constraints (non-membrane boundaries)
-    function applyBoundaryConstraints(particle) {
-        // Keep particles within boundaries
-        if (particle === orbie) {
-            // For Orbie, constrain to prevent going off screen
-            const padding = particle.size || 10;
-            if (particle.x < padding) particle.x = padding;
-            if (particle.x > width - padding) particle.x = width - padding;
-            if (particle.y < padding) particle.y = padding;
-            if (particle.y > height - padding) particle.y = height - padding;
-        } else {
-            // For other particles, wrap around screen edges (toroidal)
-            if (particle.x < 0) particle.x = width;
-            if (particle.x > width) particle.x = 0;
-            if (particle.y < 0) particle.y = height;
-            if (particle.y > height) particle.y = 0;
+        // Count background particles if they're considered zots
+        totalZots += backgroundParticles.length;
+        
+        // Update the counter display
+        if (zotsCounterDisplay) {
+            zotsCounterDisplay.textContent = `Zots: ${totalZots}`;
         }
     }
     
     // Initialize everything
-    function init(canvasElement, fpsElement) {
-        console.log("ParticleSystem.init called with:", canvasElement, fpsElement);
+    function init() {
+        // Load default settings from Presets
+        orbieSettings = JSON.parse(JSON.stringify(Presets.defaults.orbie));
         
-        // Store references to DOM elements
-        canvas = canvasElement;
-        fpsDisplay = fpsElement;
-        
-        // Get the drawing context
-        if (canvas) {
-            ctx = canvas.getContext('2d');
-            console.log("Canvas context obtained:", ctx ? "✓" : "✗");
-        } else {
-            console.error("Canvas element is null or undefined");
-            return false;
+        // Ensure glowOpacity has a default if it's missing from presets
+        if (orbieSettings.glowOpacity === undefined) {
+            orbieSettings.glowOpacity = 0.2;
         }
         
-        // Set up canvas with DPR handling
-        setupCanvas();
+        // Ensure glowColor has a default if it's missing
+        if (orbieSettings.glowColor === undefined) {
+            orbieSettings.glowColor = 'rgba(255, 215, 0, 0.6)';
+        }
         
-        // Initialize elements
-        initBackgroundParticles();
+        // Ensure enabled property is false by default
+        orbieSettings.enabled = false;
+        
+        orbieSwarmSettings = {...Presets.defaults.orbieSwarm};
+        forceSettings = {...Presets.defaults.forces};
+        
+        // Initialize canvas dimensions
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        
+        // Reset mouse position
+        touch.x = width / 2;
+        touch.y = height / 2;
+        
+        // Clear particles arrays
+        backgroundParticles = [];
+        zotSwarms = [];
+        
+        // Reset Orbie pulse effect phase
+        orbiePulsePhase = 0;
+        
+        // Initialize Orbie
         initOrbie();
         
-        console.log("Initialization complete, starting animation loop");
-        // Start the animation loop if not already running
-        if (!animationFrameId) {
-            lastTime = performance.now();
-            lastFpsUpdate = lastTime;
-            frameCount = 0;
-            
-            // Force first frame to draw
-            drawParticles();
-            // Start animation loop
-            animationFrameId = requestAnimationFrame(animate);
-            console.log("Animation loop started with ID:", animationFrameId);
-        }
+        console.log("Orbie initialized:", orbie, "Enabled:", orbieSettings.enabled);
         
-        return true;
+        // Create background particles
+        initBackgroundParticles();
+        
+        // Start animation
+        animationFrameId = requestAnimationFrame(animate);
     }
     
     // Public API - only expose necessary methods
     return {
         init: function(canvasElement, fpsElement) {
-            return init(canvasElement, fpsElement);
+            canvas = canvasElement;
+            ctx = canvas.getContext('2d', { alpha: false });
+            fpsDisplay = fpsElement;
+            zotsCounterDisplay = document.getElementById('zotsCounter');
+            
+            setupCanvas();
+            init();
         },
         
-        setTouchPosition: function(x, y, isActive) {
+        setTouchPosition: function(x, y, active) {
+            // Store the original touch values
             touch.x = x;
             touch.y = y;
-            touch.active = isActive;
+            touch.active = active;
+            
+            // Adjust touch position for ZotCentricMobility if enabled
+            if (typeof ZotCentricMobility !== 'undefined' && ZotCentricMobility.isEnabled() && active) {
+                // Convert screen position to world position for physics calculations
+                const worldPos = ZotCentricMobility.removeOffsetFromPoint({ x, y });
+                touch.worldX = worldPos.x;
+                touch.worldY = worldPos.y;
+            } else {
+                touch.worldX = x;
+                touch.worldY = y;
+            }
         },
         
         toggleAttraction: function() {
@@ -837,25 +1061,8 @@ const ParticleSystem = (function() {
         
         // Update settings (generic method)
         updateSettings: function(group, property, value) {
-            if (group === 'orbie') {
-                this.updateOrbieSettings(property, value);
-            } else if (group === 'orbieSwarm') {
-                this.updateOrbieSwarmSettings(property, value);
-            } else if (group === 'forces') {
+            if (group === 'forces' && property in forceSettings) {
                 forceSettings[property] = value;
-                console.log(`Updated Force ${property} to ${value}`);
-            } else if (group === 'zotSwarms') {
-                // Handle update to global zot swarm settings
-                if (property === 'showExteriorStroke') {
-                    zotSwarmSettings.showExteriorStroke = value;
-                    console.log(`Updated Zot Swarms exterior stroke to ${value ? 'enabled' : 'disabled'}`);
-                } else if (property === 'exteriorStrokeWidth') {
-                    zotSwarmSettings.exteriorStrokeWidth = value;
-                    console.log(`Updated Zot Swarms exterior stroke width to ${value}px`);
-                } else {
-                    zotSwarmSettings[property] = value;
-                    console.log(`Updated Zot Swarms ${property} to ${value}`);
-                }
             }
         },
         
@@ -953,9 +1160,41 @@ const ParticleSystem = (function() {
             return updateZotSwarm(swarmId, config);
         },
         
-        // Get current zot swarm settings
-        getZotSwarmSettings: function() {
-            return {...zotSwarmSettings};
+        // Animation override for external control
+        updateAnimation: function(timestamp) {
+            animate(timestamp);
+        },
+        
+        // Check if touch is currently active
+        isTouchActive: function() {
+            return touch.active;
+        },
+        
+        // Get the current touch position
+        getTouchPosition: function() {
+            return {
+                x: touch.x,
+                y: touch.y
+            };
+        },
+        
+        // Get positions of all zots for external systems
+        getZotPositions: function() {
+            const positions = [];
+            
+            // Collect positions from all swarms
+            zotSwarms.forEach(swarm => {
+                if (swarm && swarm.zots) {
+                    swarm.zots.forEach(zot => {
+                        positions.push({
+                            x: zot.x,
+                            y: zot.y
+                        });
+                    });
+                }
+            });
+            
+            return positions;
         }
     };
 })();

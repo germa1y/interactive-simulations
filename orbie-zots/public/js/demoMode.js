@@ -8,9 +8,10 @@ const DemoMode = (function() {
     
     // Cycling properties
     let cycleInterval = null;
-    let cycleIndex = 0;
+    let cycleIndex = -1; // Start at -1 so first increment goes to 0
     let isCycling = false;
     let touchDetected = false;
+    let isFirstLoop = true; // Track if we're in the first loop
     
     // Idle prompt properties
     let idleTimer = null;
@@ -27,7 +28,7 @@ const DemoMode = (function() {
         maxSize: 7.5,            // Maximum zot size
         circleRadius: 150,     // Fixed pixel value for swarm positioning (was 0.35 - a fraction of screen)
         cycleInterval: 10000,  // Cycle through presets every 10 seconds
-        idleTimeout: 5000     // Show prompt after 5 seconds of inactivity
+        idleTimeout: 2000     // Show prompt after 2 seconds of inactivity
     };
     
     // Preset configurations to cycle through
@@ -96,109 +97,60 @@ const DemoMode = (function() {
                 zotCount: 40
             })
         },
-        // Mix of 2 presets
-        {
-            name: "Dual Swarms",
-            configs: [
-                { presetName: 'atomic', zotCount: 100 },
-                { presetName: 'torrential', zotCount: 5 },
-            ]
-        },
-        // Mix of all presets
+        // Mix of multiple presets
         {
             name: "Mixed Swarms",
             configs: [
                 { presetName: 'fizzyPop', zotCount: 50 },
                 { presetName: 'bubble', zotCount: 50 },
                 { presetName: 'jellyOrbs', zotCount: 50 },
-                { presetName: 'atomic', zotCount: 300 },
                 { presetName: 'torrential', zotCount: 50 }
             ]
         }
     ];
     
+    // Store event handler references for cleanup
+    let keyboardNavHandler = null;
+    
     /**
      * Initialize and start the demo mode
      */
     function start() {
-        console.log("DemoMode.start() called");
+        if (isActive) return; // Prevent multiple starts
         
-        // Reset state
-        isActive = true;
-        currentStep = 0;
-        stepProgress = 0;
-        demoTime = 0;
+        console.log('Starting Zot Swarm Demo Mode');
         
-        // Clear existing interval if needed
-        if (demoInterval) {
-            clearInterval(demoInterval);
+        // Make sure we have access to particle system
+        if (!ParticleSystem || typeof ParticleSystem.createZotSwarm !== 'function') {
+            console.error('Demo Mode: ParticleSystem not available');
+            return;
         }
         
-        // First create our Orbie character
-        try {
-            // Make sure Orbie is visible and active
-            ParticleSystem.updateOrbieSettings('enabled', true);
-            console.log("Enabled Orbie");
-            
-            // Reset Orbie to center (this will also reset its trail)
-            ParticleSystem.resetOrbie();
-            console.log("Reset Orbie position");
-            
-            // Create first swarm right away
-            createRandomSwarm();
-            console.log("Created initial random swarm");
-            
-            // Set up demo loop to progress through steps
-            demoInterval = setInterval(updateDemo, 50); // Run at 20fps (50ms interval)
-            console.log("Started demo interval:", demoInterval);
-        } catch (error) {
-            console.error("Error starting demo mode:", error);
-        }
+        // Delay to ensure all systems are properly initialized
+        setTimeout(() => {
+            createDemoSwarms();
+            setupMenuButtonListeners();
+            setupTouchDetection();
+            setupKeyboardNavigation();
+            setupIdlePrompt();
+            isActive = true;
+        }, 500);
     }
     
-    // Create a random swarm with chosen settings
-    function createRandomSwarm() {
-        try {
-            console.log("Creating random swarm...");
-            
-            // Random position within view bounds but away from edges
-            const padding = 100;
-            const x = padding + Math.random() * (window.innerWidth - padding * 2);
-            const y = padding + Math.random() * (window.innerHeight - padding * 2);
-            
-            // Random preset choices
-            const preset = randomArrayItem(['random', 'murmuration', 'lavaLamp', 'bubble', 'jellyOrbs', 'cookingOil']);
-            const colorTheme = randomArrayItem(['rainbow', 'blue', 'green', 'fire', 'neon', 'gold']);
-            
-            // Random size and count
-            const minSize = 1.5 + Math.random() * 1.5;
-            const maxSize = minSize + 1 + Math.random() * 2;
-            const count = Math.floor(Math.random() * 30) + 20; // 20-50 zots
-            
-            // Create the swarm configuration
-            const config = {
-                centerX: x,
-                centerY: y,
-                presetName: preset,
-                colorTheme: colorTheme,
-                zotCount: count,
-                minSize: minSize,
-                maxSize: maxSize,
-                speed: 1 + Math.random() * 2, // 1-3 speed
-            };
-            
-            console.log("Creating swarm with config:", config);
-            
-            // Create the swarm
-            const swarmId = ParticleSystem.createZotSwarm(config);
-            console.log("Created swarm with ID:", swarmId);
-            
-            return swarmId;
-        } catch (error) {
-            console.error("Error creating random swarm:", error);
-            return null;
-        }
-    }
+    // Double tap detection variables
+    let lastTapTime = 0;
+    const doubleTapDelay = 300; // ms between taps to count as double tap
+    
+    // Track push/pull prompt state
+    let pushPullPromptElement = null;
+    let pushPullPromptActive = false;
+    
+    // Track swipe prompt state
+    let swipePromptElement = null;
+    let swipePromptActive = false;
+    let lastSwipeStart = null;
+    let lastSwipePosition = null;
+    let minSwipeDistance = 100; // Minimum distance to trigger swipe (px)
     
     /**
      * Set up touch detection to start the cycle
@@ -230,8 +182,95 @@ const DemoMode = (function() {
             }
         };
         
+        // Add double tap detection
+        const handleTap = function(e) {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTapTime;
+            
+            if (tapLength < doubleTapDelay && tapLength > 0) {
+                // Double tap detected
+                console.log('Demo Mode: Double tap detected');
+                
+                // Hide push/pull prompt if active
+                hidePushPullPrompt();
+                
+                // Restart cycling if it was stopped
+                if (!isCycling) {
+                    startCycling();
+                }
+                
+                e.preventDefault(); // Prevent default action
+            }
+            
+            lastTapTime = currentTime;
+        };
+
+        // Add swipe detection
+        const handleSwipeStart = function(e) {
+            if (swipePromptActive) {
+                lastSwipeStart = {
+                    x: e.type === 'touchstart' ? e.touches[0].clientX : e.clientX,
+                    y: e.type === 'touchstart' ? e.touches[0].clientY : e.clientY,
+                    time: new Date().getTime()
+                };
+                lastSwipePosition = lastSwipeStart;
+            }
+        };
+
+        const handleSwipeMove = function(e) {
+            if (swipePromptActive && lastSwipeStart) {
+                // Get current position
+                const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+                const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+                
+                // Update last position
+                lastSwipePosition = {
+                    x: currentX,
+                    y: currentY,
+                    time: new Date().getTime()
+                };
+                
+                // Calculate distance from start
+                const distance = Math.sqrt(
+                    Math.pow(currentX - lastSwipeStart.x, 2) + 
+                    Math.pow(currentY - lastSwipeStart.y, 2)
+                );
+                
+                // If distance is enough, trigger swipe completion
+                if (distance >= minSwipeDistance) {
+                    console.log(`Demo Mode: Swipe detected (${distance.toFixed(0)}px)`);
+                    hideSwipePrompt();
+                    startCycling(); // Resume cycling
+                    
+                    // Clear swipe tracking
+                    lastSwipeStart = null;
+                    lastSwipePosition = null;
+                    
+                    e.preventDefault();
+                }
+            }
+        };
+
+        const handleSwipeEnd = function(e) {
+            // Reset swipe tracking
+            lastSwipeStart = null;
+            lastSwipePosition = null;
+        };
+        
         canvas.addEventListener('touchstart', startCyclingOnFirstTouch);
         canvas.addEventListener('click', startCyclingOnFirstTouch);
+        
+        // Add double tap listener (always active)
+        canvas.addEventListener('touchstart', handleTap);
+        canvas.addEventListener('click', handleTap);
+        
+        // Add swipe listeners
+        canvas.addEventListener('touchstart', handleSwipeStart);
+        canvas.addEventListener('mousedown', handleSwipeStart);
+        canvas.addEventListener('touchmove', handleSwipeMove);
+        canvas.addEventListener('mousemove', handleSwipeMove);
+        canvas.addEventListener('touchend', handleSwipeEnd);
+        canvas.addEventListener('mouseup', handleSwipeEnd);
     }
     
     /**
@@ -529,8 +568,9 @@ const DemoMode = (function() {
      * Show the prompt text with animation
      */
     function showPromptText() {
-        if (!promptElement || !isActive || touchDetected || promptActive) return;
+        if (!promptElement || !isActive || touchDetected || promptActive || !isFirstLoop) return;
         
+        // Only show prompts during first loop
         console.log('Demo Mode: Showing touch prompt');
         
         // Animation controllers for cleanup
@@ -669,14 +709,21 @@ const DemoMode = (function() {
         if (isCycling) return;
         
         isCycling = true;
-        cycleIndex = -1; // Start at -1 so first increment goes to 0
         
-        // Cycle immediately to first preset
-        cycleToNextPreset();
+        // Only cycle if we haven't already (when resuming from paused state)
+        if (cycleIndex === -1) {
+            // Cycle immediately to first preset
+            cycleToNextPreset();
+        }
         
         // Set up interval to cycle through presets
         cycleInterval = setInterval(() => {
             cycleToNextPreset();
+            
+            // After a complete loop, mark it as no longer first loop
+            if (cycleIndex === 0) {
+                isFirstLoop = false;
+            }
         }, DEMO_CONFIG.cycleInterval);
     }
     
@@ -699,6 +746,20 @@ const DemoMode = (function() {
             const swarmConfig = presetCycle.configs[index % presetCycle.configs.length];
             updateSwarmParameters(swarmId, swarmConfig);
         });
+        
+        // Special behavior for different presets (only in first loop)
+        if (isFirstLoop) {
+            // Show special prompt for Mixed Swarms preset
+            if (presetCycle.name === "Mixed Swarms") {
+                stopCycling(); // Pause cycling
+                showPushPullPrompt(); // Show the special prompt
+            }
+            // Show special swipe prompt for Torrential preset
+            else if (presetCycle.name === "Torrential") {
+                stopCycling(); // Pause cycling
+                showSwipePrompt(); // Show the swipe prompt
+            }
+        }
     }
     
     /**
@@ -760,6 +821,272 @@ const DemoMode = (function() {
     }
     
     /**
+     * Show the Push/Pull double tap prompt
+     */
+    function showPushPullPrompt() {
+        if (pushPullPromptActive || !isFirstLoop) return;
+        
+        // Create container if it doesn't exist
+        if (!pushPullPromptElement) {
+            pushPullPromptElement = document.createElement('div');
+            pushPullPromptElement.id = 'pushPullPrompt';
+            
+            // Set styles for the container - match demoPrompt styling
+            Object.assign(pushPullPromptElement.style, {
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                color: 'white',
+                fontWeight: 'bold',
+                textAlign: 'center',
+                opacity: '0',
+                pointerEvents: 'none',
+                zIndex: '1000',
+                width: '80%' // Match the width of standard prompt
+            });
+            
+            document.body.appendChild(pushPullPromptElement);
+        }
+        
+        // Animation controllers for cleanup
+        let pulseAnimation = null;
+        
+        // Reset the prompt content
+        pushPullPromptElement.innerHTML = '';
+        
+        // Create single text element with all content
+        const textElement = document.createElement('div');
+        textElement.id = 'pushPullPromptText';
+        Object.assign(textElement.style, {
+            fontSize: '10vw', // Same size as standard prompt
+            textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5)',
+            opacity: '0',
+            transform: 'scale(2)', // Start larger
+            transition: 'opacity 1s, transform 1s ease-out',
+            lineHeight: '1.5'
+        });
+        
+        // Set content with colored Push/Pull text
+        textElement.innerHTML = 'Double Tap to<br><span style="color: #3498db;">Push</span>  /  <span style="color: #e67e22;">Pull</span>';
+        
+        // Add to the container
+        pushPullPromptElement.appendChild(textElement);
+        
+        // Display the prompt container
+        pushPullPromptElement.style.opacity = '0.5'; // 50% translucent like standard prompt
+        pushPullPromptActive = true;
+        
+        // Start pulse effect on the entire prompt
+        pulseAnimation = txtPulse(pushPullPromptElement, 0.25, 0.05);
+        
+        // Force reflow to ensure animation starts properly
+        textElement.offsetHeight;
+        
+        // Show text with zoom effect
+        textElement.style.opacity = '1';
+        textElement.style.transform = 'scale(1)'; // Zoom to normal size
+        
+        // Store animation controllers in the element for cleanup
+        pushPullPromptElement.animations = {
+            pulse: pulseAnimation
+        };
+        
+        console.log('Demo Mode: Showing Push/Pull prompt');
+    }
+    
+    /**
+     * Hide the Push/Pull prompt
+     */
+    function hidePushPullPrompt() {
+        if (!pushPullPromptActive || !pushPullPromptElement) return;
+        
+        // Stop all animations
+        if (pushPullPromptElement.animations) {
+            if (pushPullPromptElement.animations.pulse) pushPullPromptElement.animations.pulse.stop();
+            pushPullPromptElement.animations = null;
+        }
+        
+        pushPullPromptElement.style.opacity = '0';
+        pushPullPromptActive = false;
+        
+        // Clear content after fade out
+        setTimeout(() => {
+            if (!pushPullPromptActive && pushPullPromptElement) {
+                pushPullPromptElement.innerHTML = '';
+            }
+        }, 1000);
+        
+        console.log('Demo Mode: Hiding Push/Pull prompt');
+    }
+    
+    /**
+     * Show the swipe prompt for Torrential preset
+     */
+    function showSwipePrompt() {
+        if (swipePromptActive || !isFirstLoop) return;
+        
+        // Create container if it doesn't exist
+        if (!swipePromptElement) {
+            swipePromptElement = document.createElement('div');
+            swipePromptElement.id = 'swipePrompt';
+            
+            // Set styles for the container - match other prompt styling
+            Object.assign(swipePromptElement.style, {
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                color: 'white',
+                fontWeight: 'bold',
+                textAlign: 'center',
+                opacity: '0',
+                pointerEvents: 'none',
+                zIndex: '1000',
+                width: '80%' // Match the width of standard prompt
+            });
+            
+            document.body.appendChild(swipePromptElement);
+        }
+        
+        // Animation controllers for cleanup
+        let pulseAnimation = null;
+        let zoomAnimation = null;
+        
+        // Reset the prompt content
+        swipePromptElement.innerHTML = '';
+        
+        // Create text element with full content
+        const textElement = document.createElement('div');
+        textElement.id = 'swipePromptText';
+        Object.assign(textElement.style, {
+            fontSize: '10vw', // Same size as standard prompt
+            textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5)',
+            opacity: '0',
+            transform: 'scale(2)', // Start larger
+            transition: 'opacity 1s, transform 1s ease-out',
+            lineHeight: '1.5'
+        });
+        textElement.innerHTML = 'Gimme that<br>Good Swipe';
+        
+        // Add to the container
+        swipePromptElement.appendChild(textElement);
+        
+        // Display the prompt container
+        swipePromptElement.style.opacity = '0.5'; // 50% translucent like standard prompt
+        swipePromptActive = true;
+        
+        // Start pulse effect on the entire prompt
+        pulseAnimation = txtPulse(swipePromptElement, 0.25, 0.05);
+        
+        // Force reflow to ensure animation starts properly
+        textElement.offsetHeight;
+        
+        // Show text with zoom effect
+        textElement.style.opacity = '1';
+        textElement.style.transform = 'scale(1)'; // Zoom to normal size
+        
+        // Store animation controllers in the element for cleanup
+        swipePromptElement.animations = {
+            pulse: pulseAnimation
+        };
+        
+        console.log('Demo Mode: Showing swipe prompt');
+    }
+    
+    /**
+     * Hide the swipe prompt
+     */
+    function hideSwipePrompt() {
+        if (!swipePromptActive || !swipePromptElement) return;
+        
+        // Stop all animations
+        if (swipePromptElement.animations) {
+            if (swipePromptElement.animations.pulse) swipePromptElement.animations.pulse.stop();
+            swipePromptElement.animations = null;
+        }
+        
+        swipePromptElement.style.opacity = '0';
+        swipePromptActive = false;
+        
+        // Clear content after fade out
+        setTimeout(() => {
+            if (!swipePromptActive && swipePromptElement) {
+                swipePromptElement.innerHTML = '';
+            }
+        }, 1000);
+        
+        console.log('Demo Mode: Hiding swipe prompt');
+    }
+    
+    /**
+     * Set up keyboard navigation for cycling through presets
+     */
+    function setupKeyboardNavigation() {
+        // Keyboard handler function
+        keyboardNavHandler = function(e) {
+            if (!isActive) return;
+            
+            // Detect right arrow or ">" key
+            if (e.key === 'ArrowRight' || e.key === '>') {
+                console.log('Demo Mode: Next preset key detected');
+                goToNextPreset();
+                e.preventDefault();
+            }
+            // Detect left arrow or "<" key
+            else if (e.key === 'ArrowLeft' || e.key === '<') {
+                console.log('Demo Mode: Previous preset key detected');
+                goToPreviousPreset();
+                e.preventDefault();
+            }
+        };
+        
+        // Add event listener to document
+        document.addEventListener('keydown', keyboardNavHandler);
+    }
+    
+    /**
+     * Go to the next preset immediately
+     */
+    function goToNextPreset() {
+        // Pause cycling if it's active
+        const wasActive = isCycling;
+        if (wasActive) {
+            stopCycling();
+        }
+        
+        // Move to next preset
+        cycleToNextPreset();
+        
+        // Restart cycling if it was active
+        if (wasActive) {
+            startCycling();
+        }
+    }
+    
+    /**
+     * Go to the previous preset immediately
+     */
+    function goToPreviousPreset() {
+        // Pause cycling if it's active
+        const wasActive = isCycling;
+        if (wasActive) {
+            stopCycling();
+        }
+        
+        // Calculate previous index
+        cycleIndex = (cycleIndex - 2 + PRESET_CYCLES.length) % PRESET_CYCLES.length;
+        
+        // Move to previous preset
+        cycleToNextPreset();
+        
+        // Restart cycling if it was active
+        if (wasActive) {
+            startCycling();
+        }
+    }
+    
+    /**
      * End the demo mode by removing all swarms
      */
     function endDemoMode(event) {
@@ -790,6 +1117,12 @@ const DemoMode = (function() {
             menuToggle.removeEventListener('touchstart', endDemoMode, { capture: true });
         }
         
+        // Remove keyboard navigation
+        if (keyboardNavHandler) {
+            document.removeEventListener('keydown', keyboardNavHandler);
+            keyboardNavHandler = null;
+        }
+        
         // Remove all demo swarms
         if (demoSwarms.length > 0 && ParticleSystem && typeof ParticleSystem.removeZotSwarm === 'function') {
             demoSwarms.forEach(swarmId => {
@@ -802,18 +1135,201 @@ const DemoMode = (function() {
             demoSwarms = [];
         }
         
+        // Remove push/pull prompt if active
+        if (pushPullPromptElement) {
+            if (pushPullPromptElement.parentNode) {
+                pushPullPromptElement.parentNode.removeChild(pushPullPromptElement);
+            }
+            pushPullPromptElement = null;
+            pushPullPromptActive = false;
+        }
+        
+        // Remove swipe prompt if active
+        if (swipePromptElement) {
+            if (swipePromptElement.parentNode) {
+                swipePromptElement.parentNode.removeChild(swipePromptElement);
+            }
+            swipePromptElement = null;
+            swipePromptActive = false;
+        }
+        
         isActive = false;
         touchDetected = false;
+        isFirstLoop = true; // Reset for next start
         
         // Allow the event to continue propagating after we've cleaned up
         // (so the menu button still works normally)
+    }
+    
+    /**
+     * Create the demo swarms in a circular arrangement
+     */
+    function createDemoSwarms() {
+        // Get canvas dimensions
+        const canvas = document.getElementById('canvas');
+        if (!canvas) {
+            console.error('Demo Mode: Canvas not found');
+            return;
+        }
+        
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = DEMO_CONFIG.circleRadius; // Use fixed radius value directly
+        
+        // Determine number of swarms to create based on initial preset
+        const initialPreset = PRESET_CYCLES[0];
+        const swarmCount = Math.max(
+            DEMO_CONFIG.swarmCount,
+            Math.max(...PRESET_CYCLES.map(cycle => cycle.configs.length))
+        );
+        
+        // Create swarms in a circular pattern
+        for (let i = 0; i < swarmCount; i++) {
+            // Calculate position on circle
+            const angle = (i / swarmCount) * Math.PI * 2;
+            const x = centerX + Math.cos(angle) * radius;
+            const y = centerY + Math.sin(angle) * radius;
+            
+            // Configure the swarm with parameters from jellyOrbs preset
+            const preset = Presets.swarmPresets[DEMO_CONFIG.presetName] || {};
+            
+            // Configuration object for the swarm
+            const config = {
+                // Swarm preset behavior parameters
+                zotCount: DEMO_CONFIG.zotsPerSwarm,
+                speed: preset.speed || 3,
+                separation: preset.separation || 0.1,
+                alignment: preset.alignment || 0.1,
+                cohesion: preset.cohesion || 5,
+                perception: preset.perception || 100,
+                
+                // Position
+                centerX: x,
+                centerY: y,
+                
+                // Appearance
+                colorTheme: DEMO_CONFIG.colorTheme,
+                minSize: DEMO_CONFIG.minSize,
+                maxSize: DEMO_CONFIG.maxSize,
+                
+                // Name
+                name: `Demo Swarm ${i+1}`
+            };
+            
+            // Create the swarm
+            try {
+                const swarmId = ParticleSystem.createZotSwarm(config);
+                if (swarmId) {
+                    demoSwarms.push(swarmId);
+                    console.log(`Demo Mode: Created swarm ${swarmId} at (${x.toFixed(0)}, ${y.toFixed(0)})`);
+                }
+            } catch (error) {
+                console.error('Demo Mode: Error creating swarm:', error);
+            }
+        }
+        
+        console.log(`Demo Mode: Created ${demoSwarms.length} swarms`);
+    }
+    
+    /**
+     * Detect second touch to spawn remaining swarms
+     */
+    const detectSecondTouch = function(e) {
+        if (!isActive || secondTouchDetected) return;
+        
+        // Get touch coordinates
+        if (e.type === 'touchstart') {
+            secondTouchX = e.touches[0].clientX;
+            secondTouchY = e.touches[0].clientY;
+        } else {
+            secondTouchX = e.clientX;
+            secondTouchY = e.clientY;
+        }
+        
+        secondTouchDetected = true;
+        console.log(`Demo Mode: Second touch detected at (${secondTouchX}, ${secondTouchY}), spawning remaining swarms`);
+        
+        // Create remaining swarms
+        createRemainingSwarms();
+        
+        // Play demo intro audio
+        playDemoAudio();
+        
+        // Enable music button if MusicController is available
+        if (typeof MusicController !== 'undefined' && MusicController.enableButton) {
+            MusicController.enableButton();
+        }
+        
+        // Remove second touch listener
+        canvas.removeEventListener('touchstart', detectSecondTouch);
+        canvas.removeEventListener('click', detectSecondTouch);
+    };
+    
+    /**
+     * Stop any playing demo audio
+     */
+    function stopAudio() {
+        if (demoAudio) {
+            demoAudio.pause();
+            demoAudio = null;
+            console.log('Demo Mode: Stopped demo audio');
+        }
+    }
+    
+    /**
+     * Toggle pause/play state of demo audio
+     * @returns {boolean} true if audio is now playing, false if paused
+     */
+    function togglePauseAudio() {
+        if (!demoAudio) return false;
+        
+        if (demoAudio.paused) {
+            // Resume playback
+            demoAudio.play().catch(err => {
+                console.error('Demo Mode: Error resuming audio:', err);
+            });
+            console.log('Demo Mode: Resumed demo audio');
+            return true;
+        } else {
+            // Pause playback
+            demoAudio.pause();
+            console.log('Demo Mode: Paused demo audio');
+            return false;
+        }
+    }
+    
+    /**
+     * Resume audio playback if it's paused
+     * @returns {boolean} true if successfully resumed, false otherwise
+     */
+    function resumeAudio() {
+        if (!demoAudio || !demoAudio.paused) return false;
+        
+        demoAudio.play().catch(err => {
+            console.error('Demo Mode: Error resuming audio:', err);
+            return false;
+        });
+        console.log('Demo Mode: Resumed demo audio');
+        return true;
+    }
+    
+    /**
+     * Check if demo audio is currently playing
+     */
+    function isAudioPlaying() {
+        return demoAudio !== null && !demoAudio.paused;
     }
     
     // Public API
     return {
         start: start,
         end: endDemoMode,
-        isActive: function() { return isActive; }
+        isActive: function() { return isActive; },
+        isSecondTouchDetected: function() { return secondTouchDetected; },
+        stopAudio: stopAudio,
+        togglePauseAudio: togglePauseAudio,
+        resumeAudio: resumeAudio,
+        isAudioPlaying: isAudioPlaying
     };
 })();
 

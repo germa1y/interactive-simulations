@@ -24,6 +24,13 @@
     </button>
     <button id="menuToggle">≡</button>
     
+    <!-- Music Button -->
+    <button id="musicButton">
+        <svg width="24" height="24" viewBox="0 0 24 24">
+            <path d="M12 3l0.01 10.55c-0.59-0.34-1.27-0.55-2-0.55c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3H12z" fill="white"/>
+        </svg>
+    </button>
+    
     <!-- Controls Panel -->
     <div id="controls" class="controls collapsed">
         <h1>Orbie Zot Parameters</h1>
@@ -436,6 +443,40 @@
     <div id="fps" class="fps">FPS: 0</div>
     <div id="zotsCounter" class="fps" style="left: 0.6rem; right: auto;">Zots: 0</div>
     
+    <!-- Main Application Bundle -->
     <script src="dist/bundle.js"></script>
+    
+    <!-- Music Controller -->
+    <script src="js/musicController.js"></script>
+    <script>
+        // Initialize on window load
+        window.addEventListener('load', function() {
+            console.log('Window loaded - initializing components');
+            
+            // Initialize home button
+            const homeButton = document.getElementById('homeButton');
+            if (homeButton) {
+                homeButton.addEventListener('click', function() {
+                    window.location.href = '/';
+                });
+                
+                // Show home button if not on main page
+                if (window.location.pathname !== '/') {
+                    homeButton.classList.add('visible');
+                }
+            }
+            
+            // Explicitly initialize music controller
+            if (typeof MusicController !== 'undefined' && MusicController.init) {
+                console.log('Explicitly initializing Music Controller');
+                MusicController.init();
+            }
+            
+            // Start in demo mode if it hasn't already been started
+            if (typeof DemoMode !== 'undefined' && !DemoMode.isActive()) {
+                DemoMode.start();
+            }
+        });
+    </script>
 </body>
 </html>

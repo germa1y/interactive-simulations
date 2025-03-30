@@ -1,8 +1,52 @@
 /**
  * Orbie Zots - Particle Swarm Simulation
  * Copyright (c) 2025
- * Built: 2025-03-29T15:28:49.385Z
+ * Built: 2025-03-30T18:44:04.568Z
  */
+
+// config.js - Environment-specific configuration
+const Config = (function() {
+    // Environment detection
+    const isLocal = window.location.hostname === 'localhost' || 
+                   window.location.hostname === '127.0.0.1' ||
+                   window.location.hostname === '';
+
+    // Audio paths
+    const audioPaths = {
+        demoIntro: isLocal 
+            ? 'D:\\.apps\\interactive-simulations\\orbie-zots\\src\\music\\DemoIntro.mp3'
+            : '/music/DemoIntro.mp3',
+        demoPulse: isLocal
+            ? 'D:\\.apps\\interactive-simulations\\orbie-zots\\src\\music\\DemoPulse.mp3'
+            : '/music/DemoPulse.mp3',
+        demoOrchestra: isLocal
+            ? 'D:\\.apps\\interactive-simulations\\orbie-zots\\src\\music\\DemoOrchestra.mp3'
+            : '/music/DemoOrchestra.mp3',
+        demoDubstep: isLocal
+            ? 'D:\\.apps\\interactive-simulations\\orbie-zots\\src\\music\\DemoDubstep.mp3'
+            : '/music/DemoDubstep.mp3',
+        demoGlassandi: isLocal
+            ? 'D:\\.apps\\interactive-simulations\\orbie-zots\\src\\music\\DemoGlassandi.mp3'
+            : '/music/DemoGlassandi.mp3'
+    };
+
+    // Public API
+    return {
+        getAudioPath: function(key) {
+            return audioPaths[key];
+        },
+        isLocal: isLocal,
+        // Get all demo song keys except intro
+        getDemoSongKeys: function() {
+            return Object.keys(audioPaths).filter(key => key !== 'demoIntro');
+        }
+    };
+})();
+
+// Export for module system
+if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+    module.exports = Config;
+} 
 
 // colors.js - Color themes and generators for particles
 const ColorThemes = (function() {
@@ -3513,11 +3557,17 @@ const DemoMode = (function() {
     // Store created swarms for cleanup
     let demoSwarms = [];
     
+    // Audio elements and state
+    let demoAudio = null;
+    let currentSongIndex = -1;
+    let shuffledSongKeys = [];
+    
     // Cycling properties
     let cycleInterval = null;
     let cycleIndex = -1; // Start at -1 so first increment goes to 0
     let isCycling = false;
     let touchDetected = false;
+    let secondTouchDetected = false; // Track if second touch has been detected
     let isFirstLoop = true; // Track if we're in the first loop
     
     // Idle prompt properties
@@ -3556,20 +3606,20 @@ const DemoMode = (function() {
                 zotCount: 40
             })
         },
-        // Torrential, Blue
-        {
-            name: "Torrential",
-            configs: Array(6).fill({
-                presetName: 'torrential',
-                zotCount: 40
-            })
-        },
         // Cooking Oil, Gold
         {
             name: "Cooking Oil",
             configs: Array(6).fill({
                 presetName: 'cookingOil',
                 zotCount: 50
+            })
+        },
+        // Torrential, Blue
+        {
+            name: "Torrential",
+            configs: Array(6).fill({
+                presetName: 'torrential',
+                zotCount: 40
             })
         },
         // Bird Flock (murmuration), Rainbow, zotCount=150
@@ -3619,6 +3669,10 @@ const DemoMode = (function() {
     // Store event handler references for cleanup
     let keyboardNavHandler = null;
     
+    // Track touch location for swarm creation
+    let secondTouchX = null;
+    let secondTouchY = null;
+    
     /**
      * Initialize and start the demo mode
      */
@@ -3635,7 +3689,7 @@ const DemoMode = (function() {
         
         // Delay to ensure all systems are properly initialized
         setTimeout(() => {
-            createDemoSwarms();
+            createInitialSwarm(); // Create only one swarm initially
             setupMenuButtonListeners();
             setupTouchDetection();
             setupKeyboardNavigation();
@@ -3681,12 +3735,44 @@ const DemoMode = (function() {
                 touchDetected = true;
                 startCycling();
                 
-                // Remove event listeners once triggered
-                canvas.removeEventListener('touchstart', startCyclingOnFirstTouch);
-                canvas.removeEventListener('click', startCyclingOnFirstTouch);
+                // Add second touch detection
+                canvas.addEventListener('touchstart', detectSecondTouch);
+                canvas.addEventListener('click', detectSecondTouch);
                 
                 console.log('Demo Mode: First touch detected, started cycling');
             }
+        };
+        
+        // Detect second touch to spawn remaining swarms
+        const detectSecondTouch = function(e) {
+            if (!isActive || secondTouchDetected) return;
+            
+            // Get touch coordinates
+            if (e.type === 'touchstart') {
+                secondTouchX = e.touches[0].clientX;
+                secondTouchY = e.touches[0].clientY;
+            } else {
+                secondTouchX = e.clientX;
+                secondTouchY = e.clientY;
+            }
+            
+            secondTouchDetected = true;
+            console.log(`Demo Mode: Second touch detected at (${secondTouchX}, ${secondTouchY}), spawning remaining swarms`);
+            
+            // Create remaining swarms
+            createRemainingSwarms();
+            
+            // Play demo intro audio
+            playDemoAudio();
+            
+            // Enable music button if MusicController is available
+            if (typeof MusicController !== 'undefined' && MusicController.enableButton) {
+                MusicController.enableButton();
+            }
+            
+            // Remove second touch listener
+            canvas.removeEventListener('touchstart', detectSecondTouch);
+            canvas.removeEventListener('click', detectSecondTouch);
         };
         
         // Add double tap detection
@@ -4083,7 +4169,6 @@ const DemoMode = (function() {
         // Animation controllers for cleanup
         let pulseAnimation = null;
         let zoomAnimation = null;
-        let rippleAnimation = null;
         
         // Reset the prompt content
         promptElement.innerHTML = '';
@@ -4136,51 +4221,17 @@ const DemoMode = (function() {
         setTimeout(() => {
             if (!promptActive) return; // Stop if no longer active
             
-            // Add the "T-T-T-Touch Me" text
-            secondPart.textContent = 'Touch \'em';
+            // Add the text
+            secondPart.innerHTML = 'Give it a little<br>Pokie-Poke';
             
             // Apply zoom fade-in to second part
-            zoomAnimation = txtZoomFadeIn(secondPart, 2, 1, 1000, () => {
-                // Only after the zoom-in is complete, start the ripple effect
-                // Get all characters for the ripple effect
-                secondPart.innerHTML = ''; // Clear for individual chars
-                
-                // Content for the second part with hyphens
-                const text = 'Touch \'em';
-                
-                // Animation variables
-                let letterIndex = 0;
-                
-                // Create span elements for each character
-                for (let i = 0; i < text.length; i++) {
-                    const charSpan = document.createElement('span');
-                    
-                    // Special handling for spaces to prevent trimming
-                    if (text[i] === ' ') {
-                        charSpan.innerHTML = '&nbsp;';
-                        charSpan.style.width = '0.5em';
-                    } else {
-                        charSpan.textContent = text[i];
-                    }
-                    
-                    charSpan.style.opacity = '1'; // Make visible immediately since we already faded in
-                    charSpan.style.display = 'inline-block';
-                    charSpan.style.position = 'relative';
-                    charSpan.style.transition = 'transform 0.1s ease-out';
-                    secondPart.appendChild(charSpan);
-                }
-                
-                // Start the ripple effect immediately
-                const chars = secondPart.querySelectorAll('span');
-                rippleAnimation = txtRipple(chars);
-            });
+            zoomAnimation = txtZoomFadeIn(secondPart, 2, 1, 1000);
         }, 1500); // Wait 1.5s for first part to finish its animation
         
         // Store animation controllers in the element for cleanup
         promptElement.animations = {
             pulse: pulseAnimation,
-            zoom: zoomAnimation,
-            ripple: rippleAnimation
+            zoom: zoomAnimation
         };
     }
     
@@ -4194,7 +4245,6 @@ const DemoMode = (function() {
         if (promptElement.animations) {
             if (promptElement.animations.pulse) promptElement.animations.pulse.stop();
             if (promptElement.animations.zoom) promptElement.animations.zoom.stop();
-            if (promptElement.animations.ripple) promptElement.animations.ripple.stop();
             promptElement.animations = null;
         }
         
@@ -4243,6 +4293,11 @@ const DemoMode = (function() {
             return;
         }
         
+        // Don't cycle if we're showing a prompt
+        if (pushPullPromptActive || swipePromptActive) {
+            return;
+        }
+        
         cycleIndex = (cycleIndex + 1) % PRESET_CYCLES.length;
         const presetCycle = PRESET_CYCLES[cycleIndex];
         
@@ -4256,8 +4311,8 @@ const DemoMode = (function() {
         
         // Special behavior for different presets (only in first loop)
         if (isFirstLoop) {
-            // Show special prompt for Mixed Swarms preset
-            if (presetCycle.name === "Mixed Swarms") {
+            // Show special prompt for Atomic preset
+            if (presetCycle.name === "Atomic") {
                 stopCycling(); // Pause cycling
                 showPushPullPrompt(); // Show the special prompt
             }
@@ -4280,7 +4335,7 @@ const DemoMode = (function() {
             // Create update config with behavior parameters
             const updateConfig = {
                 zotCount: config.zotCount || DEMO_CONFIG.zotsPerSwarm,
-                speed: preset.speed !== undefined ? preset.speed : 3,
+                speed: preset.speed !== undefined ? preset.speed : 4,
                 separation: preset.separation !== undefined ? preset.separation : 0.1,
                 alignment: preset.alignment !== undefined ? preset.alignment : 0.1,
                 cohesion: preset.cohesion !== undefined ? preset.cohesion : 5,
@@ -4333,6 +4388,12 @@ const DemoMode = (function() {
     function showPushPullPrompt() {
         if (pushPullPromptActive || !isFirstLoop) return;
         
+        // Pause the idle timer
+        if (idleTimer) {
+            clearTimeout(idleTimer);
+            idleTimer = null;
+        }
+        
         // Create container if it doesn't exist
         if (!pushPullPromptElement) {
             pushPullPromptElement = document.createElement('div');
@@ -4375,7 +4436,7 @@ const DemoMode = (function() {
         });
         
         // Set content with colored Push/Pull text
-        textElement.innerHTML = 'Double Tap to<br><span style="color: #3498db;">Push</span>  /  <span style="color: #e67e22;">Pull</span>';
+        textElement.innerHTML = 'Double Tap to<br><span style="color: #e67e22;">Push</span>  /  <span style="color: #3498db;">Pull</span>';
         
         // Add to the container
         pushPullPromptElement.appendChild(textElement);
@@ -4604,6 +4665,12 @@ const DemoMode = (function() {
         // Stop cycling
         stopCycling();
         
+        // Stop and cleanup audio
+        if (demoAudio) {
+            demoAudio.pause();
+            demoAudio = null;
+        }
+        
         // Clear idle timer if active
         if (idleTimer) {
             clearTimeout(idleTimer);
@@ -4662,6 +4729,7 @@ const DemoMode = (function() {
         
         isActive = false;
         touchDetected = false;
+        secondTouchDetected = false; // Reset second touch detection
         isFirstLoop = true; // Reset for next start
         
         // Allow the event to continue propagating after we've cleaned up
@@ -4669,9 +4737,9 @@ const DemoMode = (function() {
     }
     
     /**
-     * Create the demo swarms in a circular arrangement
+     * Create the initial single jellyorb swarm
      */
-    function createDemoSwarms() {
+    function createInitialSwarm() {
         // Get canvas dimensions
         const canvas = document.getElementById('canvas');
         if (!canvas) {
@@ -4681,19 +4749,68 @@ const DemoMode = (function() {
         
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
+        
+        // Configure the swarm with parameters from jellyOrbs preset
+        const preset = Presets.swarmPresets[DEMO_CONFIG.presetName] || {};
+        
+        // Configuration object for the swarm
+        const config = {
+            // Swarm preset behavior parameters
+            zotCount: DEMO_CONFIG.zotsPerSwarm,
+            speed: preset.speed || 4,
+            separation: preset.separation || 0.1,
+            alignment: preset.alignment || 0.1,
+            cohesion: preset.cohesion || 5,
+            perception: preset.perception || 100,
+            
+            // Position - center of canvas
+            centerX: centerX,
+            centerY: centerY,
+            
+            // Appearance
+            colorTheme: DEMO_CONFIG.colorTheme,
+            minSize: DEMO_CONFIG.minSize,
+            maxSize: DEMO_CONFIG.maxSize,
+            
+            // Name
+            name: `Demo Swarm 1`
+        };
+        
+        // Create the swarm
+        try {
+            const swarmId = ParticleSystem.createZotSwarm(config);
+            if (swarmId) {
+                demoSwarms.push(swarmId);
+                console.log(`Demo Mode: Created initial swarm ${swarmId} at center (${centerX.toFixed(0)}, ${centerY.toFixed(0)})`);
+            }
+        } catch (error) {
+            console.error('Demo Mode: Error creating initial swarm:', error);
+        }
+    }
+    
+    /**
+     * Create the remaining 7 swarms in a circular arrangement centered around the second touch location
+     */
+    function createRemainingSwarms() {
+        // Get canvas dimensions
+        const canvas = document.getElementById('canvas');
+        if (!canvas) {
+            console.error('Demo Mode: Canvas not found');
+            return;
+        }
+        
+        // Use the second touch location as the center
+        const centerX = secondTouchX !== null ? secondTouchX : canvas.width / 2;
+        const centerY = secondTouchY !== null ? secondTouchY : canvas.height / 2;
         const radius = DEMO_CONFIG.circleRadius; // Use fixed radius value directly
         
-        // Determine number of swarms to create based on initial preset
-        const initialPreset = PRESET_CYCLES[0];
-        const swarmCount = Math.max(
-            DEMO_CONFIG.swarmCount,
-            Math.max(...PRESET_CYCLES.map(cycle => cycle.configs.length))
-        );
+        // Determine number of swarms to create
+        const swarmCount = DEMO_CONFIG.swarmCount - 1; // -1 because we already created one
         
         // Create swarms in a circular pattern
         for (let i = 0; i < swarmCount; i++) {
-            // Calculate position on circle
-            const angle = (i / swarmCount) * Math.PI * 2;
+            // Calculate position on circle with even distribution
+            const angle = (i / swarmCount) * Math.PI * 2; // Evenly distribute swarms
             const x = centerX + Math.cos(angle) * radius;
             const y = centerY + Math.sin(angle) * radius;
             
@@ -4704,7 +4821,7 @@ const DemoMode = (function() {
             const config = {
                 // Swarm preset behavior parameters
                 zotCount: DEMO_CONFIG.zotsPerSwarm,
-                speed: preset.speed || 3,
+                speed: preset.speed || 4,
                 separation: preset.separation || 0.1,
                 alignment: preset.alignment || 0.1,
                 cohesion: preset.cohesion || 5,
@@ -4720,7 +4837,7 @@ const DemoMode = (function() {
                 maxSize: DEMO_CONFIG.maxSize,
                 
                 // Name
-                name: `Demo Swarm ${i+1}`
+                name: `Demo Swarm ${i+2}` // Start numbering from 2
             };
             
             // Create the swarm
@@ -4728,21 +4845,182 @@ const DemoMode = (function() {
                 const swarmId = ParticleSystem.createZotSwarm(config);
                 if (swarmId) {
                     demoSwarms.push(swarmId);
-                    console.log(`Demo Mode: Created swarm ${swarmId} at (${x.toFixed(0)}, ${y.toFixed(0)})`);
+                    console.log(`Demo Mode: Created additional swarm ${swarmId} at (${x.toFixed(0)}, ${y.toFixed(0)})`);
                 }
             } catch (error) {
-                console.error('Demo Mode: Error creating swarm:', error);
+                console.error('Demo Mode: Error creating additional swarm:', error);
             }
         }
         
-        console.log(`Demo Mode: Created ${demoSwarms.length} swarms`);
+        console.log(`Demo Mode: Created ${swarmCount} additional swarms, total: ${demoSwarms.length}`);
+    }
+    
+    /**
+     * Shuffle an array using Fisher-Yates algorithm
+     * @param {Array} array The array to shuffle
+     * @returns {Array} A new shuffled array
+     */
+    function shuffleArray(array) {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    }
+
+    /**
+     * Randomize and prepare the song playlist
+     */
+    function randomizeSongs() {
+        // Get all demo song keys except intro
+        const songKeys = Config.getDemoSongKeys();
+        shuffledSongKeys = shuffleArray(songKeys);
+        currentSongIndex = -1; // Will be incremented to 0 on first play
+        console.log('Demo Mode: Randomized song playlist:', shuffledSongKeys);
+    }
+
+    /**
+     * Play the next song in the shuffled playlist
+     */
+    function playNextSong() {
+        currentSongIndex = (currentSongIndex + 1) % shuffledSongKeys.length;
+        const nextSongKey = shuffledSongKeys[currentSongIndex];
+        
+        // Create new audio element
+        if (demoAudio) {
+            demoAudio.pause();
+        }
+        demoAudio = new Audio();
+        demoAudio.src = Config.getAudioPath(nextSongKey);
+        
+        // Set up ended event for continuous playback
+        demoAudio.onended = playNextSong;
+        
+        // Add error handling
+        demoAudio.onerror = function(err) {
+            console.error(`Demo Mode: Error loading audio ${nextSongKey}:`, err);
+            demoAudio = null;
+            // Try to play next song on error
+            setTimeout(playNextSong, 1000);
+        };
+        
+        // Play the audio
+        demoAudio.play().catch(err => {
+            console.error(`Demo Mode: Error playing audio ${nextSongKey}:`, err);
+            // Try to play next song on error
+            setTimeout(playNextSong, 1000);
+        });
+        
+        console.log(`Demo Mode: Playing song ${currentSongIndex + 1}/${shuffledSongKeys.length}: ${nextSongKey}`);
+    }
+
+    /**
+     * Play the demo intro audio
+     */
+    function playDemoAudio() {
+        try {
+            // Create audio element if it doesn't exist
+            if (!demoAudio) {
+                demoAudio = new Audio();
+                demoAudio.src = Config.getAudioPath('demoIntro');
+                
+                // Set up ended event to start random playlist
+                demoAudio.onended = function() {
+                    randomizeSongs();
+                    playNextSong();
+                };
+                
+                // Add error handling
+                demoAudio.onerror = function(err) {
+                    console.error('Demo Mode: Error loading intro audio:', err);
+                    demoAudio = null;
+                    // Start random playlist immediately on error
+                    randomizeSongs();
+                    playNextSong();
+                };
+            }
+            
+            // Play the audio
+            demoAudio.play().catch(err => {
+                console.error('Demo Mode: Error playing intro audio:', err);
+                // Start random playlist immediately on error
+                randomizeSongs();
+                playNextSong();
+            });
+        } catch (err) {
+            console.error('Demo Mode: Error setting up audio:', err);
+            // Start random playlist immediately on error
+            randomizeSongs();
+            playNextSong();
+        }
+    }
+    
+    /**
+     * Stop any playing demo audio
+     */
+    function stopAudio() {
+        if (demoAudio) {
+            demoAudio.pause();
+            demoAudio = null;
+            console.log('Demo Mode: Stopped demo audio');
+        }
+    }
+    
+    /**
+     * Toggle pause/play state of demo audio
+     * @returns {boolean} true if audio is now playing, false if paused
+     */
+    function togglePauseAudio() {
+        if (!demoAudio) return false;
+        
+        if (demoAudio.paused) {
+            // Resume playback
+            demoAudio.play().catch(err => {
+                console.error('Demo Mode: Error resuming audio:', err);
+            });
+            console.log('Demo Mode: Resumed demo audio');
+            return true;
+        } else {
+            // Pause playback
+            demoAudio.pause();
+            console.log('Demo Mode: Paused demo audio');
+            return false;
+        }
+    }
+    
+    /**
+     * Resume audio playback if it's paused
+     * @returns {boolean} true if successfully resumed, false otherwise
+     */
+    function resumeAudio() {
+        if (!demoAudio || !demoAudio.paused) return false;
+        
+        demoAudio.play().catch(err => {
+            console.error('Demo Mode: Error resuming audio:', err);
+            return false;
+        });
+        console.log('Demo Mode: Resumed demo audio');
+        return true;
+    }
+    
+    /**
+     * Check if demo audio is currently playing
+     */
+    function isAudioPlaying() {
+        return demoAudio !== null && !demoAudio.paused;
     }
     
     // Public API
     return {
         start: start,
         end: endDemoMode,
-        isActive: function() { return isActive; }
+        isActive: function() { return isActive; },
+        isSecondTouchDetected: function() { return secondTouchDetected; },
+        stopAudio: stopAudio,
+        togglePauseAudio: togglePauseAudio,
+        resumeAudio: resumeAudio,
+        isAudioPlaying: isAudioPlaying
     };
 })();
 
@@ -5402,16 +5680,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Update displayed values
                     // HIDDEN: All slider values are hidden to protect IP
-                    /*
+                    
                     document.getElementById('newSwarmZotCountValue').textContent = randomConfig.zotCount;
-                    document.getElementById('newSwarmSpeedValue').textContent = randomConfig.speed.toFixed(1);
-                    document.getElementById('newSwarmSeparationValue').textContent = randomConfig.separation.toFixed(1);
-                    document.getElementById('newSwarmAlignmentValue').textContent = randomConfig.alignment.toFixed(2);
-                    document.getElementById('newSwarmCohesionValue').textContent = randomConfig.cohesion.toFixed(1);
-                    document.getElementById('newSwarmPerceptionValue').textContent = randomConfig.perception;
                     document.getElementById('newSwarmMinSizeValue').textContent = minSize.toFixed(1);
                     document.getElementById('newSwarmMaxSizeValue').textContent = maxSize.toFixed(1);
-                    */
                     
                     // Also update the dual slider visuals
                     updateDualSliderVisuals('newSwarmMinSize', 'newSwarmMaxSize');
@@ -5434,15 +5706,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Update displayed values, keeping the current zot count
                     // HIDDEN: All slider values are hidden to protect IP
-                    /*
+                    
                     document.getElementById('newSwarmZotCountValue').textContent = currentZotCount;
-                    document.getElementById('newSwarmSpeedValue').textContent = preset.speed.toFixed(1);
-                    document.getElementById('newSwarmSeparationValue').textContent = preset.separation.toFixed(1);
-                    document.getElementById('newSwarmAlignmentValue').textContent = preset.alignment.toFixed(2);
-                    document.getElementById('newSwarmCohesionValue').textContent = preset.cohesion.toFixed(1);
-                    document.getElementById('newSwarmPerceptionValue').textContent = preset.perception;
-                    */
-
+                    
+                    // Also update min/max size if present in preset
+                    if (preset.minSize !== undefined && preset.maxSize !== undefined) {
+                        document.getElementById('newSwarmMinSize').value = preset.minSize;
+                        document.getElementById('newSwarmMaxSize').value = preset.maxSize;
+                        document.getElementById('newSwarmMinSizeValue').textContent = preset.minSize.toFixed(1);
+                        document.getElementById('newSwarmMaxSizeValue').textContent = preset.maxSize.toFixed(1);
+                        
+                        // Update the dual slider visuals
+                        updateDualSliderVisuals('newSwarmMinSize', 'newSwarmMaxSize');
+                    }
+                    
                     // Update color theme selector
                     if (preset.colorTheme) {
                         const colorPresets = document.querySelectorAll('.color-preset');
@@ -5687,13 +5964,13 @@ document.addEventListener('DOMContentLoaded', function() {
                              input.step.includes('.01') ? 2 : 1;
             
             // HIDDEN: All slider values are hidden to protect IP
-            // valueDisplay.textContent = parseFloat(input.value).toFixed(precision);
+            valueDisplay.textContent = parseFloat(input.value).toFixed(precision);
             
             // Add event listeners for input changes
             input.addEventListener('input', function() {
                 const value = parseFloat(this.value);
                 // HIDDEN: All slider values are hidden to protect IP
-                // valueDisplay.textContent = value.toFixed(precision);
+                valueDisplay.textContent = value.toFixed(precision);
                 
                 // Call the callback with the new value
                 if (changeCallback) {
@@ -5711,14 +5988,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const maxValueDisplay = document.getElementById(maxId + 'Value');
         
         if (minSlider && maxSlider && minValueDisplay && maxValueDisplay) {
+            // Set initial values display
+            const minVal = parseFloat(minSlider.value);
+            const maxVal = parseFloat(maxSlider.value);
+            minValueDisplay.textContent = minVal.toFixed(1);
+            maxValueDisplay.textContent = maxVal.toFixed(1);
+            
             // Update values displays
             function updateValues() {
                 const minVal = parseFloat(minSlider.value);
                 const maxVal = parseFloat(maxSlider.value);
                 
                 // HIDDEN: All slider values are hidden to protect IP
-                // minValueDisplay.textContent = minVal.toFixed(1);
-                // maxValueDisplay.textContent = maxVal.toFixed(1);
+                minValueDisplay.textContent = minVal.toFixed(1);
+                maxValueDisplay.textContent = maxVal.toFixed(1);
                 
                 // Ensure thumb positions are visually reflecting the values
                 updateThumbPositions();
