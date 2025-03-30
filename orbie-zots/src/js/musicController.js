@@ -139,7 +139,7 @@ const MusicController = (function() {
      */
     function setDisabledState() {
         if (musicButton) {
-            musicButton.style.backgroundColor = 'rgba(100, 100, 100, 0.5)'; // Lighter gray when disabled
+            musicButton.style.backgroundColor = 'rgba(100, 100, 100, 0.75)'; // Lighter gray when disabled
             musicButton.style.cursor = 'not-allowed';
             
             // Make the SVG icon 50% opaque
@@ -176,7 +176,7 @@ const MusicController = (function() {
             zIndex: '2000',
             bottom: '2.6rem',
             left: '0.6rem',
-            backgroundColor: 'rgba(100, 100, 100, 0.5)', // Start with disabled color
+            backgroundColor: 'rgba(100, 100, 100, 0.75)', // Start with disabled color
             color: 'white',
             border: 'none',
             borderRadius: '50%',
@@ -582,9 +582,9 @@ const MusicController = (function() {
             
             // Update background color based on play state
             if (isPlaying) {
-                musicButton.style.backgroundColor = 'rgba(76, 175, 80, 0.9)'; // Green when active
+                musicButton.style.backgroundColor = 'rgba(76, 175, 80, 0.75)'; // Green when active
             } else {
-                musicButton.style.backgroundColor = 'rgba(40, 40, 40, 0.9)'; // Gray when inactive
+                musicButton.style.backgroundColor = 'rgba(40, 40, 40, 0.75)'; // Gray when inactive
             }
         }
     }
