@@ -1630,7 +1630,7 @@ const DemoMode = (function() {
     
     /**
      * Stop any playing demo audio with fade out effect
-     * @param {number} fadeOutDuration - Fade out duration in ms (default 1500ms)
+     * @param {number} fadeOutDuration - Fade out duration in ms (default 800ms)
      */
     function stopAudio(fadeOutDuration = 800) {
         if (!demoAudio) {
@@ -1640,6 +1640,18 @@ const DemoMode = (function() {
         
         // If audio is already paused, just cleanup
         if (demoAudio.paused) {
+            // Remove all event listeners to prevent memory leaks
+            demoAudio.onended = null;
+            demoAudio.onerror = null;
+            demoAudio.onloadeddata = null;
+            
+            // Set src to empty string to release media resources completely
+            try {
+                demoAudio.src = '';
+            } catch (e) {
+                console.error('Demo Mode: Error clearing audio src:', e);
+            }
+            
             demoAudio = null;
             console.log('Demo Mode: Audio already paused, cleaned up audio element');
             return;
@@ -1647,48 +1659,73 @@ const DemoMode = (function() {
         
         console.log(`Demo Mode: Fading out audio over ${fadeOutDuration}ms`);
         
-        // Store original volume for reference
-        const originalVolume = demoAudio.volume;
-        
-        // Create a reference to the audio element that we'll keep for the fade
-        const audioToFade = demoAudio;
-        
-        // Prevent setting demoAudio to null until fade completes
-        demoAudio = null; // Clear the reference so new audio can be created if needed
-        
-        // Implement fade out
-        const fadeSteps = 30; // Increase number of steps for smoother fade
-        const fadeStepTime = fadeOutDuration / fadeSteps; // Time between volume changes
-        const volumeStep = originalVolume / fadeSteps; // Amount to reduce volume each step
-        
-        let currentStep = 0;
-        
-        // Create fade interval
-        const fadeInterval = setInterval(() => {
-            currentStep++;
+        try {
+            // Store original volume for reference
+            const originalVolume = demoAudio.volume;
             
-            // Calculate new volume
-            const newVolume = Math.max(originalVolume - (volumeStep * currentStep), 0);
+            // Create a reference to the audio element that we'll keep for the fade
+            const audioToFade = demoAudio;
             
-            // Apply new volume
-            audioToFade.volume = newVolume;
+            // Prevent setting demoAudio to null until fade completes
+            demoAudio = null; // Clear the reference so new audio can be created if needed
             
-            // Log every few steps to monitor the fade progress
-            if (currentStep % 5 === 0) {
-                console.log(`Demo Mode: Fade progress - volume: ${newVolume.toFixed(2)} (step ${currentStep}/${fadeSteps})`);
-            }
+            // Implement fade out
+            const fadeSteps = 20; // Reduce steps for faster fadeout
+            const fadeStepTime = fadeOutDuration / fadeSteps; // Time between volume changes
+            const volumeStep = originalVolume / fadeSteps; // Amount to reduce volume each step
             
-            // Check if we've completed the fade
-            if (currentStep >= fadeSteps || newVolume <= 0) {
-                clearInterval(fadeInterval);
-                audioToFade.pause();
+            let currentStep = 0;
+            const fadeInterval = setInterval(() => {
+                currentStep++;
                 
-                // Reset volume for future use (not really needed since we're discarding the element)
-                audioToFade.volume = originalVolume;
+                // Reduce volume
+                const newVolume = Math.max(0, originalVolume - (volumeStep * currentStep));
                 
-                console.log('Demo Mode: Fade out complete, audio stopped');
+                try {
+                    audioToFade.volume = newVolume;
+                } catch (err) {
+                    // If we can't set volume (e.g., audio element is gone), clear interval
+                    clearInterval(fadeInterval);
+                    return;
+                }
+                
+                // When we reach the end of the fade
+                if (currentStep >= fadeSteps) {
+                    clearInterval(fadeInterval);
+                    
+                    try {
+                        // Pause the audio once faded out
+                        audioToFade.pause();
+                        
+                        // Remove all event listeners to prevent memory leaks
+                        audioToFade.onended = null;
+                        audioToFade.onerror = null;
+                        audioToFade.onloadeddata = null;
+                        
+                        // Set src to empty string to release media resources completely
+                        audioToFade.src = '';
+                    } catch (err) {
+                        console.error('Demo Mode: Error cleaning up faded audio:', err);
+                    }
+                    
+                    console.log('Demo Mode: Audio fade out complete');
+                }
+            }, fadeStepTime);
+        } catch (err) {
+            console.error('Demo Mode: Error during audio fade out:', err);
+            
+            // Emergency cleanup if fade fails
+            if (demoAudio) {
+                try {
+                    demoAudio.pause();
+                    demoAudio.src = '';
+                    demoAudio = null;
+                } catch (e) {
+                    console.error('Demo Mode: Error in emergency audio cleanup:', e);
+                    demoAudio = null;
+                }
             }
-        }, fadeStepTime);
+        }
     }
     
     /**
@@ -1818,49 +1855,72 @@ const DemoMode = (function() {
      */
     function preloadSlideAudio() {
         try {
-            // Create audio element if it doesn't exist
-            if (!slideAudio) {
-                console.log('Demo Mode: Preloading DemoSlides.mp3');
+            console.log('Demo Mode: Preloading DemoSlides.mp3');
+            
+            // Clear any existing slide audio to prevent resource leaks
+            if (slideAudio) {
+                try {
+                    slideAudio.onloadeddata = null;
+                    slideAudio.onerror = null;
+                    slideAudio.src = '';
+                    slideAudio = null;
+                } catch (err) {
+                    console.error('Demo Mode: Error cleaning up existing slide audio:', err);
+                }
+            }
+            
+            // Create a fresh audio element
+            slideAudio = new Audio();
+            
+            // Set preload attribute to ensure it loads immediately
+            slideAudio.preload = 'auto';
+            
+            // Add error handler first
+            slideAudio.onerror = function(e) {
+                console.error('Demo Mode: Error loading DemoSlides.mp3:', e);
+                console.error('Demo Mode: Error code:', slideAudio.error ? slideAudio.error.code : 'unknown');
                 
-                slideAudio = new Audio();
+                // Check if we need to try a different path
+                if (slideAudio.error && slideAudio.error.code === 4) { // MEDIA_ERR_SRC_NOT_SUPPORTED
+                    console.log('Demo Mode: Trying alternative path for DemoSlides.mp3');
+                    // Try src/ directory as fallback
+                    slideAudio.src = './src/music/DemoSlides.mp3';
+                }
+            };
+            
+            // Add load success handler
+            slideAudio.onloadeddata = function() {
+                console.log('Demo Mode: DemoSlides.mp3 loaded successfully');
+            };
+            
+            // Set source - use direct path for reliability
+            slideAudio.src = './music/DemoSlides.mp3';
+            
+            // For mobile compatibility, we should try to load the audio immediately,
+            // but catch any autoplay restrictions
+            try {
+                // Start loading by playing then immediately pausing
+                slideAudio.volume = 0; // Silent
+                const playPromise = slideAudio.play();
                 
-                // Set preload attribute to ensure it loads immediately
-                slideAudio.preload = 'auto';
-                
-                // Set source - use direct path for reliability
-                // Fix the file name (DemoSlides.mp3 with an 's', not DemoSlide.mp3)
-                slideAudio.src = './music/DemoSlides.mp3';
-                
-                // Add load event handler
-                slideAudio.onloadeddata = function() {
-                    console.log('Demo Mode: DemoSlides.mp3 loaded successfully');
-                };
-                
-                // Add error handling with more detailed logging
-                slideAudio.onerror = function(err) {
-                    console.error('Demo Mode: Error loading DemoSlides.mp3:', err);
-                    console.error('Demo Mode: Audio error code:', slideAudio.error ? slideAudio.error.code : 'unknown');
-                    console.error('Demo Mode: Audio src was:', slideAudio.src);
-                    
-                    // Try a fallback with the full path
-                    console.log('Demo Mode: Trying fallback path for DemoSlides.mp3');
-                    slideAudio.src = '/music/DemoSlides.mp3';
-                    
-                    // If that still fails, try another fallback
-                    slideAudio.onerror = function() {
-                        console.error('Demo Mode: Second attempt to load DemoSlides.mp3 failed');
-                        
-                        // Try one more absolute fallback
-                        slideAudio.src = window.location.origin + '/music/DemoSlides.mp3';
-                        slideAudio.onerror = function() {
-                            console.error('Demo Mode: All attempts to load DemoSlides.mp3 failed');
-                            slideAudio = null;
-                        };
-                    };
-                };
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        // Successfully started playing, now pause it
+                        slideAudio.pause();
+                        slideAudio.currentTime = 0;
+                        slideAudio.volume = 1; // Reset volume
+                        console.log('Demo Mode: DemoSlides.mp3 preloaded with play-pause technique');
+                    }).catch(err => {
+                        // Just allow the file to preload normally
+                        console.log('Demo Mode: Play-pause preload technique not allowed:', err);
+                    });
+                }
+            } catch (err) {
+                // Ignore errors from play attempt - this is just to help with preloading
+                console.log('Demo Mode: Error in play-pause preload technique:', err);
             }
         } catch (err) {
-            console.error('Demo Mode: Error setting up slide audio:', err);
+            console.error('Demo Mode: Error in preloadSlideAudio:', err);
             slideAudio = null;
         }
     }
@@ -1923,59 +1983,118 @@ const DemoMode = (function() {
     
     // New function to play DemoSlides.mp3 through the music system
     function playDemoSlides() {
-        // Stop current audio with fade if it's playing
-        if (demoAudio && !demoAudio.paused) {
-            stopAudio();
-        }
-
         console.log('Demo Mode: Playing DemoSlides.mp3 using music system');
         
-        // Create new audio element
-        demoAudio = new Audio();
-        demoAudio.preload = 'auto';
-        
-        // Use directly preloaded slideAudio if available for faster playback
-        if (slideAudio && slideAudio.readyState >= 2) {
-            console.log('Demo Mode: Using preloaded DemoSlides.mp3 for immediate playback');
-            demoAudio = slideAudio;
-            slideAudio = null; // Clear the reference so it's not used again
-        } else {
-            console.log('Demo Mode: Creating new audio element for DemoSlides.mp3');
-            // Use the direct path to DemoSlides.mp3
-            demoAudio.src = './music/DemoSlides.mp3';
+        // Make sure all existing audio is properly stopped
+        if (demoAudio) {
+            // Stop current audio with immediate fade
+            stopAudio(300);
         }
         
-        // Set up ended event to resume regular playlist
-        demoAudio.onended = function() {
-            console.log('Demo Mode: DemoSlides.mp3 ended, resuming regular playlist');
-            // Resume regular playlist
-            randomizeSongs();
-            playNextSong();
-        };
-        
-        // Play the audio
-        try {
-            // Make sure user interaction has been recorded for autoplay policies
-            if (typeof document !== 'undefined' && document.documentElement) {
-                document.documentElement.setAttribute('data-user-interacted', 'true');
+        // Also stop any existing slideAudio to prevent duplication
+        if (slideAudio && !slideAudio.paused) {
+            try {
+                slideAudio.pause();
+                slideAudio.currentTime = 0;
+            } catch (err) {
+                console.error('Demo Mode: Error stopping slide audio:', err);
             }
-            
-            const playPromise = demoAudio.play();
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    console.log('Demo Mode: DemoSlides.mp3 playing successfully via music system');
-                }).catch(err => {
-                    console.error('Demo Mode: Error playing DemoSlides.mp3:', err);
-                    // Fall back to regular playlist on error
+        }
+        
+        // Wait a small amount of time to ensure audio resources are released
+        setTimeout(() => {
+            try {
+                // Create new audio element - never reuse existing ones on mobile
+                demoAudio = new Audio();
+                demoAudio.preload = 'auto';
+                
+                // Always use a direct path for better mobile compatibility
+                demoAudio.src = './music/DemoSlides.mp3';
+                
+                // Set up ended event to resume regular playlist
+                demoAudio.onended = function() {
+                    console.log('Demo Mode: DemoSlides.mp3 ended, resuming regular playlist');
+                    
+                    // Reset audio source and create a fresh instance to avoid conflicts
+                    demoAudio = null;
+                    
+                    // Use timeout before starting new audio
+                    setTimeout(() => {
+                        randomizeSongs();
+                        playNextSong();
+                    }, 250);
+                };
+                
+                // Play the audio
+                try {
+                    // Make sure user interaction has been recorded for autoplay policies
+                    if (typeof document !== 'undefined' && document.documentElement) {
+                        document.documentElement.setAttribute('data-user-interacted', 'true');
+                    }
+                    
+                    // Add clear error logging
+                    demoAudio.onerror = function(e) {
+                        console.error('Demo Mode: Audio error playing DemoSlides.mp3:', e);
+                        console.error('Demo Mode: Audio error code:', demoAudio.error ? demoAudio.error.code : 'unknown');
+                        // Clean up and try to recover
+                        demoAudio = null;
+                        setTimeout(() => {
+                            randomizeSongs();
+                            playNextSong();
+                        }, 250);
+                    };
+                    
+                    // Set volume to 0 and fade in for smoother start (prevents pops/clicks)
+                    demoAudio.volume = 0;
+                    
+                    const playPromise = demoAudio.play();
+                    if (playPromise !== undefined) {
+                        playPromise.then(() => {
+                            console.log('Demo Mode: DemoSlides.mp3 playing successfully via music system');
+                            
+                            // Fade in volume
+                            let vol = 0;
+                            const fadeIn = setInterval(() => {
+                                if (demoAudio) {
+                                    vol += 0.1;
+                                    if (vol > 1) {
+                                        vol = 1;
+                                        clearInterval(fadeIn);
+                                    }
+                                    demoAudio.volume = vol;
+                                } else {
+                                    clearInterval(fadeIn);
+                                }
+                            }, 50);
+                            
+                        }).catch(err => {
+                            console.error('Demo Mode: Error playing DemoSlides.mp3:', err);
+                            // Clean up and recover
+                            demoAudio = null;
+                            setTimeout(() => {
+                                randomizeSongs();
+                                playNextSong();
+                            }, 250);
+                        });
+                    }
+                } catch (err) {
+                    console.error('Demo Mode: Error initiating DemoSlides.mp3 playback:', err);
+                    // Clean up and recover
+                    demoAudio = null;
+                    setTimeout(() => {
+                        randomizeSongs();
+                        playNextSong();
+                    }, 250);
+                }
+            } catch (err) {
+                console.error('Demo Mode: Error creating audio element for DemoSlides.mp3:', err);
+                demoAudio = null;
+                setTimeout(() => {
                     randomizeSongs();
                     playNextSong();
-                });
+                }, 250);
             }
-        } catch (err) {
-            console.error('Demo Mode: Error initiating DemoSlides.mp3 playback:', err);
-            randomizeSongs();
-            playNextSong();
-        }
+        }, 300); // Wait for fadeout to complete
     }
     
     // Public API
