@@ -1,7 +1,7 @@
 /**
  * Orbie Zots - Particle Swarm Simulation
  * Copyright (c) 2025
- * Built: 2025-03-30T19:41:47.453Z
+ * Built: 2025-03-31T03:40:42.614Z
  */
 
 // config.js - Environment-specific configuration
@@ -14,7 +14,7 @@ const Config = (function() {
     // Get base path - handles GitHub Pages and other hosting environments
     const getBasePath = function() {
         if (isLocal) {
-            return 'D:\\.apps\\interactive-simulations\\orbie-zots\\src\\music\\';
+            return './music/';  // Use relative path from the web root
         } else {
             // Check if we're on GitHub Pages or another hosting platform
             const path = window.location.pathname;
@@ -32,11 +32,34 @@ const Config = (function() {
 
     // Audio paths
     const audioPaths = {
+        // Original demo songs
         demoIntro: `${basePath}DemoIntro.mp3`,
         demoPulse: `${basePath}DemoPulse.mp3`,
         demoOrchestra: `${basePath}DemoOrchestra.mp3`,
         demoDubstep: `${basePath}DemoDubstep.mp3`,
-        demoGlassandi: `${basePath}DemoGlassandi.mp3`
+        demoGlassandi: `${basePath}DemoGlassandi.mp3`,
+        demoSlides: `${basePath}DemoSlides.mp3`,
+        demoIntroV1: `${basePath}DemoIntro.v1.mp3`,
+        
+        // Additional music files
+        eightBit: `${basePath}8-Bit.mp3`,
+        arabianstep: `${basePath}Arabianstep.mp3`,
+        ballroomWaltzDubstep: `${basePath}Ballroom_Waltz_Dubstep.mp3`,
+        creepyForestCreatures: `${basePath}Creepy_Forest_Creatures_-_Xylophone_Bells.mp3`,
+        digestiveSystem: `${basePath}Digestive_System.mp3`,
+        egyptianFlamenco: `${basePath}Egyptian_Flamenco.mp3`,
+        electricMerengue: `${basePath}Electric_Merengue.mp3`,
+        epicExpanse: `${basePath}Epic_Expanse.mp3`,
+        expansiveOpenPlains: `${basePath}Expansive_Open_Plains_-_Varying_Instruments.mp3`,
+        footStompingFingerSnapping: `${basePath}Foot_Stomping_Finger_Snapping.mp3`,
+        indianSitarNativeAmerican: `${basePath}Indian_Sitar_Native_American.mp3`,
+        intenseChase: `${basePath}Intense_Chase.mp3`,
+        liquidEphemeral: `${basePath}Liquid_Ephemeral.mp3`,
+        monophonicPiano: `${basePath}Monophonic_Piano.mp3`,
+        oldWesternSaloon: `${basePath}old_western_saloon.mp3`,
+        ominousSuspense: `${basePath}Ominous_Suspense.mp3`,
+        rancherSpaghettiWestern: `${basePath}Rancher_Spaghetti_Western.mp3`,
+        zeldaDungeon: `${basePath}Zelda_Dungeon.mp3`
     };
 
     // Public API
@@ -3568,6 +3591,7 @@ const DemoMode = (function() {
     
     // Audio elements and state
     let demoAudio = null;
+    let slideAudio = null; // New audio element for slide effect
     let currentSongIndex = -1;
     let shuffledSongKeys = [];
     
@@ -3766,22 +3790,70 @@ const DemoMode = (function() {
             }
             
             secondTouchDetected = true;
-            console.log(`Demo Mode: Second touch detected at (${secondTouchX}, ${secondTouchY}), spawning remaining swarms`);
+            console.log(`Demo Mode: Second touch detected at (${secondTouchX}, ${secondTouchY}), waiting 1 second before spawning remaining swarms`);
             
-            // Create remaining swarms
-            createRemainingSwarms();
-            
-            // Play demo intro audio
-            playDemoAudio();
-            
-            // Enable music button if MusicController is available
-            if (typeof MusicController !== 'undefined' && MusicController.enableButton) {
-                MusicController.enableButton();
+            // Play demo intro audio immediately - use direct path to ensure it works
+            try {
+                if (demoAudio) {
+                    demoAudio.pause();
+                }
+                
+                demoAudio = new Audio();
+                demoAudio.preload = 'auto';
+                
+                // Use a direct path to the audio file - more reliable than using Config
+                demoAudio.src = './music/DemoIntro.mp3';
+                console.log('Demo Mode: Using direct path to demo intro audio:', demoAudio.src);
+                
+                // Set up ended event to start random playlist
+                demoAudio.onended = function() {
+                    console.log('Demo Mode: Intro audio ended, starting random playlist');
+                    randomizeSongs();
+                    playNextSong();
+                };
+                
+                // Play the audio
+                setTimeout(() => {
+                    try {
+                        // Make sure user interaction has been recorded for autoplay policies
+                        if (typeof document !== 'undefined' && document.documentElement) {
+                            document.documentElement.setAttribute('data-user-interacted', 'true');
+                        }
+                        
+                        const playPromise = demoAudio.play();
+                        if (playPromise !== undefined) {
+                            playPromise.then(() => {
+                                console.log('Demo Mode: Intro audio playing successfully');
+                            }).catch(err => {
+                                console.error('Demo Mode: Error playing intro audio:', err);
+                                // Fall back to random playlist on error
+                                randomizeSongs();
+                                playNextSong();
+                            });
+                        }
+                    } catch (err) {
+                        console.error('Demo Mode: Error initiating intro audio playback:', err);
+                        randomizeSongs();
+                        playNextSong();
+                    }
+                }, 500);
+            } catch (err) {
+                console.error('Demo Mode: Error setting up intro audio:', err);
+                randomizeSongs();
+                playNextSong();
             }
+            
+            // Remove music button enabling from here (will enable when Torrential is detected)
             
             // Remove second touch listener
             canvas.removeEventListener('touchstart', detectSecondTouch);
             canvas.removeEventListener('click', detectSecondTouch);
+            
+            // Add 1-second delay before spawning remaining swarms
+            setTimeout(() => {
+                console.log('Demo Mode: 1-second delay complete, spawning remaining swarms');
+                createRemainingSwarms();
+            }, 1000);
         };
         
         // Add double tap detection
@@ -3842,6 +3914,10 @@ const DemoMode = (function() {
                 if (distance >= minSwipeDistance) {
                     console.log(`Demo Mode: Swipe detected (${distance.toFixed(0)}px)`);
                     hideSwipePrompt();
+                    
+                    // Use music system to play DemoSlides.mp3 instead of separate playback
+                    playDemoSlides();
+                    
                     startCycling(); // Resume cycling
                     
                     // Clear swipe tracking
@@ -4328,6 +4404,24 @@ const DemoMode = (function() {
             // Show special swipe prompt for Torrential preset
             else if (presetCycle.name === "Torrential") {
                 stopCycling(); // Pause cycling
+                
+                // Preload the slide audio for later use immediately
+                preloadSlideAudio();
+                
+                // Enable music button if MusicController is available
+                if (typeof MusicController !== 'undefined' && MusicController.enableButton) {
+                    console.log('Demo Mode: Enabling music button on Torrential preset detection');
+                    MusicController.enableButton();
+                }
+                
+                // Add a 1-second delay before stopping the music
+                console.log('Demo Mode: Waiting 1 second before stopping music for Torrential preset');
+                setTimeout(() => {
+                    // Stop any currently playing music
+                    stopAudio();
+                    console.log('Demo Mode: Stopped music for Torrential preset after 1-second delay');
+                }, 1000);
+                
                 showSwipePrompt(); // Show the swipe prompt
             }
         }
@@ -4680,6 +4774,12 @@ const DemoMode = (function() {
             demoAudio = null;
         }
         
+        // Stop and cleanup slide audio
+        if (slideAudio) {
+            slideAudio.pause();
+            slideAudio = null;
+        }
+        
         // Clear idle timer if active
         if (idleTimer) {
             clearTimeout(idleTimer);
@@ -4884,6 +4984,7 @@ const DemoMode = (function() {
     function randomizeSongs() {
         // Get all demo song keys except intro
         const songKeys = Config.getDemoSongKeys();
+        console.log('Demo Mode: Available song keys:', songKeys);
         shuffledSongKeys = shuffleArray(songKeys);
         currentSongIndex = -1; // Will be incremented to 0 on first play
         console.log('Demo Mode: Randomized song playlist:', shuffledSongKeys);
@@ -4914,7 +5015,42 @@ const DemoMode = (function() {
         }
         
         demoAudio = new Audio();
-        const audioPath = Config.getAudioPath(nextSongKey);
+        
+        // Get source path - try two methods for more reliability
+        let audioPath;
+        try {
+            // Try Config method first
+            audioPath = Config.getAudioPath(nextSongKey);
+            console.log(`Demo Mode: Config provided path: ${audioPath}`);
+            
+            // If it's not a full path (doesn't start with http or /), convert to direct path
+            if (!audioPath.startsWith('http') && !audioPath.startsWith('/')) {
+                // Fall back to direct path if needed
+                const fileName = nextSongKey.replace(/([A-Z])/g, '_$1').toLowerCase();
+                if (fileName.startsWith('_')) {
+                    audioPath = `./music/${fileName.substring(1)}.mp3`;
+                } else {
+                    audioPath = `./music/${fileName}.mp3`;
+                }
+                
+                // Handle special cases for direct paths
+                if (nextSongKey.startsWith('demo')) {
+                    // Capitalize first letter for demo files
+                    const demoName = nextSongKey.charAt(0).toUpperCase() + nextSongKey.slice(1);
+                    audioPath = `./music/${demoName}.mp3`;
+                } else if (nextSongKey === 'eightBit') {
+                    audioPath = './music/8-Bit.mp3';
+                }
+                
+                console.log(`Demo Mode: Using direct path: ${audioPath}`);
+            }
+        } catch (err) {
+            console.error('Demo Mode: Error getting audio path from Config, using fallback path');
+            
+            // Use a fallback demo song if everything fails
+            audioPath = './music/DemoPulse.mp3';
+        }
+        
         console.log(`Demo Mode: Creating audio element with path: ${audioPath}`);
         
         // Preload setting
@@ -4935,9 +5071,24 @@ const DemoMode = (function() {
         demoAudio.onerror = function(err) {
             console.error(`Demo Mode: Error loading audio ${nextSongKey}:`, err);
             console.error('Demo Mode: Audio error code:', demoAudio.error ? demoAudio.error.code : 'unknown');
-            demoAudio = null;
-            // Try to play next song on error
-            setTimeout(playNextSong, 1000);
+            console.error('Demo Mode: Audio src was:', demoAudio.src);
+            
+            // Try a direct fallback to a reliable file
+            console.log('Demo Mode: Trying fallback to DemoPulse.mp3');
+            demoAudio.src = './music/DemoPulse.mp3';
+            
+            // Try to play the fallback, but prepare to move on if it fails
+            try {
+                demoAudio.play().catch(() => {
+                    demoAudio = null;
+                    // Try to play next song on error
+                    setTimeout(playNextSong, 1000);
+                });
+            } catch (e) {
+                demoAudio = null;
+                // Try to play next song on error
+                setTimeout(playNextSong, 1000);
+            }
         };
         
         // Play the audio with a short delay to ensure loading starts
@@ -5061,14 +5212,66 @@ const DemoMode = (function() {
     }
     
     /**
-     * Stop any playing demo audio
+     * Stop any playing demo audio with fade out effect
+     * @param {number} fadeOutDuration - Fade out duration in ms (default 1500ms)
      */
-    function stopAudio() {
-        if (demoAudio) {
-            demoAudio.pause();
-            demoAudio = null;
-            console.log('Demo Mode: Stopped demo audio');
+    function stopAudio(fadeOutDuration = 800) {
+        if (!demoAudio) {
+            console.log('Demo Mode: No audio to stop');
+            return;
         }
+        
+        // If audio is already paused, just cleanup
+        if (demoAudio.paused) {
+            demoAudio = null;
+            console.log('Demo Mode: Audio already paused, cleaned up audio element');
+            return;
+        }
+        
+        console.log(`Demo Mode: Fading out audio over ${fadeOutDuration}ms`);
+        
+        // Store original volume for reference
+        const originalVolume = demoAudio.volume;
+        
+        // Create a reference to the audio element that we'll keep for the fade
+        const audioToFade = demoAudio;
+        
+        // Prevent setting demoAudio to null until fade completes
+        demoAudio = null; // Clear the reference so new audio can be created if needed
+        
+        // Implement fade out
+        const fadeSteps = 30; // Increase number of steps for smoother fade
+        const fadeStepTime = fadeOutDuration / fadeSteps; // Time between volume changes
+        const volumeStep = originalVolume / fadeSteps; // Amount to reduce volume each step
+        
+        let currentStep = 0;
+        
+        // Create fade interval
+        const fadeInterval = setInterval(() => {
+            currentStep++;
+            
+            // Calculate new volume
+            const newVolume = Math.max(originalVolume - (volumeStep * currentStep), 0);
+            
+            // Apply new volume
+            audioToFade.volume = newVolume;
+            
+            // Log every few steps to monitor the fade progress
+            if (currentStep % 5 === 0) {
+                console.log(`Demo Mode: Fade progress - volume: ${newVolume.toFixed(2)} (step ${currentStep}/${fadeSteps})`);
+            }
+            
+            // Check if we've completed the fade
+            if (currentStep >= fadeSteps || newVolume <= 0) {
+                clearInterval(fadeInterval);
+                audioToFade.pause();
+                
+                // Reset volume for future use (not really needed since we're discarding the element)
+                audioToFade.volume = originalVolume;
+                
+                console.log('Demo Mode: Fade out complete, audio stopped');
+            }
+        }, fadeStepTime);
     }
     
     /**
@@ -5191,6 +5394,171 @@ const DemoMode = (function() {
      */
     function isAudioPlaying() {
         return demoAudio !== null && !demoAudio.paused;
+    }
+    
+    /**
+     * Preload the slide audio file for quick playback when swipe is detected
+     */
+    function preloadSlideAudio() {
+        try {
+            // Create audio element if it doesn't exist
+            if (!slideAudio) {
+                console.log('Demo Mode: Preloading DemoSlides.mp3');
+                
+                slideAudio = new Audio();
+                
+                // Set preload attribute to ensure it loads immediately
+                slideAudio.preload = 'auto';
+                
+                // Set source - use direct path for reliability
+                // Fix the file name (DemoSlides.mp3 with an 's', not DemoSlide.mp3)
+                slideAudio.src = './music/DemoSlides.mp3';
+                
+                // Add load event handler
+                slideAudio.onloadeddata = function() {
+                    console.log('Demo Mode: DemoSlides.mp3 loaded successfully');
+                };
+                
+                // Add error handling with more detailed logging
+                slideAudio.onerror = function(err) {
+                    console.error('Demo Mode: Error loading DemoSlides.mp3:', err);
+                    console.error('Demo Mode: Audio error code:', slideAudio.error ? slideAudio.error.code : 'unknown');
+                    console.error('Demo Mode: Audio src was:', slideAudio.src);
+                    
+                    // Try a fallback with the full path
+                    console.log('Demo Mode: Trying fallback path for DemoSlides.mp3');
+                    slideAudio.src = '/music/DemoSlides.mp3';
+                    
+                    // If that still fails, try another fallback
+                    slideAudio.onerror = function() {
+                        console.error('Demo Mode: Second attempt to load DemoSlides.mp3 failed');
+                        
+                        // Try one more absolute fallback
+                        slideAudio.src = window.location.origin + '/music/DemoSlides.mp3';
+                        slideAudio.onerror = function() {
+                            console.error('Demo Mode: All attempts to load DemoSlides.mp3 failed');
+                            slideAudio = null;
+                        };
+                    };
+                };
+            }
+        } catch (err) {
+            console.error('Demo Mode: Error setting up slide audio:', err);
+            slideAudio = null;
+        }
+    }
+    
+    /**
+     * Play the slide audio when swipe is detected
+     */
+    function playSlideAudio() {
+        if (!slideAudio) {
+            // Try to create it if it doesn't exist
+            preloadSlideAudio();
+            
+            // If still doesn't exist, return
+            if (!slideAudio) {
+                console.error('Demo Mode: Cannot play slide audio - element not available');
+                return;
+            }
+        }
+        
+        try {
+            console.log('Demo Mode: Playing DemoSlides.mp3');
+            
+            // Make sure user interaction has been recorded for autoplay policies
+            if (typeof document !== 'undefined' && document.documentElement && 
+                typeof document.documentElement.hasAttribute === 'function' &&
+                !document.documentElement.hasAttribute('data-user-interacted')) {
+                document.documentElement.setAttribute('data-user-interacted', 'true');
+                console.log('Demo Mode: Setting user interaction flag for autoplay');
+            }
+            
+            // Reset audio to beginning if it was played before
+            slideAudio.currentTime = 0;
+            
+            const playPromise = slideAudio.play();
+            
+            // Handle the promise properly
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    console.log('Demo Mode: DemoSlides.mp3 playing successfully');
+                }).catch(err => {
+                    console.error('Demo Mode: Error playing DemoSlides.mp3:', err);
+                    console.error('Demo Mode: Audio src on error was:', slideAudio.src);
+                    
+                    // Try a final fallback to a more directly accessible path
+                    console.log('Demo Mode: Trying alternative method to play slide audio after error');
+                    
+                    // Create new audio as a last resort
+                    const lastResortAudio = new Audio('./music/DemoSlides.mp3');
+                    lastResortAudio.play().catch(e => {
+                        console.error('Demo Mode: Last resort audio play failed:', e);
+                    });
+                });
+            } else {
+                console.log('Demo Mode: Audio play did not return a promise');
+            }
+        } catch (err) {
+            console.error('Demo Mode: Error playing slide audio:', err);
+        }
+    }
+    
+    // New function to play DemoSlides.mp3 through the music system
+    function playDemoSlides() {
+        // Stop current audio with fade if it's playing
+        if (demoAudio && !demoAudio.paused) {
+            stopAudio();
+        }
+
+        console.log('Demo Mode: Playing DemoSlides.mp3 using music system');
+        
+        // Create new audio element
+        demoAudio = new Audio();
+        demoAudio.preload = 'auto';
+        
+        // Use directly preloaded slideAudio if available for faster playback
+        if (slideAudio && slideAudio.readyState >= 2) {
+            console.log('Demo Mode: Using preloaded DemoSlides.mp3 for immediate playback');
+            demoAudio = slideAudio;
+            slideAudio = null; // Clear the reference so it's not used again
+        } else {
+            console.log('Demo Mode: Creating new audio element for DemoSlides.mp3');
+            // Use the direct path to DemoSlides.mp3
+            demoAudio.src = './music/DemoSlides.mp3';
+        }
+        
+        // Set up ended event to resume regular playlist
+        demoAudio.onended = function() {
+            console.log('Demo Mode: DemoSlides.mp3 ended, resuming regular playlist');
+            // Resume regular playlist
+            randomizeSongs();
+            playNextSong();
+        };
+        
+        // Play the audio
+        try {
+            // Make sure user interaction has been recorded for autoplay policies
+            if (typeof document !== 'undefined' && document.documentElement) {
+                document.documentElement.setAttribute('data-user-interacted', 'true');
+            }
+            
+            const playPromise = demoAudio.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    console.log('Demo Mode: DemoSlides.mp3 playing successfully via music system');
+                }).catch(err => {
+                    console.error('Demo Mode: Error playing DemoSlides.mp3:', err);
+                    // Fall back to regular playlist on error
+                    randomizeSongs();
+                    playNextSong();
+                });
+            }
+        } catch (err) {
+            console.error('Demo Mode: Error initiating DemoSlides.mp3 playback:', err);
+            randomizeSongs();
+            playNextSong();
+        }
     }
     
     // Public API
