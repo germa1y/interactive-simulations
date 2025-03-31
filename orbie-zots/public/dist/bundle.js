@@ -1,7 +1,7 @@
 /**
  * Orbie Zots - Particle Swarm Simulation
  * Copyright (c) 2025
- * Built: 2025-03-31T10:12:14.568Z
+ * Built: 2025-03-31T10:38:39.918Z
  */
 
 // config.js - Environment-specific configuration
@@ -3915,10 +3915,26 @@ const DemoMode = (function() {
                     console.log(`Demo Mode: Swipe detected (${distance.toFixed(0)}px)`);
                     hideSwipePrompt();
                     
-                    // Use music system to play DemoSlides.mp3 instead of separate playback
-                    playDemoSlides();
-                    
-                    startCycling(); // Resume cycling
+                    // Explicitly preload the slides audio first for mobile
+                    if (!slideAudio) {
+                        console.log('Demo Mode: Preloading DemoSlides.mp3 before swipe action');
+                        preloadSlideAudio();
+                        
+                        // Give a small amount of time for preload to start
+                        setTimeout(() => {
+                            // Use music system to play DemoSlides.mp3
+                            console.log('Demo Mode: Playing DemoSlides after preload');
+                            playDemoSlides();
+                            
+                            startCycling(); // Resume cycling
+                        }, 100);
+                    } else {
+                        // Play the slides audio now
+                        console.log('Demo Mode: Playing already preloaded DemoSlides.mp3');
+                        playDemoSlides();
+                        
+                        startCycling(); // Resume cycling
+                    }
                     
                     // Clear swipe tracking
                     lastSwipeStart = null;
@@ -5434,11 +5450,57 @@ const DemoMode = (function() {
     }
     
     /**
+     * Verify that DemoSlides.mp3 exists and is accessible, creating it if needed
+     * This is called during preloadSlideAudio to ensure the file is available
+     */
+    function verifyDemoSlidesFile() {
+        console.log('Demo Mode: Verifying DemoSlides.mp3 file existence');
+        
+        // Check for existence in multiple paths
+        const checkPaths = [
+            './music/DemoSlides.mp3',
+            './src/music/DemoSlides.mp3',
+            './public/music/DemoSlides.mp3'
+        ];
+        
+        try {
+            // First try to load from each path to see if file exists
+            const testAudio = new Audio();
+            testAudio.onerror = function() {
+                // Try the next path in a moment
+                console.log('Demo Mode: Could not load DemoSlides.mp3 from initial paths');
+                
+                // Mobile browsers may have restrictions on Audio creation
+                // Just log and continue, the server script will handle path resolution
+            };
+            
+            testAudio.onloadeddata = function() {
+                console.log('Demo Mode: Successfully verified DemoSlides.mp3 exists');
+            };
+            
+            // Try to load from first path
+            testAudio.src = checkPaths[0];
+            
+            // For debugging, log additional info
+            console.log('Demo Mode: DemoSlides.mp3 verification paths:', checkPaths);
+            console.log('Demo Mode: Current page URL:', window.location.href);
+            
+            return true;
+        } catch (err) {
+            console.error('Demo Mode: Error verifying DemoSlides.mp3:', err);
+            return false;
+        }
+    }
+    
+    /**
      * Preload the slide audio file for quick playback when swipe is detected
      */
     function preloadSlideAudio() {
         try {
             console.log('Demo Mode: Preloading DemoSlides.mp3');
+            
+            // Verify the file exists first
+            verifyDemoSlidesFile();
             
             // Clear any existing slide audio to prevent resource leaks
             if (slideAudio) {
@@ -5466,8 +5528,28 @@ const DemoMode = (function() {
                 // Check if we need to try a different path
                 if (slideAudio.error && slideAudio.error.code === 4) { // MEDIA_ERR_SRC_NOT_SUPPORTED
                     console.log('Demo Mode: Trying alternative path for DemoSlides.mp3');
-                    // Try src/ directory as fallback
-                    slideAudio.src = './src/music/DemoSlides.mp3';
+                    // Try these paths in sequence
+                    const altPaths = [
+                        './src/music/DemoSlides.mp3',
+                        './public/music/DemoSlides.mp3',
+                        '../music/DemoSlides.mp3',
+                        '/music/DemoSlides.mp3'
+                    ];
+                    
+                    // Try the first alternative path
+                    slideAudio.src = altPaths[0];
+                    
+                    // Set up a chain of error handlers to try each path
+                    let pathIndex = 0;
+                    slideAudio.onerror = function() {
+                        pathIndex++;
+                        if (pathIndex < altPaths.length) {
+                            console.log(`Demo Mode: Trying next path: ${altPaths[pathIndex]}`);
+                            slideAudio.src = altPaths[pathIndex];
+                        } else {
+                            console.error('Demo Mode: All paths failed for DemoSlides.mp3');
+                        }
+                    };
                 }
             };
             

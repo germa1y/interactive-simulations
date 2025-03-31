@@ -499,13 +499,18 @@ const MusicController = (function() {
         // Only check DemoMode audio if we haven't switched to our own playlist
         if (!hasSwitchedToPlaylist && typeof DemoMode !== 'undefined' && DemoMode.isAudioPlaying && typeof DemoMode.isAudioPlaying === 'function') {
             if (DemoMode.resumeAudio && typeof DemoMode.resumeAudio === 'function') {
-                // Try to resume DemoMode audio if it's paused
-                const resumed = DemoMode.resumeAudio();
-                if (resumed) {
-                    isDemoIntroAudioPlaying = true;
-                    isPlaying = true;
-                    updateButtonState();
-                    return;
+                try {
+                    // Try to resume DemoMode audio if it's paused
+                    const resumed = DemoMode.resumeAudio();
+                    if (resumed) {
+                        isDemoIntroAudioPlaying = true;
+                        isPlaying = true;
+                        updateButtonState();
+                        return;
+                    }
+                } catch (err) {
+                    console.error('Music Controller: Error resuming DemoMode audio:', err);
+                    // Continue to play our own music if DemoMode resume fails
                 }
             }
         }
@@ -517,13 +522,29 @@ const MusicController = (function() {
             randomizeSongs();
             playNextSong();
         } else {
-            // Resume current song
-            audioElement.play().catch(err => {
-                console.error('Music Controller: Error resuming audio:', err);
-                
-                // Try to play next song if current one fails
-                playNextSong();
-            });
+            // Resume current song - safely handle promise
+            try {
+                const playPromise = audioElement.play();
+                if (playPromise !== undefined) {
+                    // Modern browsers return a promise
+                    playPromise.catch(err => {
+                        console.error('Music Controller: Error resuming audio:', err);
+                        
+                        // Try to play next song if current one fails
+                        setTimeout(() => {
+                            playNextSong();
+                        }, 300); // Add delay to avoid rapid retries
+                    });
+                } else {
+                    // Older browsers don't return a promise
+                    console.log('Music Controller: Play did not return a promise (older browser?)');
+                }
+            } catch (err) {
+                console.error('Music Controller: Exception when playing audio:', err);
+                setTimeout(() => {
+                    playNextSong();
+                }, 300);
+            }
         }
         
         isPlaying = true;
@@ -639,11 +660,18 @@ const MusicController = (function() {
      */
     function playNextSong() {
         // Don't play if not enabled
-        if (!isEnabled) return;
+        if (!isEnabled) {
+            console.log('Music Controller: Not enabled, skipping playNextSong');
+            return;
+        }
         
         // First stop any DemoMode audio that might be playing
         if (isDemoIntroAudioPlaying) {
-            stopAnyPlayingAudio();
+            try {
+                stopAnyPlayingAudio();
+            } catch (err) {
+                console.error('Music Controller: Error stopping DemoMode audio:', err);
+            }
         }
         
         // Mark that we've switched to our own playlist
@@ -662,36 +690,138 @@ const MusicController = (function() {
         if (!audioElement) {
             audioElement = new Audio();
         } else {
-            audioElement.pause();
+            try {
+                audioElement.pause();
+                audioElement.onended = null; // Remove previous event
+                audioElement.onerror = null; // Remove previous error handler
+            } catch (err) {
+                console.error('Music Controller: Error cleaning up previous audio:', err);
+                audioElement = new Audio(); // Create fresh one if cleanup fails
+            }
         }
         
         try {
-            // Set up new audio
-            audioElement.src = Config.getAudioPath(nextSongKey);
+            console.log(`Music Controller: Setting up audio for ${nextSongKey}`);
             
-            // Set up ended event for continuous playback
-            audioElement.onended = playNextSong;
+            // Get the audio path
+            let audioPath;
+            try {
+                audioPath = Config.getAudioPath(nextSongKey);
+                console.log(`Music Controller: Using path from Config: ${audioPath}`);
+            } catch (err) {
+                console.error('Music Controller: Error getting audio path, using direct path:', err);
+                // Fallback to direct path if Config fails
+                audioPath = `./music/${nextSongKey.replace(/([A-Z])/g, '_$1').toLowerCase()}.mp3`;
+                if (audioPath.startsWith('./music/_')) {
+                    audioPath = `./music/${audioPath.substring(9)}.mp3`;
+                }
+                console.log(`Music Controller: Using fallback path: ${audioPath}`);
+            }
+            
+            // Set up audio properties
+            audioElement.src = audioPath;
+            audioElement.preload = 'auto';
+            
+            // Set up ended event for continuous playback - use safe method
+            audioElement.onended = function() {
+                console.log('Music Controller: Song ended, playing next');
+                setTimeout(playNextSong, 250); // Add delay between songs
+            };
             
             // Add error handling
             audioElement.onerror = function(err) {
                 console.error(`Music Controller: Error loading audio ${nextSongKey}:`, err);
-                // Try to play next song on error
-                setTimeout(playNextSong, 1000);
+                console.error('Music Controller: Audio error code:', audioElement.error ? audioElement.error.code : 'unknown');
+                
+                // Try to play next song after delay
+                setTimeout(function() {
+                    console.log('Music Controller: Trying next song after error');
+                    // Move to next song
+                    playNextSong();
+                }, 1000);
             };
             
-            // Play the audio
-            audioElement.play().catch(err => {
-                console.error(`Music Controller: Error playing audio ${nextSongKey}:`, err);
-                // Try to play next song on error
-                setTimeout(playNextSong, 1000);
-            });
+            // Add load success handler
+            audioElement.onloadeddata = function() {
+                console.log(`Music Controller: Successfully loaded ${nextSongKey}`);
+            };
             
-            isPlaying = true;
-            updateButtonState();
+            // Safe play with Promise handling
+            try {
+                console.log(`Music Controller: Attempting to play ${nextSongKey}`);
+                
+                // Set volume to 0 and fade in for smoother start
+                audioElement.volume = 0;
+                
+                const playPromise = audioElement.play();
+                
+                if (playPromise !== undefined) {
+                    // Modern browsers return a promise
+                    playPromise.then(() => {
+                        console.log(`Music Controller: Successfully playing ${nextSongKey}`);
+                        
+                        // Fade in volume
+                        let vol = 0;
+                        const fadeIn = setInterval(() => {
+                            if (audioElement) {
+                                vol += 0.1;
+                                if (vol > 1) {
+                                    vol = 1;
+                                    clearInterval(fadeIn);
+                                }
+                                audioElement.volume = vol;
+                            } else {
+                                clearInterval(fadeIn);
+                            }
+                        }, 50);
+                        
+                        isPlaying = true;
+                        updateButtonState();
+                        
+                    }).catch(err => {
+                        console.error(`Music Controller: Promise error playing ${nextSongKey}:`, err);
+                        
+                        // Try next song after delay
+                        setTimeout(() => {
+                            isPlaying = false;
+                            updateButtonState();
+                            playNextSong();
+                        }, 1000);
+                    });
+                } else {
+                    // Older browsers don't return a promise
+                    console.log(`Music Controller: Play didn't return a promise (older browser?)`);
+                    isPlaying = true;
+                    updateButtonState();
+                    
+                    // Gradually increase volume
+                    setTimeout(() => {
+                        if (audioElement) {
+                            audioElement.volume = 1;
+                        }
+                    }, 500);
+                }
+                
+                console.log(`Music Controller: Playing song ${currentSongIndex + 1}/${shuffledSongKeys.length}: ${nextSongKey}`);
+                
+            } catch (playErr) {
+                console.error(`Music Controller: Exception playing ${nextSongKey}:`, playErr);
+                
+                // Try next song after delay
+                setTimeout(() => {
+                    isPlaying = false; 
+                    updateButtonState();
+                    playNextSong();
+                }, 1000);
+            }
             
-            console.log(`Music Controller: Playing song ${currentSongIndex + 1}/${shuffledSongKeys.length}: ${nextSongKey}`);
         } catch (err) {
             console.error('Music Controller: Error setting up audio:', err);
+            
+            // Try again after a longer delay
+            setTimeout(() => {
+                playNextSong();
+            }, 2000);
         }
     }
     
