@@ -440,7 +440,7 @@ const SwipeSplitSystem = (function() {
             return forceActive && swipePaths.length > 0;
         },
         
-        // Update path and force settings
+        // Update path and force settings (batch update)
         updateSettings: function(settings) {
             if (settings.pathColor) pathColor = settings.pathColor;
             if (settings.pathWidth) pathWidth = settings.pathWidth;
@@ -450,10 +450,38 @@ const SwipeSplitSystem = (function() {
             }
             
             // Force settings
-            if (settings.forceRadius !== undefined) forceRadius = settings.forceRadius;
-            if (settings.forceIntensity !== undefined) forceIntensity = settings.forceIntensity;
-            if (settings.attractMultiplier !== undefined) attractMultiplier = settings.attractMultiplier;
-            if (settings.repelMultiplier !== undefined) repelMultiplier = settings.repelMultiplier;
+            if (settings.forceRadius !== undefined) {
+                forceRadius = settings.forceRadius;
+                // Update displayed value
+                const radiusDisplay = document.getElementById('swipeForceRadiusValue');
+                if (radiusDisplay) {
+                    radiusDisplay.textContent = forceRadius;
+                }
+            }
+            if (settings.forceIntensity !== undefined) {
+                forceIntensity = settings.forceIntensity;
+                // Update displayed value
+                const intensityDisplay = document.getElementById('swipeForceIntensityValue');
+                if (intensityDisplay) {
+                    intensityDisplay.textContent = forceIntensity.toFixed(1);
+                }
+            }
+            if (settings.attractMultiplier !== undefined) {
+                attractMultiplier = settings.attractMultiplier;
+                // Update displayed value
+                const attractDisplay = document.getElementById('swipeAttractMultiplierValue');
+                if (attractDisplay) {
+                    attractDisplay.textContent = attractMultiplier.toFixed(1);
+                }
+            }
+            if (settings.repelMultiplier !== undefined) {
+                repelMultiplier = settings.repelMultiplier;
+                // Update displayed value
+                const repelDisplay = document.getElementById('swipeRepelMultiplierValue');
+                if (repelDisplay) {
+                    repelDisplay.textContent = repelMultiplier.toFixed(1);
+                }
+            }
             if (settings.forceActive !== undefined) forceActive = settings.forceActive;
             
             // If we have an active path, recalculate the decay speed
@@ -465,17 +493,60 @@ const SwipeSplitSystem = (function() {
             return this;
         },
         
-        // Get current settings (for UI or debugging)
+        // Get all settings for saving
         getSettings: function() {
             return {
-                isAttractMode,
-                pathWidth,
                 forceRadius,
                 forceIntensity,
                 attractMultiplier,
                 repelMultiplier,
-                forceActive
+                forceActive,
+                pathCount: swipePaths.length
             };
+        },
+        
+        // Update a single setting - used when loading saved swarms
+        updateSetting: function(key, value) {
+            // Only update valid settings
+            if (key === 'forceRadius' && typeof value === 'number') {
+                forceRadius = value;
+                // Update UI if present
+                const radiusSlider = document.getElementById('swipeForceRadius');
+                if (radiusSlider) radiusSlider.value = value;
+                const radiusValue = document.getElementById('swipeForceRadiusValue');
+                if (radiusValue) radiusValue.textContent = value;
+            } 
+            else if (key === 'forceIntensity' && typeof value === 'number') {
+                forceIntensity = value;
+                // Update UI if present
+                const intensitySlider = document.getElementById('swipeForceIntensity');
+                if (intensitySlider) intensitySlider.value = value;
+                const intensityValue = document.getElementById('swipeForceIntensityValue');
+                if (intensityValue) intensityValue.textContent = value;
+            }
+            else if (key === 'attractMultiplier' && typeof value === 'number') {
+                attractMultiplier = value;
+                // Update UI if present
+                const attractSlider = document.getElementById('swipeAttractMultiplier');
+                if (attractSlider) attractSlider.value = value;
+                const attractValue = document.getElementById('swipeAttractMultiplierValue');
+                if (attractValue) attractValue.textContent = value;
+            }
+            else if (key === 'repelMultiplier' && typeof value === 'number') {
+                repelMultiplier = value;
+                // Update UI if present
+                const repelSlider = document.getElementById('swipeRepelMultiplier');
+                if (repelSlider) repelSlider.value = value;
+                const repelValue = document.getElementById('swipeRepelMultiplierValue');
+                if (repelValue) repelValue.textContent = value;
+            }
+            else if (key === 'forceActive' && typeof value === 'boolean') {
+                forceActive = value;
+                // Update UI if present
+                const forceToggle = document.getElementById('swipeForcesEnabled');
+                if (forceToggle) forceToggle.checked = value;
+            }
+            return true;
         }
     };
 })(); 

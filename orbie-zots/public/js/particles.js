@@ -1080,7 +1080,15 @@ const ParticleSystem = (function() {
             return zotSwarms.map(swarm => ({
                 id: swarm.id,
                 zotCount: swarm.zots.length,
-                settings: {...swarm.settings}
+                settings: {...swarm.settings},
+                particles: swarm.zots.map(zot => ({
+                    x: zot.x,
+                    y: zot.y,
+                    size: zot.size,
+                    color: zot.color,
+                    vx: zot.vx,
+                    vy: zot.vy
+                }))
             }));
         },
         
@@ -1195,6 +1203,41 @@ const ParticleSystem = (function() {
             });
             
             return positions;
+        },
+        
+        // Get force settings for saving
+        getForceSettings: function() {
+            // Return a copy of the force settings object
+            return { ...forceSettings };
+        },
+        
+        // Get a specific force setting value
+        getSpecificForceSettingValue: function(setting) {
+            // Return a specific force setting value
+            if (forceSettings.hasOwnProperty(setting)) {
+                return forceSettings[setting];
+            }
+            return undefined;
+        },
+        
+        // Enhanced getZotSwarms to include complete particle data 
+        getZotSwarmsWithData: function() {
+            // Create a copy with the data needed for saving
+            return zotSwarms.map(swarm => {
+                return {
+                    id: swarm.id,
+                    zotCount: swarm.zots.length,
+                    settings: { ...swarm.settings },
+                    particles: swarm.zots.map(zot => ({
+                        x: zot.x,
+                        y: zot.y,
+                        size: zot.size,
+                        color: zot.color,
+                        vx: zot.vx,
+                        vy: zot.vy
+                    }))
+                };
+            });
         }
     };
 })();

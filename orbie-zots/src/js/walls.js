@@ -683,6 +683,14 @@ const WallSystem = (function() {
             renderWalls(ctx);
         },
         
+        // Get wall settings for saving
+        getWallSettings: function() {
+            return {
+                ...wallSettings,
+                wallCount: walls.length
+            };
+        },
+        
         // Export utility functions for external use
         utils: {
             distToSegment,

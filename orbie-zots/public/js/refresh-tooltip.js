@@ -34,4 +34,4 @@ function handleSwipe() {
       }
     }, 300); // Short delay to ensure context is fully resumed
   }
-}
+} 

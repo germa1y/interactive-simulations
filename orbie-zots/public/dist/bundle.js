@@ -1,7 +1,7 @@
 /**
  * Orbie Zots - Particle Swarm Simulation
  * Copyright (c) 2025
- * Built: 2025-03-31T11:54:07.902Z
+ * Built: 2025-04-05T14:45:45.005Z
  */
 
 // config.js - Environment-specific configuration
@@ -341,7 +341,7 @@ const Presets = {
         jellyOrbs: {
             name: "Jelly Orbs",
             zotCount: 25,
-            speed: 2,
+            speed: 5,
             separation: 0.1,
             alignment: 0.1,
             cohesion: 5,
@@ -360,8 +360,8 @@ const Presets = {
             trailLength: 0,
             colorTheme: 'sparkle'  // Default color theme for this preset
         },
-        atomic: {
-            name: "Atomic",
+        ringer: {
+            name: "Ringer",
             zotCount: 25,
             speed: 3.5,
             separation: 0,
@@ -2207,6 +2207,64 @@ const ParticleSystem = (function() {
         animationFrameId = requestAnimationFrame(animate);
     }
     
+    // Add new getter methods for force settings
+    function getForceSettings() {
+        // Return a copy of the force settings object
+        return { ...forceSettings };
+    }
+    
+    function getForceSettingValue(setting) {
+        // Return a specific force setting value
+        if (forceSettings.hasOwnProperty(setting)) {
+            return forceSettings[setting];
+        }
+        return undefined;
+    }
+    
+    function updateForceSettings(setting, value) {
+        // Update a specific force setting
+        if (forceSettings.hasOwnProperty(setting)) {
+            forceSettings[setting] = value;
+            return true;
+        }
+        return false;
+    }
+    
+    function updateSettings(category, setting, value) {
+        // General method to update settings in different categories
+        if (category === 'forces') {
+            return updateForceSettings(setting, value);
+        } else if (category === 'orbieSwarm') {
+            if (orbieSwarmSettings.hasOwnProperty(setting)) {
+                orbieSwarmSettings[setting] = value;
+                return true;
+            }
+        } else if (category === 'orbie') {
+            return updateOrbieSettings(setting, value);
+        }
+        return false;
+    }
+    
+    // Get all zot swarms with their complete data
+    function getZotSwarms() {
+        // Create a copy with the data needed for saving
+        return zotSwarms.map(swarm => {
+            return {
+                id: swarm.id,
+                zotCount: swarm.zots.length,
+                settings: { ...swarm.settings },
+                particles: swarm.zots.map(zot => ({
+                    x: zot.x,
+                    y: zot.y,
+                    size: zot.size,
+                    color: zot.color,
+                    vx: zot.vx,
+                    vy: zot.vy
+                }))
+            };
+        });
+    }
+    
     // Public API - only expose necessary methods
     return {
         init: function(canvasElement, fpsElement) {
@@ -2290,36 +2348,9 @@ const ParticleSystem = (function() {
             }
         },
         
-        // Update force settings
-        updateForceSettings: function(property, value) {
-            if (property in forceSettings) {
-                forceSettings[property] = value;
-            }
-        },
-        
-        // Update settings (generic method)
-        updateSettings: function(group, property, value) {
-            if (group === 'forces' && property in forceSettings) {
-                forceSettings[property] = value;
-            }
-        },
-        
-        // Get a force setting value
-        getForceSettingValue: function(property) {
-            return property in forceSettings ? forceSettings[property] : undefined;
-        },
-        
         // Methods for ZotSwarm management
         createZotSwarm: function(config) {
             return createZotSwarm(config);
-        },
-        
-        getZotSwarms: function() {
-            return zotSwarms.map(swarm => ({
-                id: swarm.id,
-                zotCount: swarm.zots.length,
-                settings: {...swarm.settings}
-            }));
         },
         
         removeZotSwarm: function(swarmId) {
@@ -2396,12 +2427,29 @@ const ParticleSystem = (function() {
         // Update an existing ZotSwarm with new parameters
         updateZotSwarm: function(swarmId, config) {
             return updateZotSwarm(swarmId, config);
-        }
+        },
+        
+        // Add new public methods for force settings access
+        getForceSettings: getForceSettings,
+        getForceSettingValue: getForceSettingValue,
+        updateForceSettings: function(property, value) {
+            if (property in forceSettings) {
+                forceSettings[property] = value;
+            }
+        },
+        updateSettings: function(group, property, value) {
+            if (group === 'forces' && property in forceSettings) {
+                forceSettings[property] = value;
+            }
+        },
+        
+        // Enhanced getZotSwarms method that includes particle data
+        getZotSwarms: getZotSwarms
     };
 })();
 
-// Export for module system
-if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+// Export for use in other modules
+if (typeof module !== 'undefined' && module.exports) {
     module.exports = ParticleSystem;
 }
 
@@ -3090,6 +3138,14 @@ const WallSystem = (function() {
             renderWalls(ctx);
         },
         
+        // Get wall settings for saving
+        getWallSettings: function() {
+            return {
+                ...wallSettings,
+                wallCount: walls.length
+            };
+        },
+        
         // Export utility functions for external use
         utils: {
             distToSegment,
@@ -3541,7 +3597,7 @@ const SwipeSplitSystem = (function() {
             return forceActive && swipePaths.length > 0;
         },
         
-        // Update path and force settings
+        // Update path and force settings (batch update)
         updateSettings: function(settings) {
             if (settings.pathColor) pathColor = settings.pathColor;
             if (settings.pathWidth) pathWidth = settings.pathWidth;
@@ -3551,10 +3607,38 @@ const SwipeSplitSystem = (function() {
             }
             
             // Force settings
-            if (settings.forceRadius !== undefined) forceRadius = settings.forceRadius;
-            if (settings.forceIntensity !== undefined) forceIntensity = settings.forceIntensity;
-            if (settings.attractMultiplier !== undefined) attractMultiplier = settings.attractMultiplier;
-            if (settings.repelMultiplier !== undefined) repelMultiplier = settings.repelMultiplier;
+            if (settings.forceRadius !== undefined) {
+                forceRadius = settings.forceRadius;
+                // Update displayed value
+                const radiusDisplay = document.getElementById('swipeForceRadiusValue');
+                if (radiusDisplay) {
+                    radiusDisplay.textContent = forceRadius;
+                }
+            }
+            if (settings.forceIntensity !== undefined) {
+                forceIntensity = settings.forceIntensity;
+                // Update displayed value
+                const intensityDisplay = document.getElementById('swipeForceIntensityValue');
+                if (intensityDisplay) {
+                    intensityDisplay.textContent = forceIntensity.toFixed(1);
+                }
+            }
+            if (settings.attractMultiplier !== undefined) {
+                attractMultiplier = settings.attractMultiplier;
+                // Update displayed value
+                const attractDisplay = document.getElementById('swipeAttractMultiplierValue');
+                if (attractDisplay) {
+                    attractDisplay.textContent = attractMultiplier.toFixed(1);
+                }
+            }
+            if (settings.repelMultiplier !== undefined) {
+                repelMultiplier = settings.repelMultiplier;
+                // Update displayed value
+                const repelDisplay = document.getElementById('swipeRepelMultiplierValue');
+                if (repelDisplay) {
+                    repelDisplay.textContent = repelMultiplier.toFixed(1);
+                }
+            }
             if (settings.forceActive !== undefined) forceActive = settings.forceActive;
             
             // If we have an active path, recalculate the decay speed
@@ -3566,17 +3650,60 @@ const SwipeSplitSystem = (function() {
             return this;
         },
         
-        // Get current settings (for UI or debugging)
+        // Get all settings for saving
         getSettings: function() {
             return {
-                isAttractMode,
-                pathWidth,
                 forceRadius,
                 forceIntensity,
                 attractMultiplier,
                 repelMultiplier,
-                forceActive
+                forceActive,
+                pathCount: swipePaths.length
             };
+        },
+        
+        // Update a single setting - used when loading saved swarms
+        updateSetting: function(key, value) {
+            // Only update valid settings
+            if (key === 'forceRadius' && typeof value === 'number') {
+                forceRadius = value;
+                // Update UI if present
+                const radiusSlider = document.getElementById('swipeForceRadius');
+                if (radiusSlider) radiusSlider.value = value;
+                const radiusValue = document.getElementById('swipeForceRadiusValue');
+                if (radiusValue) radiusValue.textContent = value;
+            } 
+            else if (key === 'forceIntensity' && typeof value === 'number') {
+                forceIntensity = value;
+                // Update UI if present
+                const intensitySlider = document.getElementById('swipeForceIntensity');
+                if (intensitySlider) intensitySlider.value = value;
+                const intensityValue = document.getElementById('swipeForceIntensityValue');
+                if (intensityValue) intensityValue.textContent = value;
+            }
+            else if (key === 'attractMultiplier' && typeof value === 'number') {
+                attractMultiplier = value;
+                // Update UI if present
+                const attractSlider = document.getElementById('swipeAttractMultiplier');
+                if (attractSlider) attractSlider.value = value;
+                const attractValue = document.getElementById('swipeAttractMultiplierValue');
+                if (attractValue) attractValue.textContent = value;
+            }
+            else if (key === 'repelMultiplier' && typeof value === 'number') {
+                repelMultiplier = value;
+                // Update UI if present
+                const repelSlider = document.getElementById('swipeRepelMultiplier');
+                if (repelSlider) repelSlider.value = value;
+                const repelValue = document.getElementById('swipeRepelMultiplierValue');
+                if (repelValue) repelValue.textContent = value;
+            }
+            else if (key === 'forceActive' && typeof value === 'boolean') {
+                forceActive = value;
+                // Update UI if present
+                const forceToggle = document.getElementById('swipeForcesEnabled');
+                if (forceToggle) forceToggle.checked = value;
+            }
+            return true;
         }
     };
 })(); 
@@ -3592,6 +3719,7 @@ const DemoMode = (function() {
     // Audio elements and state
     let demoAudio = null;
     let slideAudio = null; // New audio element for slide effect
+    let introAudio = null; // Specific element for intro audio to keep it cached
     let currentSongIndex = -1;
     let shuffledSongKeys = [];
     
@@ -3603,10 +3731,18 @@ const DemoMode = (function() {
     let secondTouchDetected = false; // Track if second touch has been detected
     let isFirstLoop = true; // Track if we're in the first loop
     
+    // New flags for the modified behavior
+    let allSwarmsSpawned = false; // Track if all swarms have been spawned
+    let firstTouchAfterSpawnDetected = false; // Track if first touch after spawn has been detected
+    
     // Idle prompt properties
     let idleTimer = null;
     let promptElement = null;
     let promptActive = false;
+    
+    // Audio loading state tracking
+    let introAudioLoaded = false;
+    let introAudioFailed = false;
     
     // Configuration for demo mode
     const DEMO_CONFIG = {
@@ -3618,7 +3754,9 @@ const DemoMode = (function() {
         maxSize: 7.5,            // Maximum zot size
         circleRadius: 150,     // Fixed pixel value for swarm positioning (was 0.35 - a fraction of screen)
         cycleInterval: 10000,  // Cycle through presets every 10 seconds
-        idleTimeout: 2000     // Show prompt after 2 seconds of inactivity
+        idleTimeout: 2000,     // Show prompt after 2 seconds of inactivity
+        initialSpeed: 2,       // Initial speed for jellyOrbs (slower)
+        finalSpeed: 5.5        // Final speed after first touch/tap/swipe
     };
     
     // Preset configurations to cycle through
@@ -3679,11 +3817,11 @@ const DemoMode = (function() {
                 zotCount: 40
             })
         },
-        // Atomic, Neon
+        // Ringer, Neon
         {
-            name: "Atomic",
+            name: "Ringer",
             configs: Array(6).fill({
-                presetName: 'atomic',
+                presetName: 'ringer',
                 zotCount: 40
             })
         },
@@ -3719,6 +3857,16 @@ const DemoMode = (function() {
             console.error('Demo Mode: ParticleSystem not available');
             return;
         }
+        
+        // Reset tracking variables
+        allSwarmsSpawned = false;
+        firstTouchAfterSpawnDetected = false;
+        isFirstLoop = true; // Ensure we reset the first loop flag
+        touchDetected = false;
+        secondTouchDetected = false;
+        
+        // Preload the intro audio immediately
+        preloadIntroAudio();
         
         // Delay to ensure all systems are properly initialized
         setTimeout(() => {
@@ -3766,13 +3914,15 @@ const DemoMode = (function() {
             
             if (!touchDetected) {
                 touchDetected = true;
-                startCycling();
+                // We no longer start cycling on first touch
+                // Keeping the comment for clarity that this is a deliberate change
+                // startCycling();
                 
                 // Add second touch detection
                 canvas.addEventListener('touchstart', detectSecondTouch);
                 canvas.addEventListener('click', detectSecondTouch);
                 
-                console.log('Demo Mode: First touch detected, started cycling');
+                console.log('Demo Mode: First touch detected, waiting for second touch');
             }
         };
         
@@ -3792,18 +3942,26 @@ const DemoMode = (function() {
             secondTouchDetected = true;
             console.log(`Demo Mode: Second touch detected at (${secondTouchX}, ${secondTouchY}), waiting 1 second before spawning remaining swarms`);
             
-            // Play demo intro audio immediately - use direct path to ensure it works
+            // Start playing demo intro audio but don't start cycling yet
             try {
                 if (demoAudio) {
                     demoAudio.pause();
                 }
                 
-                demoAudio = new Audio();
-                demoAudio.preload = 'auto';
+                // Use the preloaded intro audio if available
+                if (introAudio && introAudioLoaded) {
+                    console.log('Demo Mode: Using cached intro audio for playback');
+                    demoAudio = introAudio;
+                    introAudio = null; // Clear reference to avoid duplicate usage
+                } else {
+                    // Create new audio element if preloaded one isn't available
+                    console.log('Demo Mode: Creating new audio element for intro');
+                    demoAudio = new Audio();
+                    demoAudio.preload = 'auto';
+                    demoAudio.src = './music/DemoIntro.mp3';
+                }
                 
-                // Use a direct path to the audio file - more reliable than using Config
-                demoAudio.src = './music/DemoIntro.mp3';
-                console.log('Demo Mode: Using direct path to demo intro audio:', demoAudio.src);
+                console.log('Demo Mode: Using path for demo intro audio:', demoAudio.src);
                 
                 // Set up ended event to start random playlist
                 demoAudio.onended = function() {
@@ -3843,8 +4001,6 @@ const DemoMode = (function() {
                 playNextSong();
             }
             
-            // Remove music button enabling from here (will enable when Torrential is detected)
-            
             // Remove second touch listener
             canvas.removeEventListener('touchstart', detectSecondTouch);
             canvas.removeEventListener('click', detectSecondTouch);
@@ -3853,7 +4009,34 @@ const DemoMode = (function() {
             setTimeout(() => {
                 console.log('Demo Mode: 1-second delay complete, spawning remaining swarms');
                 createRemainingSwarms();
+                
+                // Set flag that all swarms are spawned
+                allSwarmsSpawned = true;
+                
+                // Add listener for the first touch after all swarms are spawned
+                canvas.addEventListener('touchstart', detectFirstTouchAfterSpawn);
+                canvas.addEventListener('click', detectFirstTouchAfterSpawn);
+                
+                console.log('Demo Mode: All swarms spawned, waiting for first touch to increase speed and start cycling');
             }, 1000);
+        };
+        
+        // New handler for detecting the first touch after all swarms are spawned
+        const detectFirstTouchAfterSpawn = function(e) {
+            if (!isActive || !allSwarmsSpawned || firstTouchAfterSpawnDetected) return;
+            
+            firstTouchAfterSpawnDetected = true;
+            console.log('Demo Mode: First touch after all swarms spawned detected, increasing speed and starting cycling');
+            
+            // Update all jellyOrb swarms to the final speed
+            updateAllJellyOrbsSpeed(DEMO_CONFIG.finalSpeed);
+            
+            // Now start the cycling
+            startCycling();
+            
+            // Remove this event listener
+            canvas.removeEventListener('touchstart', detectFirstTouchAfterSpawn);
+            canvas.removeEventListener('click', detectFirstTouchAfterSpawn);
         };
         
         // Add double tap detection
@@ -3870,7 +4053,9 @@ const DemoMode = (function() {
                 
                 // Restart cycling if it was stopped
                 if (!isCycling) {
-                    startCycling();
+                    // Pass true to skipImmediateCycle to prevent advancing to the next preset
+                    // when resuming from push/pull prompt
+                    startCycling(true);
                 }
                 
                 e.preventDefault(); // Prevent default action
@@ -4346,33 +4531,48 @@ const DemoMode = (function() {
     
     /**
      * Start cycling through presets
+     * @param {boolean} skipImmediateCycle - If true, don't cycle immediately (just set up interval)
      */
-    function startCycling() {
+    function startCycling(skipImmediateCycle = false) {
         if (isCycling) return;
         
-        isCycling = true;
-        
-        // Only cycle if we haven't already (when resuming from paused state)
-        if (cycleIndex === -1) {
-            // Cycle immediately to first preset
-            cycleToNextPreset();
+        // Only start cycling if we've detected the first touch after all swarms are spawned
+        // or if we're in special circumstances like after a swipe
+        if (!firstTouchAfterSpawnDetected && allSwarmsSpawned) {
+            console.log('Demo Mode: Not starting cycling yet, waiting for first touch after all swarms are spawned');
+            return;
         }
         
-        // Set up interval to cycle through presets
-        cycleInterval = setInterval(() => {
-            cycleToNextPreset();
-            
-            // After a complete loop, mark it as no longer first loop
-            if (cycleIndex === 0) {
-                isFirstLoop = false;
-            }
-        }, DEMO_CONFIG.cycleInterval);
+        console.log('Demo Mode: Starting preset cycling');
+        
+        // Don't reset cycle index if we're resuming after a prompt (swipe or push/pull)
+        // Only reset if we're starting fresh (no cycling has happened yet)
+        if (cycleIndex === -1) {
+            // First time starting cycling
+            console.log('Demo Mode: First time starting cycle, initialize index to -1');
+            // Keep cycleIndex at -1 so first increment goes to 0
+        } else {
+            // We're resuming after a prompt (like swipe or push/pull), maintain current preset
+            console.log(`Demo Mode: Resuming cycling from preset index ${cycleIndex}`);
+            // No need to change cycleIndex, keep current preset
+        }
+        
+        // Cycle immediately unless skipImmediateCycle is true
+        if (!skipImmediateCycle) {
+            cyclePreset();
+        } else {
+            console.log('Demo Mode: Skipping immediate cycle, will cycle after interval');
+        }
+        
+        // Set up cycling interval
+        cycleInterval = setInterval(cyclePreset, DEMO_CONFIG.cycleInterval);
+        isCycling = true;
     }
     
     /**
      * Cycle to the next preset configuration
      */
-    function cycleToNextPreset() {
+    function cyclePreset() {
         if (!isActive || demoSwarms.length === 0) {
             stopCycling();
             return;
@@ -4383,10 +4583,21 @@ const DemoMode = (function() {
             return;
         }
         
-        cycleIndex = (cycleIndex + 1) % PRESET_CYCLES.length;
+        // Calculate the next cycle index
+        const nextCycleIndex = (cycleIndex + 1) % PRESET_CYCLES.length;
+        
+        // Check if we've completed a full cycle (gone through all presets)
+        if (isFirstLoop && nextCycleIndex === 0 && cycleIndex !== -1) {
+            // We've gone through all presets once and are looping back to the first preset
+            console.log('Demo Mode: First loop complete, disabling instructions and pauses');
+            isFirstLoop = false;
+        }
+        
+        // Update the cycle index
+        cycleIndex = nextCycleIndex;
         const presetCycle = PRESET_CYCLES[cycleIndex];
         
-        console.log(`Demo Mode: Cycling to preset "${presetCycle.name}"`);
+        console.log(`Demo Mode: Cycling to preset "${presetCycle.name}" (First Loop: ${isFirstLoop})`);
         
         // Apply new configurations to each swarm
         demoSwarms.forEach((swarmId, index) => {
@@ -4396,8 +4607,8 @@ const DemoMode = (function() {
         
         // Special behavior for different presets (only in first loop)
         if (isFirstLoop) {
-            // Show special prompt for Atomic preset
-            if (presetCycle.name === "Atomic") {
+            // Show special prompt for Ringer preset
+            if (presetCycle.name === "Ringer") {
                 stopCycling(); // Pause cycling
                 showPushPullPrompt(); // Show the special prompt
             }
@@ -4420,7 +4631,7 @@ const DemoMode = (function() {
                     // Stop any currently playing music
                     stopAudio();
                     console.log('Demo Mode: Stopped music for Torrential preset after 1-second delay');
-                }, 1000);
+                }, -10000);
                 
                 showSwipePrompt(); // Show the swipe prompt
             }
@@ -4438,7 +4649,7 @@ const DemoMode = (function() {
             // Create update config with behavior parameters
             const updateConfig = {
                 zotCount: config.zotCount || DEMO_CONFIG.zotsPerSwarm,
-                speed: preset.speed !== undefined ? preset.speed : 4,
+                speed: preset.speed !== undefined ? preset.speed : 5.5,
                 separation: preset.separation !== undefined ? preset.separation : 0.1,
                 alignment: preset.alignment !== undefined ? preset.alignment : 0.1,
                 cohesion: preset.cohesion !== undefined ? preset.cohesion : 5,
@@ -4727,7 +4938,7 @@ const DemoMode = (function() {
         }
         
         // Move to next preset
-        cycleToNextPreset();
+        cyclePreset();
         
         // Restart cycling if it was active
         if (wasActive) {
@@ -4749,7 +4960,7 @@ const DemoMode = (function() {
         cycleIndex = (cycleIndex - 2 + PRESET_CYCLES.length) % PRESET_CYCLES.length;
         
         // Move to previous preset
-        cycleToNextPreset();
+        cyclePreset();
         
         // Restart cycling if it was active
         if (wasActive) {
@@ -4778,6 +4989,14 @@ const DemoMode = (function() {
         if (slideAudio) {
             slideAudio.pause();
             slideAudio = null;
+        }
+        
+        // Clean up intro audio if it exists
+        if (introAudio) {
+            introAudio.pause();
+            introAudio = null;
+            introAudioLoaded = false;
+            introAudioFailed = false;
         }
         
         // Clear idle timer if active
@@ -4866,7 +5085,7 @@ const DemoMode = (function() {
         const config = {
             // Swarm preset behavior parameters
             zotCount: DEMO_CONFIG.zotsPerSwarm,
-            speed: preset.speed || 4,
+            speed: DEMO_CONFIG.initialSpeed, // Use the slower initial speed
             separation: preset.separation || 0.1,
             alignment: preset.alignment || 0.1,
             cohesion: preset.cohesion || 5,
@@ -4890,7 +5109,7 @@ const DemoMode = (function() {
             const swarmId = ParticleSystem.createZotSwarm(config);
             if (swarmId) {
                 demoSwarms.push(swarmId);
-                console.log(`Demo Mode: Created initial swarm ${swarmId} at center (${centerX.toFixed(0)}, ${centerY.toFixed(0)})`);
+                console.log(`Demo Mode: Created initial swarm ${swarmId} at center (${centerX.toFixed(0)}, ${centerY.toFixed(0)}) with speed ${config.speed}`);
             }
         } catch (error) {
             console.error('Demo Mode: Error creating initial swarm:', error);
@@ -4930,7 +5149,7 @@ const DemoMode = (function() {
             const config = {
                 // Swarm preset behavior parameters
                 zotCount: DEMO_CONFIG.zotsPerSwarm,
-                speed: preset.speed || 4,
+                speed: DEMO_CONFIG.initialSpeed, // Use the slower initial speed
                 separation: preset.separation || 0.1,
                 alignment: preset.alignment || 0.1,
                 cohesion: preset.cohesion || 5,
@@ -4954,7 +5173,7 @@ const DemoMode = (function() {
                 const swarmId = ParticleSystem.createZotSwarm(config);
                 if (swarmId) {
                     demoSwarms.push(swarmId);
-                    console.log(`Demo Mode: Created additional swarm ${swarmId} at (${x.toFixed(0)}, ${y.toFixed(0)})`);
+                    console.log(`Demo Mode: Created additional swarm ${swarmId} at (${x.toFixed(0)}, ${y.toFixed(0)}) with speed ${config.speed}`);
                 }
             } catch (error) {
                 console.error('Demo Mode: Error creating additional swarm:', error);
@@ -5128,94 +5347,107 @@ const DemoMode = (function() {
     }
 
     /**
-     * Play the demo intro audio
+     * Preload the intro audio file so it's ready to play immediately when needed
      */
-    function playDemoAudio() {
-        console.log('Demo Mode: Attempting to play demo intro audio');
-        
-        try {
-            // Create audio element if it doesn't exist
-            if (!demoAudio) {
-                const audioPath = Config.getAudioPath('demoIntro');
-                console.log(`Demo Mode: Creating audio element with path: ${audioPath}`);
-                
-                demoAudio = new Audio();
-                
-                // Preload the audio
-                demoAudio.preload = 'auto';
-                
-                // Set source
-                demoAudio.src = audioPath;
-                
-                // Set up ended event to start random playlist
-                demoAudio.onended = function() {
-                    console.log('Demo Mode: Intro audio ended, starting random playlist');
-                    randomizeSongs();
-                    playNextSong();
-                };
-                
-                // Add error handling
-                demoAudio.onerror = function(err) {
-                    console.error('Demo Mode: Error loading intro audio:', err);
-                    console.error('Demo Mode: Audio error code:', demoAudio.error ? demoAudio.error.code : 'unknown');
-                    demoAudio = null;
-                    // Start random playlist immediately on error
-                    randomizeSongs();
-                    playNextSong();
-                };
-                
-                // Add load event handler
-                demoAudio.onloadeddata = function() {
-                    console.log('Demo Mode: Intro audio loaded successfully');
-                };
-            }
-            
-            // Play the audio - but first check if it's already loaded
-            setTimeout(() => {
-                try {
-                    console.log('Demo Mode: Attempting to play intro audio now');
-                    // Add a user interaction check
-                    if (typeof document !== 'undefined' && document.documentElement && 
-                        typeof document.documentElement.hasAttribute === 'function' &&
-                        !document.documentElement.hasAttribute('data-user-interacted')) {
-                        document.documentElement.setAttribute('data-user-interacted', 'true');
-                        console.log('Demo Mode: Setting user interaction flag for autoplay');
-                    }
-                    
-                    const playPromise = demoAudio.play();
-                    
-                    // Handle the promise properly
-                    if (playPromise !== undefined) {
-                        playPromise.then(() => {
-                            console.log('Demo Mode: Intro audio playing successfully');
-                        }).catch(err => {
-                            console.error('Demo Mode: Error playing intro audio:', err);
-                            // Start random playlist immediately on error
-                            randomizeSongs();
-                            playNextSong();
-                        });
-                    } else {
-                        console.log('Demo Mode: Audio play did not return a promise');
-                    }
-                } catch (err) {
-                    console.error('Demo Mode: Error initiating intro audio playback:', err);
-                    randomizeSongs();
-                    playNextSong();
-                }
-            }, 500); // Short delay to ensure audio element is fully initialized
-        } catch (err) {
-            console.error('Demo Mode: Error setting up audio:', err);
-            // Start random playlist immediately on error
-            randomizeSongs();
-            playNextSong();
+    function preloadIntroAudio() {
+        if (introAudio || introAudioLoaded) {
+            console.log('Demo Mode: Intro audio already preloaded');
+            return;
         }
+        
+        console.log('Demo Mode: Preloading intro audio...');
+        
+        // Create a dedicated audio element just for the intro
+        introAudio = new Audio();
+        
+        // Set highest preload priority
+        introAudio.preload = 'auto';
+        
+        // Use a direct path to the audio file for maximum reliability
+        introAudio.src = './music/DemoIntro.mp3';
+        
+        // Add load event handler
+        introAudio.onloadeddata = function() {
+            console.log('Demo Mode: Intro audio loaded successfully and cached');
+            introAudioLoaded = true;
+            
+            // Additional measure to ensure audio stays in memory
+            // Force a play/pause with minimal volume to engage the audio subsystem
+            try {
+                introAudio.volume = 0.001; // Nearly silent
+                const promise = introAudio.play();
+                
+                if (promise !== undefined) {
+                    promise.then(() => {
+                        // Immediately pause after successful play
+                        setTimeout(() => {
+                            introAudio.pause();
+                            introAudio.currentTime = 0; // Reset to beginning
+                            introAudio.volume = 1.0; // Reset volume
+                            console.log('Demo Mode: Intro audio primed for immediate playback');
+                        }, 10);
+                    }).catch(err => {
+                        // Common error on browsers that require user interaction - not a problem
+                        console.log('Demo Mode: Audio priming required user interaction (expected):', err.name);
+                        // Reset volume anyway
+                        introAudio.volume = 1.0;
+                    });
+                }
+            } catch (e) {
+                // Silent failure is ok here - browser policy may prevent this technique
+                introAudio.volume = 1.0; // Reset volume
+            }
+        };
+        
+        // Add canplaythrough event for more detailed loading feedback
+        introAudio.oncanplaythrough = function() {
+            console.log('Demo Mode: Intro audio can play through without buffering');
+        };
+        
+        // Add error handling with multiple fallback paths
+        introAudio.onerror = function(err) {
+            console.error('Demo Mode: Error loading intro audio:', err);
+            console.error('Demo Mode: Audio error code:', introAudio.error ? introAudio.error.code : 'unknown');
+            
+            // Try alternative path
+            if (introAudio.src.indexOf('./music/') === 0) {
+                console.log('Demo Mode: Trying alternative path for intro audio');
+                introAudio.src = '/music/DemoIntro.mp3';
+                
+                // Handle second failure
+                introAudio.onerror = function() {
+                    console.error('Demo Mode: Second attempt to load intro audio failed');
+                    
+                    // Try one more absolute fallback
+                    if (typeof window !== 'undefined' && window.location) {
+                        introAudio.src = window.location.origin + '/music/DemoIntro.mp3';
+                        
+                        // Final failure handler
+                        introAudio.onerror = function() {
+                            console.error('Demo Mode: All attempts to load intro audio failed');
+                            introAudioFailed = true;
+                            introAudio = null;
+                        };
+                    } else {
+                        introAudioFailed = true;
+                        introAudio = null;
+                    }
+                };
+            } else {
+                introAudioFailed = true;
+                introAudio = null;
+            }
+        };
+        
+        // Explicitly call load() to start loading the audio right away
+        introAudio.load();
     }
     
     /**
      * Stop any playing demo audio with fade out effect
      * @param {number} fadeOutDuration - Fade out duration in ms (default 1500ms)
      */
-    function stopAudio(fadeOutDuration = 800) {
+    function stopAudio(fadeOutDuration = 1500) {
         if (!demoAudio) {
             console.log('Demo Mode: No audio to stop');
             return;
@@ -5561,6 +5793,32 @@ const DemoMode = (function() {
         }
     }
     
+    /**
+     * Update all jellyOrb swarm speeds to a new value
+     * @param {number} speed - The new speed to set for all jellyOrb swarms
+     */
+    function updateAllJellyOrbsSpeed(speed) {
+        console.log(`Demo Mode: Updating all jellyOrb swarms to speed ${speed}`);
+        
+        // Update each swarm in the demoSwarms array
+        demoSwarms.forEach((swarmId, index) => {
+            try {
+                // Only update the speed property
+                const updateConfig = {
+                    speed: speed
+                };
+                
+                // Update the swarm
+                if (ParticleSystem.updateZotSwarm) {
+                    ParticleSystem.updateZotSwarm(swarmId, updateConfig);
+                    console.log(`Demo Mode: Updated swarm ${swarmId} speed to ${speed}`);
+                }
+            } catch (error) {
+                console.error(`Demo Mode: Error updating swarm ${swarmId} speed:`, error);
+            }
+        });
+    }
+    
     // Public API
     return {
         start: start,
@@ -5570,7 +5828,9 @@ const DemoMode = (function() {
         stopAudio: stopAudio,
         togglePauseAudio: togglePauseAudio,
         resumeAudio: resumeAudio,
-        isAudioPlaying: isAudioPlaying
+        isAudioPlaying: isAudioPlaying,
+        // Add a public method to force preload the intro audio
+        preloadIntroAudio: preloadIntroAudio
     };
 })();
 
@@ -5579,13 +5839,14 @@ if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
     module.exports = DemoMode;
 } 
 
-// submitSwarms.js - Handle zot swarm submission
+// submitSwarms.js - Handle zot swarm submission and loading
 
 const SubmitSwarms = (function() {
     // Track popup state
     let isPopupOpen = false;
     let popupOverlay = null;
     let popupContainer = null;
+    let fileInput = null; // Reference to hidden file input element
     
     // Initialize the submit button in the UI
     function init() {
@@ -5596,19 +5857,61 @@ const SubmitSwarms = (function() {
         // Create the submit button
         const submitButton = document.createElement('button');
         submitButton.id = 'submitSwarmsButton';
-        submitButton.textContent = 'Submit Your Zots';
+        submitButton.textContent = 'Save';
         submitButton.className = 'submit-swarms-btn';
         
-        // Insert between Create and Clear buttons
-        const clearButton = document.getElementById('clearSwarmsButton');
-        if (clearButton) {
-            buttonGroup.insertBefore(submitButton, clearButton);
-        } else {
-            buttonGroup.appendChild(submitButton);
+        // Insert below the button group (not between Create and Clear)
+        const parentContainer = buttonGroup.parentElement;
+        if (parentContainer) {
+            // Create a new div for the save/load buttons that spans the width
+            const saveButtonContainer = document.createElement('div');
+            saveButtonContainer.className = 'save-button-container';
+            saveButtonContainer.style.marginTop = '15px';
+            saveButtonContainer.style.display = 'flex';
+            saveButtonContainer.style.justifyContent = 'center';
+            saveButtonContainer.style.flexDirection = 'column';
+            saveButtonContainer.style.gap = '10px';
+            
+            // Add the save button
+            saveButtonContainer.appendChild(submitButton);
+            
+            // Create load button
+            const loadButton = document.createElement('button');
+            loadButton.id = 'loadSwarmsButton';
+            loadButton.textContent = 'Load';
+            loadButton.className = 'load-swarms-btn';
+            saveButtonContainer.appendChild(loadButton);
+            
+            // Create hidden file input for loading
+            fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.json';
+            fileInput.style.display = 'none';
+            fileInput.id = 'swarmFileInput';
+            saveButtonContainer.appendChild(fileInput);
+            
+            // Insert below the button group
+            parentContainer.insertBefore(saveButtonContainer, buttonGroup.nextSibling);
         }
         
         // Add click event to the submit button
         submitButton.addEventListener('click', showSubmitPopup);
+        
+        // Add click event to the load button
+        const loadButton = document.getElementById('loadSwarmsButton');
+        if (loadButton) {
+            loadButton.addEventListener('click', () => {
+                // Trigger the file input dialog
+                if (fileInput) {
+                    fileInput.click();
+                }
+            });
+        }
+        
+        // Add change event to file input
+        if (fileInput) {
+            fileInput.addEventListener('change', handleFileSelect);
+        }
         
         // Create and add styles for the popup
         addPopupStyles();
@@ -5690,10 +5993,25 @@ const SubmitSwarms = (function() {
             .submit-swarms-btn {
                 background-color: #4CAF50;
                 color: white;
+                width: 100%;
+                padding: 10px;
+                font-weight: bold;
             }
             
             .submit-swarms-btn:hover {
                 background-color: #388E3C;
+            }
+            
+            .load-swarms-btn {
+                background-color: #2196F3;
+                color: white;
+                width: 100%;
+                padding: 10px;
+                font-weight: bold;
+            }
+            
+            .load-swarms-btn:hover {
+                background-color: #0b7dda;
             }
             
             .error-message {
@@ -5701,8 +6019,181 @@ const SubmitSwarms = (function() {
                 margin-top: 10px;
                 font-size: 14px;
             }
+            
+            .success-message {
+                color: #4CAF50;
+                margin-top: 10px;
+                font-size: 14px;
+            }
+            
+            .save-button-container {
+                width: 100%;
+            }
         `;
         document.head.appendChild(styleEl);
+    }
+    
+    // Handle file selection for loading
+    function handleFileSelect(e) {
+        const file = e.target.files[0];
+        if (!file) {
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                const data = JSON.parse(event.target.result);
+                loadZotSwarms(data);
+                // Reset file input so the same file can be selected again
+                fileInput.value = '';
+            } catch (error) {
+                console.error('[LOAD] Error parsing JSON file:', error);
+                showLoadError('Error parsing file. Please select a valid JSON file.');
+                fileInput.value = '';
+            }
+        };
+        
+        reader.onerror = function() {
+            console.error('[LOAD] Error reading file');
+            showLoadError('Error reading file. Please try again.');
+            fileInput.value = '';
+        };
+        
+        reader.readAsText(file);
+    }
+    
+    // Show error message for load operation
+    function showLoadError(message) {
+        // Create a popup for the error
+        showLoadPopup('Load Error', message, 'error');
+    }
+    
+    // Show success message for load operation
+    function showLoadSuccess(message) {
+        // Create a popup for the success message
+        showLoadPopup('Load Successful', message, 'success');
+    }
+    
+    // Show a popup for load operations
+    function showLoadPopup(title, message, type) {
+        if (isPopupOpen) closePopup();
+        
+        // Create overlay
+        popupOverlay = document.createElement('div');
+        popupOverlay.className = 'popup-overlay';
+        
+        // Create popup container
+        popupContainer = document.createElement('div');
+        popupContainer.className = 'popup-container';
+        
+        // Determine message class based on type
+        const messageClass = type === 'error' ? 'error-message' : 'success-message';
+        
+        // Popup content
+        popupContainer.innerHTML = `
+            <h3 class="popup-title">${title}</h3>
+            <div class="popup-content">
+                <div class="${messageClass}">${message}</div>
+            </div>
+            <div class="popup-buttons">
+                <button class="popup-button cancel">Close</button>
+            </div>
+        `;
+        
+        // Add to DOM
+        popupOverlay.appendChild(popupContainer);
+        document.body.appendChild(popupOverlay);
+        
+        // Set state
+        isPopupOpen = true;
+        
+        // Add event listeners
+        const closeBtn = popupContainer.querySelector('.popup-button.cancel');
+        closeBtn.addEventListener('click', closePopup);
+        
+        // Auto-close success messages after 3 seconds
+        if (type === 'success') {
+            setTimeout(closePopup, 3000);
+        }
+    }
+    
+    // Load zot swarms from saved data
+    function loadZotSwarms(data) {
+        try {
+            console.log('[LOAD] Loading swarm data:', data);
+            
+            if (!data || !data.swarms || !Array.isArray(data.swarms) || data.swarms.length === 0) {
+                showLoadError('Invalid data format or no swarms found in file.');
+                return false;
+            }
+            
+            // Check if ParticleSystem is available
+            if (typeof ParticleSystem === 'undefined' || !ParticleSystem.removeAllZotSwarms || !ParticleSystem.createZotSwarm) {
+                showLoadError('ParticleSystem not available for loading swarms.');
+                return false;
+            }
+            
+            // Clear existing swarms first
+            ParticleSystem.removeAllZotSwarms();
+            
+            // Apply global settings if available
+            if (data.globalSettings) {
+                if (data.globalSettings.forces && typeof ParticleSystem.updateForceSettings === 'function') {
+                    Object.entries(data.globalSettings.forces).forEach(([key, value]) => {
+                        ParticleSystem.updateForceSettings(key, value);
+                    });
+                }
+                
+                if (data.globalSettings.swipe && typeof SwipeSplitSystem !== 'undefined') {
+                    // Apply swipe settings if SwipeSplitSystem has an update method
+                    if (typeof SwipeSplitSystem.updateSetting === 'function') {
+                        Object.entries(data.globalSettings.swipe).forEach(([key, value]) => {
+                            if (key !== 'pathCount') { // Skip non-setting properties
+                                SwipeSplitSystem.updateSetting(key, value);
+                            }
+                        });
+                    }
+                }
+            }
+            
+            // Recreate each swarm
+            const loadedSwarms = [];
+            data.swarms.forEach(swarm => {
+                // Ensure we have valid settings
+                if (!swarm.settings) {
+                    console.warn('[LOAD] Skipping swarm with missing settings:', swarm);
+                    return;
+                }
+                
+                // Calculate center position if not present
+                const config = {
+                    ...swarm.settings,
+                    centerX: window.innerWidth / 2,  // Default center position
+                    centerY: window.innerHeight / 2
+                };
+                
+                // Create the swarm with the saved configuration
+                const swarmId = ParticleSystem.createZotSwarm(config);
+                if (swarmId) {
+                    loadedSwarms.push(swarmId);
+                }
+            });
+            
+            // Update UI to show swarms if needed
+            if (typeof updateSwarmList === 'function') {
+                updateSwarmList();
+            }
+            
+            // Show success message
+            showLoadSuccess(`Successfully loaded ${loadedSwarms.length} swarm${loadedSwarms.length !== 1 ? 's' : ''}.`);
+            
+            return true;
+        } catch (error) {
+            console.error('[LOAD] Error loading swarms:', error);
+            showLoadError(`Error loading swarms: ${error.message}`);
+            return false;
+        }
     }
     
     // Show the submit popup
@@ -5719,13 +6210,13 @@ const SubmitSwarms = (function() {
         
         // Popup content
         popupContainer.innerHTML = `
-            <h3 class="popup-title">Submit Your Zots</h3>
+            <h3 class="popup-title">Save Zots</h3>
             <div class="popup-content">
-                Are you ready to submit your zot swarms?
+                Are you ready to save your zot swarms?
             </div>
             <div id="submitError" class="error-message" style="display: none;"></div>
             <div class="popup-buttons">
-                <button class="popup-button submit">Submit</button>
+                <button class="popup-button submit">Save</button>
                 <button class="popup-button cancel">Cancel</button>
             </div>
         `;
@@ -5743,18 +6234,18 @@ const SubmitSwarms = (function() {
         const errorElement = popupContainer.querySelector('#submitError');
         
         submitBtn.addEventListener('click', function() {
-            console.log('[SUBMIT] Submit button clicked');
+            console.log('[SAVE] Save button clicked');
             
             // Validate if there are particles on screen
             if (typeof ParticleSystem !== 'undefined' && ParticleSystem.getZotSwarms) {
-                console.log('[SUBMIT] ParticleSystem is available');
+                console.log('[SAVE] ParticleSystem is available');
                 
                 const swarms = ParticleSystem.getZotSwarms();
-                console.log(`[SUBMIT] Found ${swarms ? swarms.length : 0} swarms`);
+                console.log(`[SAVE] Found ${swarms ? swarms.length : 0} swarms`);
                 
                 if (!swarms || swarms.length === 0) {
                     // Show error message if no particles
-                    console.error('[SUBMIT] No swarms found');
+                    console.error('[SAVE] No swarms found');
                     errorElement.textContent = "No zot swarms found! Please create at least one swarm.";
                     errorElement.style.display = "block";
                     return;
@@ -5765,20 +6256,24 @@ const SubmitSwarms = (function() {
                     // Create and save the JSON file
                     const result = saveZotSwarms(swarms);
                     
-                    // Show error message about filesystem limitations
-                    errorElement.innerHTML = "Browser security prevents saving directly to the feedback folder.<br>Check the browser console (F12) for more details.";
-                    errorElement.style.display = "block";
-                    
-                    // Don't close the popup so user can see the error
-                    submitBtn.disabled = true;
-                    submitBtn.textContent = "Error";
+                    // Show success or error message
+                    if (result) {
+                        closePopup();
+                    } else {
+                        errorElement.innerHTML = "Browser security prevents saving directly.<br>Check the browser console (F12) for more details.";
+                        errorElement.style.display = "block";
+                        
+                        // Don't close the popup so user can see the error
+                        submitBtn.disabled = true;
+                        submitBtn.textContent = "Error";
+                    }
                 } catch (error) {
-                    console.error('[SUBMIT] Error during save:', error);
+                    console.error('[SAVE] Error during save:', error);
                     errorElement.textContent = "An error occurred: " + error.message;
                     errorElement.style.display = "block";
                 }
             } else {
-                console.error('[SUBMIT] ParticleSystem not available');
+                console.error('[SAVE] ParticleSystem not available');
                 errorElement.textContent = "Error: ParticleSystem not available.";
                 errorElement.style.display = "block";
             }
@@ -5800,6 +6295,30 @@ const SubmitSwarms = (function() {
     // Save zot swarms data as JSON file
     function saveZotSwarms(swarms) {
         try {
+            // Collect global force settings from ParticleSystem
+            const forceSettings = {};
+            
+            // Try to get all force-related parameters (if these methods exist)
+            if (typeof ParticleSystem.getForceSettings === 'function') {
+                Object.assign(forceSettings, ParticleSystem.getForceSettings());
+            } else {
+                // Fallback to collecting individual settings
+                if (typeof ParticleSystem.getForceSettingValue === 'function') {
+                    forceSettings.touchForce = ParticleSystem.getForceSettingValue('touchForce');
+                    forceSettings.wallForce = ParticleSystem.getForceSettingValue('wallForce');
+                    forceSettings.zotTouchEnabled = ParticleSystem.getForceSettingValue('zotTouchEnabled');
+                    forceSettings.zotSwarmInteractionEnabled = ParticleSystem.getForceSettingValue('zotSwarmInteractionEnabled');
+                }
+            }
+            
+            // Wall forces removed as they're inconsequential for saving purposes
+            
+            // Get swipe force settings if available
+            const swipeSettings = {};
+            if (typeof SwipeSplitSystem !== 'undefined' && typeof SwipeSplitSystem.getSettings === 'function') {
+                Object.assign(swipeSettings, SwipeSplitSystem.getSettings());
+            }
+
             // Create data object with swarm settings and metadata
             const data = {
                 timestamp: new Date().toISOString(),
@@ -5808,17 +6327,18 @@ const SubmitSwarms = (function() {
                     width: window.innerWidth,
                     height: window.innerHeight
                 },
+                // Include all global settings that affect swarm behavior
+                globalSettings: {
+                    forces: forceSettings,
+                    // walls removed as they're inconsequential for saving
+                    swipe: swipeSettings
+                },
                 swarms: swarms.map(swarm => ({
                     id: swarm.id,
                     zotCount: swarm.zotCount,
-                    settings: swarm.settings,
-                    // Get particles position data
-                    particles: swarm.particles ? swarm.particles.map(p => ({
-                        x: p.x,
-                        y: p.y,
-                        size: p.size,
-                        color: p.color
-                    })) : []
+                    // Include full settings object to ensure all parameters are saved
+                    settings: swarm.settings
+                    // Individual particle data removed as it's not necessary
                 }))
             };
             
@@ -5832,30 +6352,32 @@ const SubmitSwarms = (function() {
             const timestamp = new Date().toISOString().replace(/[-:T.Z]/g, '');
             const filename = `preset${timestamp}.json`;
             
-            console.log(`[SUBMIT] Attempting to save data to ${filename}`);
-            console.log(`[SUBMIT] Data size: ${Math.round(jsonString.length / 1024)} KB`);
-            console.log(`[SUBMIT] Number of swarms: ${swarms.length}`);
+            console.log(`[SAVE] Attempting to save data to ${filename}`);
+            console.log(`[SAVE] Data size: ${Math.round(jsonString.length / 1024)} KB`);
+            console.log(`[SAVE] Number of swarms: ${swarms.length}`);
             
-            // Important: Browser JavaScript cannot directly write to server filesystem
-            // We need to inform the user of this limitation
-            console.error(`[SUBMIT] ERROR: Cannot save directly to feedback folder`);
-            console.error(`[SUBMIT] Browser security restrictions prevent JavaScript from writing directly to the server filesystem`);
-            console.error(`[SUBMIT] This would require a server-side API endpoint to handle file uploads`);
-            
-            // Log the data we would have saved (limited to prevent console flooding)
-            console.log(`[SUBMIT] Data that would be saved (truncated):`, {
-                timestamp: data.timestamp,
-                screenSize: data.screenSize,
-                swarmCount: data.swarms.length
-            });
-            
-            return false;
+            // Attempt to trigger download for the user to save manually
+            try {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                console.log(`[SAVE] Download attempted for ${filename}`);
+                return true;
+            } catch (downloadError) {
+                console.error(`[SAVE] Download attempt failed:`, downloadError);
+                return false;
+            }
         } catch (error) {
-            console.error(`[SUBMIT] ERROR: Failed to process swarm data`);
-            console.error(`[SUBMIT] Error details:`, error);
-            console.error(`[SUBMIT] Error name: ${error.name}`);
-            console.error(`[SUBMIT] Error message: ${error.message}`);
-            console.error(`[SUBMIT] Error stack:`, error.stack);
+            console.error(`[SAVE] ERROR: Failed to process swarm data`);
+            console.error(`[SAVE] Error details:`, error);
+            console.error(`[SAVE] Error name: ${error.name}`);
+            console.error(`[SAVE] Error message: ${error.message}`);
+            console.error(`[SAVE] Error stack:`, error.stack);
             return false;
         }
     }
@@ -6254,6 +6776,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('newSwarmCohesion').value = preset.cohesion;
                     document.getElementById('newSwarmPerception').value = preset.perception;
                     
+                    // Trigger input events to update the displayed values
+                    updateSliderValueDisplay('newSwarmSpeed');
+                    updateSliderValueDisplay('newSwarmSeparation');
+                    updateSliderValueDisplay('newSwarmAlignment');
+                    updateSliderValueDisplay('newSwarmCohesion');
+                    updateSliderValueDisplay('newSwarmPerception');
+                    
                     // Update displayed values, keeping the current zot count
                     // HIDDEN: All slider values are hidden to protect IP
                     
@@ -6288,6 +6817,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             });
+        }
+        
+        // Helper function to update slider value display by triggering the input event
+        function updateSliderValueDisplay(sliderId) {
+            const slider = document.getElementById(sliderId);
+            if (slider) {
+                // Create and dispatch an input event to update the displayed value
+                const event = new Event('input', { bubbles: true });
+                slider.dispatchEvent(event);
+            }
         }
         
         // Helper function to update dual slider visuals after changing values
@@ -6674,8 +7213,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 const swarmDropdown = document.getElementById('swarmList');
                 const selectedSwarmId = swarmDropdown.value;
                 if (selectedSwarmId) {
+                    // Store current index before removal
+                    const swarms = ParticleSystem.getZotSwarms();
+                    const currentIndex = swarms.findIndex(swarm => swarm.id === selectedSwarmId);
+                    
+                    // Remove the swarm
                     ParticleSystem.removeZotSwarm(selectedSwarmId);
-                    updateSwarmList();
+                    
+                    // Update the dropdown without auto-selecting the most recent swarm
+                    updateSwarmList(false);
+                    
+                    // Get updated swarms list
+                    const updatedSwarms = ParticleSystem.getZotSwarms();
+                    
+                    // If we have swarms left, select the next one by index
+                    if (updatedSwarms.length > 0) {
+                        // Calculate next index, but don't exceed array bounds
+                        const nextIndex = Math.min(currentIndex, updatedSwarms.length - 1);
+                        // Select the swarm at the calculated index
+                        swarmDropdown.value = updatedSwarms[nextIndex].id;
+                    }
                 }
             });
             removeButton.hasEventListener = true;
@@ -6683,7 +7240,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Update the list of active swarms
-    function updateSwarmList() {
+    function updateSwarmList(selectMostRecent = true) {
         const swarmDropdown = document.getElementById('swarmList');
         const removeButton = document.getElementById('removeSwarmBtn');
         const clearSwarmsButton = document.getElementById('clearSwarmsButton');
@@ -6732,6 +7289,12 @@ document.addEventListener('DOMContentLoaded', function() {
             option.textContent = `${presetDisplayName} ${colorThemeName} (${swarm.zotCount})`;
             swarmDropdown.appendChild(option);
         });
+        
+        // Select the most recently created swarm (last in the array) only when requested
+        if (selectMostRecent && swarms.length > 0) {
+            const mostRecentSwarm = swarms[swarms.length - 1];
+            swarmDropdown.value = mostRecentSwarm.id;
+        }
     }
     
     // Update all UI values to match current settings

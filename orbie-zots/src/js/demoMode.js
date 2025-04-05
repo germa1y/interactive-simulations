@@ -9,6 +9,7 @@ const DemoMode = (function() {
     // Audio elements and state
     let demoAudio = null;
     let slideAudio = null; // New audio element for slide effect
+    let introAudio = null; // Specific element for intro audio to keep it cached
     let currentSongIndex = -1;
     let shuffledSongKeys = [];
     
@@ -20,10 +21,18 @@ const DemoMode = (function() {
     let secondTouchDetected = false; // Track if second touch has been detected
     let isFirstLoop = true; // Track if we're in the first loop
     
+    // New flags for the modified behavior
+    let allSwarmsSpawned = false; // Track if all swarms have been spawned
+    let firstTouchAfterSpawnDetected = false; // Track if first touch after spawn has been detected
+    
     // Idle prompt properties
     let idleTimer = null;
     let promptElement = null;
     let promptActive = false;
+    
+    // Audio loading state tracking
+    let introAudioLoaded = false;
+    let introAudioFailed = false;
     
     // Configuration for demo mode
     const DEMO_CONFIG = {
@@ -35,7 +44,9 @@ const DemoMode = (function() {
         maxSize: 7.5,            // Maximum zot size
         circleRadius: 150,     // Fixed pixel value for swarm positioning (was 0.35 - a fraction of screen)
         cycleInterval: 10000,  // Cycle through presets every 10 seconds
-        idleTimeout: 2000     // Show prompt after 2 seconds of inactivity
+        idleTimeout: 2000,     // Show prompt after 2 seconds of inactivity
+        initialSpeed: 2,       // Initial speed for jellyOrbs (slower)
+        finalSpeed: 5.5        // Final speed after first touch/tap/swipe
     };
     
     // Preset configurations to cycle through
@@ -96,11 +107,11 @@ const DemoMode = (function() {
                 zotCount: 40
             })
         },
-        // Atomic, Neon
+        // Ringer, Neon
         {
-            name: "Atomic",
+            name: "Ringer",
             configs: Array(6).fill({
-                presetName: 'atomic',
+                presetName: 'ringer',
                 zotCount: 40
             })
         },
@@ -136,6 +147,16 @@ const DemoMode = (function() {
             console.error('Demo Mode: ParticleSystem not available');
             return;
         }
+        
+        // Reset tracking variables
+        allSwarmsSpawned = false;
+        firstTouchAfterSpawnDetected = false;
+        isFirstLoop = true; // Ensure we reset the first loop flag
+        touchDetected = false;
+        secondTouchDetected = false;
+        
+        // Preload the intro audio immediately
+        preloadIntroAudio();
         
         // Delay to ensure all systems are properly initialized
         setTimeout(() => {
@@ -183,13 +204,15 @@ const DemoMode = (function() {
             
             if (!touchDetected) {
                 touchDetected = true;
-                startCycling();
+                // We no longer start cycling on first touch
+                // Keeping the comment for clarity that this is a deliberate change
+                // startCycling();
                 
                 // Add second touch detection
                 canvas.addEventListener('touchstart', detectSecondTouch);
                 canvas.addEventListener('click', detectSecondTouch);
                 
-                console.log('Demo Mode: First touch detected, started cycling');
+                console.log('Demo Mode: First touch detected, waiting for second touch');
             }
         };
         
@@ -209,18 +232,26 @@ const DemoMode = (function() {
             secondTouchDetected = true;
             console.log(`Demo Mode: Second touch detected at (${secondTouchX}, ${secondTouchY}), waiting 1 second before spawning remaining swarms`);
             
-            // Play demo intro audio immediately - use direct path to ensure it works
+            // Start playing demo intro audio but don't start cycling yet
             try {
                 if (demoAudio) {
                     demoAudio.pause();
                 }
                 
-                demoAudio = new Audio();
-                demoAudio.preload = 'auto';
+                // Use the preloaded intro audio if available
+                if (introAudio && introAudioLoaded) {
+                    console.log('Demo Mode: Using cached intro audio for playback');
+                    demoAudio = introAudio;
+                    introAudio = null; // Clear reference to avoid duplicate usage
+                } else {
+                    // Create new audio element if preloaded one isn't available
+                    console.log('Demo Mode: Creating new audio element for intro');
+                    demoAudio = new Audio();
+                    demoAudio.preload = 'auto';
+                    demoAudio.src = './music/DemoIntro.mp3';
+                }
                 
-                // Use a direct path to the audio file - more reliable than using Config
-                demoAudio.src = './music/DemoIntro.mp3';
-                console.log('Demo Mode: Using direct path to demo intro audio:', demoAudio.src);
+                console.log('Demo Mode: Using path for demo intro audio:', demoAudio.src);
                 
                 // Set up ended event to start random playlist
                 demoAudio.onended = function() {
@@ -260,8 +291,6 @@ const DemoMode = (function() {
                 playNextSong();
             }
             
-            // Remove music button enabling from here (will enable when Torrential is detected)
-            
             // Remove second touch listener
             canvas.removeEventListener('touchstart', detectSecondTouch);
             canvas.removeEventListener('click', detectSecondTouch);
@@ -270,7 +299,34 @@ const DemoMode = (function() {
             setTimeout(() => {
                 console.log('Demo Mode: 1-second delay complete, spawning remaining swarms');
                 createRemainingSwarms();
+                
+                // Set flag that all swarms are spawned
+                allSwarmsSpawned = true;
+                
+                // Add listener for the first touch after all swarms are spawned
+                canvas.addEventListener('touchstart', detectFirstTouchAfterSpawn);
+                canvas.addEventListener('click', detectFirstTouchAfterSpawn);
+                
+                console.log('Demo Mode: All swarms spawned, waiting for first touch to increase speed and start cycling');
             }, 1000);
+        };
+        
+        // New handler for detecting the first touch after all swarms are spawned
+        const detectFirstTouchAfterSpawn = function(e) {
+            if (!isActive || !allSwarmsSpawned || firstTouchAfterSpawnDetected) return;
+            
+            firstTouchAfterSpawnDetected = true;
+            console.log('Demo Mode: First touch after all swarms spawned detected, increasing speed and starting cycling');
+            
+            // Update all jellyOrb swarms to the final speed
+            updateAllJellyOrbsSpeed(DEMO_CONFIG.finalSpeed);
+            
+            // Now start the cycling
+            startCycling();
+            
+            // Remove this event listener
+            canvas.removeEventListener('touchstart', detectFirstTouchAfterSpawn);
+            canvas.removeEventListener('click', detectFirstTouchAfterSpawn);
         };
         
         // Add double tap detection
@@ -287,7 +343,9 @@ const DemoMode = (function() {
                 
                 // Restart cycling if it was stopped
                 if (!isCycling) {
-                    startCycling();
+                    // Pass true to skipImmediateCycle to prevent advancing to the next preset
+                    // when resuming from push/pull prompt
+                    startCycling(true);
                 }
                 
                 e.preventDefault(); // Prevent default action
@@ -763,33 +821,48 @@ const DemoMode = (function() {
     
     /**
      * Start cycling through presets
+     * @param {boolean} skipImmediateCycle - If true, don't cycle immediately (just set up interval)
      */
-    function startCycling() {
+    function startCycling(skipImmediateCycle = false) {
         if (isCycling) return;
         
-        isCycling = true;
-        
-        // Only cycle if we haven't already (when resuming from paused state)
-        if (cycleIndex === -1) {
-            // Cycle immediately to first preset
-            cycleToNextPreset();
+        // Only start cycling if we've detected the first touch after all swarms are spawned
+        // or if we're in special circumstances like after a swipe
+        if (!firstTouchAfterSpawnDetected && allSwarmsSpawned) {
+            console.log('Demo Mode: Not starting cycling yet, waiting for first touch after all swarms are spawned');
+            return;
         }
         
-        // Set up interval to cycle through presets
-        cycleInterval = setInterval(() => {
-            cycleToNextPreset();
-            
-            // After a complete loop, mark it as no longer first loop
-            if (cycleIndex === 0) {
-                isFirstLoop = false;
-            }
-        }, DEMO_CONFIG.cycleInterval);
+        console.log('Demo Mode: Starting preset cycling');
+        
+        // Don't reset cycle index if we're resuming after a prompt (swipe or push/pull)
+        // Only reset if we're starting fresh (no cycling has happened yet)
+        if (cycleIndex === -1) {
+            // First time starting cycling
+            console.log('Demo Mode: First time starting cycle, initialize index to -1');
+            // Keep cycleIndex at -1 so first increment goes to 0
+        } else {
+            // We're resuming after a prompt (like swipe or push/pull), maintain current preset
+            console.log(`Demo Mode: Resuming cycling from preset index ${cycleIndex}`);
+            // No need to change cycleIndex, keep current preset
+        }
+        
+        // Cycle immediately unless skipImmediateCycle is true
+        if (!skipImmediateCycle) {
+            cyclePreset();
+        } else {
+            console.log('Demo Mode: Skipping immediate cycle, will cycle after interval');
+        }
+        
+        // Set up cycling interval
+        cycleInterval = setInterval(cyclePreset, DEMO_CONFIG.cycleInterval);
+        isCycling = true;
     }
     
     /**
      * Cycle to the next preset configuration
      */
-    function cycleToNextPreset() {
+    function cyclePreset() {
         if (!isActive || demoSwarms.length === 0) {
             stopCycling();
             return;
@@ -800,10 +873,21 @@ const DemoMode = (function() {
             return;
         }
         
-        cycleIndex = (cycleIndex + 1) % PRESET_CYCLES.length;
+        // Calculate the next cycle index
+        const nextCycleIndex = (cycleIndex + 1) % PRESET_CYCLES.length;
+        
+        // Check if we've completed a full cycle (gone through all presets)
+        if (isFirstLoop && nextCycleIndex === 0 && cycleIndex !== -1) {
+            // We've gone through all presets once and are looping back to the first preset
+            console.log('Demo Mode: First loop complete, disabling instructions and pauses');
+            isFirstLoop = false;
+        }
+        
+        // Update the cycle index
+        cycleIndex = nextCycleIndex;
         const presetCycle = PRESET_CYCLES[cycleIndex];
         
-        console.log(`Demo Mode: Cycling to preset "${presetCycle.name}"`);
+        console.log(`Demo Mode: Cycling to preset "${presetCycle.name}" (First Loop: ${isFirstLoop})`);
         
         // Apply new configurations to each swarm
         demoSwarms.forEach((swarmId, index) => {
@@ -813,8 +897,8 @@ const DemoMode = (function() {
         
         // Special behavior for different presets (only in first loop)
         if (isFirstLoop) {
-            // Show special prompt for Atomic preset
-            if (presetCycle.name === "Atomic") {
+            // Show special prompt for Ringer preset
+            if (presetCycle.name === "Ringer") {
                 stopCycling(); // Pause cycling
                 showPushPullPrompt(); // Show the special prompt
             }
@@ -837,7 +921,7 @@ const DemoMode = (function() {
                     // Stop any currently playing music
                     stopAudio();
                     console.log('Demo Mode: Stopped music for Torrential preset after 1-second delay');
-                }, 1000);
+                }, -10000);
                 
                 showSwipePrompt(); // Show the swipe prompt
             }
@@ -855,7 +939,7 @@ const DemoMode = (function() {
             // Create update config with behavior parameters
             const updateConfig = {
                 zotCount: config.zotCount || DEMO_CONFIG.zotsPerSwarm,
-                speed: preset.speed !== undefined ? preset.speed : 4,
+                speed: preset.speed !== undefined ? preset.speed : 5.5,
                 separation: preset.separation !== undefined ? preset.separation : 0.1,
                 alignment: preset.alignment !== undefined ? preset.alignment : 0.1,
                 cohesion: preset.cohesion !== undefined ? preset.cohesion : 5,
@@ -1144,7 +1228,7 @@ const DemoMode = (function() {
         }
         
         // Move to next preset
-        cycleToNextPreset();
+        cyclePreset();
         
         // Restart cycling if it was active
         if (wasActive) {
@@ -1166,7 +1250,7 @@ const DemoMode = (function() {
         cycleIndex = (cycleIndex - 2 + PRESET_CYCLES.length) % PRESET_CYCLES.length;
         
         // Move to previous preset
-        cycleToNextPreset();
+        cyclePreset();
         
         // Restart cycling if it was active
         if (wasActive) {
@@ -1195,6 +1279,14 @@ const DemoMode = (function() {
         if (slideAudio) {
             slideAudio.pause();
             slideAudio = null;
+        }
+        
+        // Clean up intro audio if it exists
+        if (introAudio) {
+            introAudio.pause();
+            introAudio = null;
+            introAudioLoaded = false;
+            introAudioFailed = false;
         }
         
         // Clear idle timer if active
@@ -1283,7 +1375,7 @@ const DemoMode = (function() {
         const config = {
             // Swarm preset behavior parameters
             zotCount: DEMO_CONFIG.zotsPerSwarm,
-            speed: preset.speed || 4,
+            speed: DEMO_CONFIG.initialSpeed, // Use the slower initial speed
             separation: preset.separation || 0.1,
             alignment: preset.alignment || 0.1,
             cohesion: preset.cohesion || 5,
@@ -1307,7 +1399,7 @@ const DemoMode = (function() {
             const swarmId = ParticleSystem.createZotSwarm(config);
             if (swarmId) {
                 demoSwarms.push(swarmId);
-                console.log(`Demo Mode: Created initial swarm ${swarmId} at center (${centerX.toFixed(0)}, ${centerY.toFixed(0)})`);
+                console.log(`Demo Mode: Created initial swarm ${swarmId} at center (${centerX.toFixed(0)}, ${centerY.toFixed(0)}) with speed ${config.speed}`);
             }
         } catch (error) {
             console.error('Demo Mode: Error creating initial swarm:', error);
@@ -1347,7 +1439,7 @@ const DemoMode = (function() {
             const config = {
                 // Swarm preset behavior parameters
                 zotCount: DEMO_CONFIG.zotsPerSwarm,
-                speed: preset.speed || 4,
+                speed: DEMO_CONFIG.initialSpeed, // Use the slower initial speed
                 separation: preset.separation || 0.1,
                 alignment: preset.alignment || 0.1,
                 cohesion: preset.cohesion || 5,
@@ -1371,7 +1463,7 @@ const DemoMode = (function() {
                 const swarmId = ParticleSystem.createZotSwarm(config);
                 if (swarmId) {
                     demoSwarms.push(swarmId);
-                    console.log(`Demo Mode: Created additional swarm ${swarmId} at (${x.toFixed(0)}, ${y.toFixed(0)})`);
+                    console.log(`Demo Mode: Created additional swarm ${swarmId} at (${x.toFixed(0)}, ${y.toFixed(0)}) with speed ${config.speed}`);
                 }
             } catch (error) {
                 console.error('Demo Mode: Error creating additional swarm:', error);
@@ -1545,94 +1637,107 @@ const DemoMode = (function() {
     }
 
     /**
-     * Play the demo intro audio
+     * Preload the intro audio file so it's ready to play immediately when needed
      */
-    function playDemoAudio() {
-        console.log('Demo Mode: Attempting to play demo intro audio');
-        
-        try {
-            // Create audio element if it doesn't exist
-            if (!demoAudio) {
-                const audioPath = Config.getAudioPath('demoIntro');
-                console.log(`Demo Mode: Creating audio element with path: ${audioPath}`);
-                
-                demoAudio = new Audio();
-                
-                // Preload the audio
-                demoAudio.preload = 'auto';
-                
-                // Set source
-                demoAudio.src = audioPath;
-                
-                // Set up ended event to start random playlist
-                demoAudio.onended = function() {
-                    console.log('Demo Mode: Intro audio ended, starting random playlist');
-                    randomizeSongs();
-                    playNextSong();
-                };
-                
-                // Add error handling
-                demoAudio.onerror = function(err) {
-                    console.error('Demo Mode: Error loading intro audio:', err);
-                    console.error('Demo Mode: Audio error code:', demoAudio.error ? demoAudio.error.code : 'unknown');
-                    demoAudio = null;
-                    // Start random playlist immediately on error
-                    randomizeSongs();
-                    playNextSong();
-                };
-                
-                // Add load event handler
-                demoAudio.onloadeddata = function() {
-                    console.log('Demo Mode: Intro audio loaded successfully');
-                };
-            }
-            
-            // Play the audio - but first check if it's already loaded
-            setTimeout(() => {
-                try {
-                    console.log('Demo Mode: Attempting to play intro audio now');
-                    // Add a user interaction check
-                    if (typeof document !== 'undefined' && document.documentElement && 
-                        typeof document.documentElement.hasAttribute === 'function' &&
-                        !document.documentElement.hasAttribute('data-user-interacted')) {
-                        document.documentElement.setAttribute('data-user-interacted', 'true');
-                        console.log('Demo Mode: Setting user interaction flag for autoplay');
-                    }
-                    
-                    const playPromise = demoAudio.play();
-                    
-                    // Handle the promise properly
-                    if (playPromise !== undefined) {
-                        playPromise.then(() => {
-                            console.log('Demo Mode: Intro audio playing successfully');
-                        }).catch(err => {
-                            console.error('Demo Mode: Error playing intro audio:', err);
-                            // Start random playlist immediately on error
-                            randomizeSongs();
-                            playNextSong();
-                        });
-                    } else {
-                        console.log('Demo Mode: Audio play did not return a promise');
-                    }
-                } catch (err) {
-                    console.error('Demo Mode: Error initiating intro audio playback:', err);
-                    randomizeSongs();
-                    playNextSong();
-                }
-            }, 500); // Short delay to ensure audio element is fully initialized
-        } catch (err) {
-            console.error('Demo Mode: Error setting up audio:', err);
-            // Start random playlist immediately on error
-            randomizeSongs();
-            playNextSong();
+    function preloadIntroAudio() {
+        if (introAudio || introAudioLoaded) {
+            console.log('Demo Mode: Intro audio already preloaded');
+            return;
         }
+        
+        console.log('Demo Mode: Preloading intro audio...');
+        
+        // Create a dedicated audio element just for the intro
+        introAudio = new Audio();
+        
+        // Set highest preload priority
+        introAudio.preload = 'auto';
+        
+        // Use a direct path to the audio file for maximum reliability
+        introAudio.src = './music/DemoIntro.mp3';
+        
+        // Add load event handler
+        introAudio.onloadeddata = function() {
+            console.log('Demo Mode: Intro audio loaded successfully and cached');
+            introAudioLoaded = true;
+            
+            // Additional measure to ensure audio stays in memory
+            // Force a play/pause with minimal volume to engage the audio subsystem
+            try {
+                introAudio.volume = 0.001; // Nearly silent
+                const promise = introAudio.play();
+                
+                if (promise !== undefined) {
+                    promise.then(() => {
+                        // Immediately pause after successful play
+                        setTimeout(() => {
+                            introAudio.pause();
+                            introAudio.currentTime = 0; // Reset to beginning
+                            introAudio.volume = 1.0; // Reset volume
+                            console.log('Demo Mode: Intro audio primed for immediate playback');
+                        }, 10);
+                    }).catch(err => {
+                        // Common error on browsers that require user interaction - not a problem
+                        console.log('Demo Mode: Audio priming required user interaction (expected):', err.name);
+                        // Reset volume anyway
+                        introAudio.volume = 1.0;
+                    });
+                }
+            } catch (e) {
+                // Silent failure is ok here - browser policy may prevent this technique
+                introAudio.volume = 1.0; // Reset volume
+            }
+        };
+        
+        // Add canplaythrough event for more detailed loading feedback
+        introAudio.oncanplaythrough = function() {
+            console.log('Demo Mode: Intro audio can play through without buffering');
+        };
+        
+        // Add error handling with multiple fallback paths
+        introAudio.onerror = function(err) {
+            console.error('Demo Mode: Error loading intro audio:', err);
+            console.error('Demo Mode: Audio error code:', introAudio.error ? introAudio.error.code : 'unknown');
+            
+            // Try alternative path
+            if (introAudio.src.indexOf('./music/') === 0) {
+                console.log('Demo Mode: Trying alternative path for intro audio');
+                introAudio.src = '/music/DemoIntro.mp3';
+                
+                // Handle second failure
+                introAudio.onerror = function() {
+                    console.error('Demo Mode: Second attempt to load intro audio failed');
+                    
+                    // Try one more absolute fallback
+                    if (typeof window !== 'undefined' && window.location) {
+                        introAudio.src = window.location.origin + '/music/DemoIntro.mp3';
+                        
+                        // Final failure handler
+                        introAudio.onerror = function() {
+                            console.error('Demo Mode: All attempts to load intro audio failed');
+                            introAudioFailed = true;
+                            introAudio = null;
+                        };
+                    } else {
+                        introAudioFailed = true;
+                        introAudio = null;
+                    }
+                };
+            } else {
+                introAudioFailed = true;
+                introAudio = null;
+            }
+        };
+        
+        // Explicitly call load() to start loading the audio right away
+        introAudio.load();
     }
     
     /**
      * Stop any playing demo audio with fade out effect
      * @param {number} fadeOutDuration - Fade out duration in ms (default 1500ms)
      */
-    function stopAudio(fadeOutDuration = 800) {
+    function stopAudio(fadeOutDuration = 1500) {
         if (!demoAudio) {
             console.log('Demo Mode: No audio to stop');
             return;
@@ -1978,6 +2083,32 @@ const DemoMode = (function() {
         }
     }
     
+    /**
+     * Update all jellyOrb swarm speeds to a new value
+     * @param {number} speed - The new speed to set for all jellyOrb swarms
+     */
+    function updateAllJellyOrbsSpeed(speed) {
+        console.log(`Demo Mode: Updating all jellyOrb swarms to speed ${speed}`);
+        
+        // Update each swarm in the demoSwarms array
+        demoSwarms.forEach((swarmId, index) => {
+            try {
+                // Only update the speed property
+                const updateConfig = {
+                    speed: speed
+                };
+                
+                // Update the swarm
+                if (ParticleSystem.updateZotSwarm) {
+                    ParticleSystem.updateZotSwarm(swarmId, updateConfig);
+                    console.log(`Demo Mode: Updated swarm ${swarmId} speed to ${speed}`);
+                }
+            } catch (error) {
+                console.error(`Demo Mode: Error updating swarm ${swarmId} speed:`, error);
+            }
+        });
+    }
+    
     // Public API
     return {
         start: start,
@@ -1987,7 +2118,9 @@ const DemoMode = (function() {
         stopAudio: stopAudio,
         togglePauseAudio: togglePauseAudio,
         resumeAudio: resumeAudio,
-        isAudioPlaying: isAudioPlaying
+        isAudioPlaying: isAudioPlaying,
+        // Add a public method to force preload the intro audio
+        preloadIntroAudio: preloadIntroAudio
     };
 })();
 

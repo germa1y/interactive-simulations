@@ -49,7 +49,7 @@ const Presets = {
         jellyOrbs: {
             name: "Jelly Orbs",
             zotCount: 25,
-            speed: 2,
+            speed: 5,
             separation: 0.1,
             alignment: 0.1,
             cohesion: 5,
@@ -68,8 +68,8 @@ const Presets = {
             trailLength: 0,
             colorTheme: 'sparkle'  // Default color theme for this preset
         },
-        atomic: {
-            name: "Atomic",
+        ringer: {
+            name: "Ringer",
             zotCount: 25,
             speed: 3.5,
             separation: 0,

@@ -389,17 +389,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('newSwarmCohesion').value = preset.cohesion;
                     document.getElementById('newSwarmPerception').value = preset.perception;
                     
-                    // Update displayed values, keeping the current zot count
-                    // HIDDEN: All slider values are hidden to protect IP
-                    /*
-                    document.getElementById('newSwarmZotCountValue').textContent = currentZotCount;
-                    document.getElementById('newSwarmSpeedValue').textContent = preset.speed.toFixed(1);
-                    document.getElementById('newSwarmSeparationValue').textContent = preset.separation.toFixed(1);
-                    document.getElementById('newSwarmAlignmentValue').textContent = preset.alignment.toFixed(2);
-                    document.getElementById('newSwarmCohesionValue').textContent = preset.cohesion.toFixed(1);
-                    document.getElementById('newSwarmPerceptionValue').textContent = preset.perception;
-                    */
-
+                    // Trigger input events to update the displayed values
+                    updateSliderValueDisplay('newSwarmSpeed');
+                    updateSliderValueDisplay('newSwarmSeparation');
+                    updateSliderValueDisplay('newSwarmAlignment');
+                    updateSliderValueDisplay('newSwarmCohesion');
+                    updateSliderValueDisplay('newSwarmPerception');
+                    
                     // Update color theme selector
                     if (preset.colorTheme) {
                         const colorPresets = document.querySelectorAll('.color-preset');
@@ -418,6 +414,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             });
+        }
+        
+        // Helper function to update slider value display by triggering the input event
+        function updateSliderValueDisplay(sliderId) {
+            const slider = document.getElementById(sliderId);
+            if (slider) {
+                // Create and dispatch an input event to update the displayed value
+                const event = new Event('input', { bubbles: true });
+                slider.dispatchEvent(event);
+            }
         }
         
         // Helper function to update dual slider visuals after changing values
@@ -638,6 +644,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const valueDisplay = document.getElementById(id + 'Value');
         
         if (input && valueDisplay) {
+            // Force a layout reflow to fix initial thumb position
+            // This addresses the issue with sliders that have modified min/max values
+            input.style.visibility = 'hidden';
+            
             // Set initial value
             const shouldRound = input.step === '1' || parseFloat(input.step) === 1;
             const precision = shouldRound ? 0 : 
@@ -645,6 +655,68 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // HIDDEN: All slider values are hidden to protect IP
             // valueDisplay.textContent = parseFloat(input.value).toFixed(precision);
+            
+            // Add increment/decrement buttons
+            const container = input.closest('.slider-overlay-container');
+            if (container) {
+                // Remove any existing buttons first to avoid duplicates
+                const existingButtons = container.querySelectorAll('.slider-button');
+                existingButtons.forEach(button => button.remove());
+                
+                // Add decrease button (-)
+                const decreaseBtn = document.createElement('div');
+                decreaseBtn.className = 'slider-button decrease';
+                decreaseBtn.textContent = '-';
+                decreaseBtn.setAttribute('role', 'button');
+                decreaseBtn.setAttribute('aria-label', 'Decrease value');
+                decreaseBtn.style.zIndex = '9999'; // Extreme z-index
+                decreaseBtn.style.boxShadow = '0 0 15px 5px rgba(255, 87, 34, 0.9)'; // Stronger glow
+                decreaseBtn.style.color = 'white';
+                
+                // Add increase button (+)
+                const increaseBtn = document.createElement('div');
+                increaseBtn.className = 'slider-button increase';
+                increaseBtn.textContent = '+';
+                increaseBtn.setAttribute('role', 'button');
+                increaseBtn.setAttribute('aria-label', 'Increase value');
+                increaseBtn.style.zIndex = '9999'; // Extreme z-index
+                increaseBtn.style.boxShadow = '0 0 15px 5px rgba(255, 87, 34, 0.9)'; // Stronger glow
+                increaseBtn.style.color = 'white';
+                
+                // Add event listeners for the buttons
+                decreaseBtn.addEventListener('click', function() {
+                    const step = parseFloat(input.step) || 1;
+                    const min = parseFloat(input.min);
+                    const newValue = Math.max(min, parseFloat(input.value) - step);
+                    input.value = newValue;
+                    
+                    // Trigger input event to update the value display and call the callback
+                    const event = new Event('input', { bubbles: true });
+                    input.dispatchEvent(event);
+                });
+                
+                increaseBtn.addEventListener('click', function() {
+                    const step = parseFloat(input.step) || 1;
+                    const max = parseFloat(input.max);
+                    const newValue = Math.min(max, parseFloat(input.value) + step);
+                    input.value = newValue;
+                    
+                    // Trigger input event to update the value display and call the callback
+                    const event = new Event('input', { bubbles: true });
+                    input.dispatchEvent(event);
+                });
+                
+                // Add the buttons to the container
+                container.appendChild(decreaseBtn);
+                container.appendChild(increaseBtn);
+                
+                // Force layout to ensure buttons are rendered
+                void container.offsetWidth;
+            }
+            
+            // Trigger browser reflow and reset visibility
+            void input.offsetWidth;
+            input.style.visibility = 'visible';
             
             // Add event listeners for input changes
             input.addEventListener('input', function() {
@@ -668,6 +740,171 @@ document.addEventListener('DOMContentLoaded', function() {
         const maxValueDisplay = document.getElementById(maxId + 'Value');
         
         if (minSlider && maxSlider && minValueDisplay && maxValueDisplay) {
+            // Track which thumb is selected (min or max)
+            let activeThumb = null;
+            let decreaseBtn = null;
+            let increaseBtn = null;
+            
+            // Add increment/decrement buttons for min slider container
+            const sliderContainer = minSlider.closest('.range-slider-container');
+            if (sliderContainer) {
+                // Remove any existing buttons first to avoid duplicates
+                const existingButtons = sliderContainer.querySelectorAll('.slider-button');
+                existingButtons.forEach(button => button.remove());
+                
+                // Add decrease button (-)
+                decreaseBtn = document.createElement('div');
+                decreaseBtn.className = 'slider-button decrease';
+                decreaseBtn.textContent = '-';
+                decreaseBtn.setAttribute('role', 'button');
+                decreaseBtn.setAttribute('aria-label', 'Decrease value');
+                decreaseBtn.style.zIndex = '9999'; // Extreme z-index
+                decreaseBtn.style.boxShadow = '0 0 15px 5px rgba(255, 87, 34, 0.9)'; // Stronger glow
+                decreaseBtn.style.color = 'white';
+                
+                // Add increase button (+)
+                increaseBtn = document.createElement('div');
+                increaseBtn.className = 'slider-button increase';
+                increaseBtn.textContent = '+';
+                increaseBtn.setAttribute('role', 'button');
+                increaseBtn.setAttribute('aria-label', 'Increase value');
+                increaseBtn.style.zIndex = '9999'; // Extreme z-index
+                increaseBtn.style.boxShadow = '0 0 15px 5px rgba(255, 87, 34, 0.9)'; // Stronger glow
+                increaseBtn.style.color = 'white';
+                
+                // Add the buttons to the container
+                sliderContainer.appendChild(decreaseBtn);
+                sliderContainer.appendChild(increaseBtn);
+                
+                // Force layout to ensure buttons are rendered
+                void sliderContainer.offsetWidth;
+                
+                console.log("Dual slider buttons created:", decreaseBtn, increaseBtn);
+            }
+            
+            // Function to set the active thumb
+            function setActiveThumb(slider) {
+                // Remove active class from both sliders
+                minSlider.classList.remove('active');
+                maxSlider.classList.remove('active');
+                
+                // Add active class to the selected slider
+                slider.classList.add('active');
+                
+                // Update active thumb reference
+                activeThumb = slider;
+                
+                // Enable both buttons
+                if (decreaseBtn && increaseBtn) {
+                    decreaseBtn.classList.remove('disabled');
+                    increaseBtn.classList.remove('disabled');
+                }
+            }
+            
+            // Function to reset selection state
+            function resetSelection() {
+                // Remove active class from both sliders
+                minSlider.classList.remove('active');
+                maxSlider.classList.remove('active');
+                
+                // Disable buttons
+                if (decreaseBtn && increaseBtn) {
+                    decreaseBtn.classList.add('disabled');
+                    increaseBtn.classList.add('disabled');
+                }
+                
+                activeThumb = null;
+            }
+            
+            // Add event listeners for button clicks
+            if (decreaseBtn) {
+                decreaseBtn.addEventListener('click', function() {
+                    if (this.classList.contains('disabled') || !activeThumb) return;
+                    
+                    const step = parseFloat(activeThumb.step) || 1;
+                    const min = parseFloat(activeThumb.min);
+                    const newValue = Math.max(min, parseFloat(activeThumb.value) - step);
+                    activeThumb.value = newValue;
+                    
+                    // If adjusting min thumb, ensure max is not smaller
+                    if (activeThumb === minSlider) {
+                        const maxVal = parseFloat(maxSlider.value);
+                        if (newValue > maxVal) {
+                            maxSlider.value = newValue;
+                        }
+                    }
+                    // If adjusting max thumb, ensure min is not larger
+                    else if (activeThumb === maxSlider) {
+                        const minVal = parseFloat(minSlider.value);
+                        if (newValue < minVal) {
+                            minSlider.value = newValue;
+                        }
+                    }
+                    
+                    // Update values and visual state
+                    updateValues();
+                });
+            }
+            
+            if (increaseBtn) {
+                increaseBtn.addEventListener('click', function() {
+                    if (this.classList.contains('disabled') || !activeThumb) return;
+                    
+                    const step = parseFloat(activeThumb.step) || 1;
+                    const max = parseFloat(activeThumb.max);
+                    const newValue = Math.min(max, parseFloat(activeThumb.value) + step);
+                    activeThumb.value = newValue;
+                    
+                    // If adjusting min thumb, ensure max is not smaller
+                    if (activeThumb === minSlider) {
+                        const maxVal = parseFloat(maxSlider.value);
+                        if (newValue > maxVal) {
+                            maxSlider.value = newValue;
+                        }
+                    }
+                    // If adjusting max thumb, ensure min is not larger
+                    else if (activeThumb === maxSlider) {
+                        const minVal = parseFloat(minSlider.value);
+                        if (newValue < minVal) {
+                            minSlider.value = newValue;
+                        }
+                    }
+                    
+                    // Update values and visual state
+                    updateValues();
+                });
+            }
+            
+            // Add thumb selection events
+            minSlider.addEventListener('mousedown', function() {
+                setActiveThumb(minSlider);
+            });
+            
+            maxSlider.addEventListener('mousedown', function() {
+                setActiveThumb(maxSlider);
+            });
+            
+            // Touch events for mobile
+            minSlider.addEventListener('touchstart', function() {
+                setActiveThumb(minSlider);
+            }, { passive: true });
+            
+            maxSlider.addEventListener('touchstart', function() {
+                setActiveThumb(maxSlider);
+            }, { passive: true });
+            
+            // Reset selection when clicking outside
+            document.addEventListener('click', function(e) {
+                // If click is not on a slider or the buttons, reset selection
+                if (!e.target.closest('.range-slider-container') || 
+                    (e.target !== minSlider && 
+                     e.target !== maxSlider && 
+                     e.target !== decreaseBtn && 
+                     e.target !== increaseBtn)) {
+                    resetSelection();
+                }
+            });
+            
             // Update values displays
             function updateValues() {
                 const minVal = parseFloat(minSlider.value);
@@ -790,24 +1027,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // This function is no longer needed
     }
     
-    // Setup function to initialize UI just once 
-    function setupSwarmManagementUI() {
-        const removeButton = document.getElementById('removeSwarmBtn');
-        if (removeButton && !removeButton.hasEventListener) {
-            removeButton.addEventListener('click', function() {
-                const swarmDropdown = document.getElementById('swarmList');
-                const selectedSwarmId = swarmDropdown.value;
-                if (selectedSwarmId) {
-                    ParticleSystem.removeZotSwarm(selectedSwarmId);
-                    updateSwarmList();
-                }
-            });
-            removeButton.hasEventListener = true;
-        }
-    }
-    
     // Update the list of active swarms
-    function updateSwarmList() {
+    function updateSwarmList(selectMostRecent = true) {
         const swarmDropdown = document.getElementById('swarmList');
         const removeButton = document.getElementById('removeSwarmBtn');
         const clearSwarmsButton = document.getElementById('clearSwarmsButton');
@@ -856,6 +1077,46 @@ document.addEventListener('DOMContentLoaded', function() {
             option.textContent = `${presetDisplayName} ${colorThemeName} (${swarm.zotCount})`;
             swarmDropdown.appendChild(option);
         });
+        
+        // Select the most recently created swarm (last in the array) only when requested
+        if (selectMostRecent && swarms.length > 0) {
+            const mostRecentSwarm = swarms[swarms.length - 1];
+            swarmDropdown.value = mostRecentSwarm.id;
+        }
+    }
+    
+    // Setup function to initialize UI just once 
+    function setupSwarmManagementUI() {
+        const removeButton = document.getElementById('removeSwarmBtn');
+        if (removeButton && !removeButton.hasEventListener) {
+            removeButton.addEventListener('click', function() {
+                const swarmDropdown = document.getElementById('swarmList');
+                const selectedSwarmId = swarmDropdown.value;
+                if (selectedSwarmId) {
+                    // Store current index before removal
+                    const swarms = ParticleSystem.getZotSwarms();
+                    const currentIndex = swarms.findIndex(swarm => swarm.id === selectedSwarmId);
+                    
+                    // Remove the swarm
+                    ParticleSystem.removeZotSwarm(selectedSwarmId);
+                    
+                    // Update the dropdown without auto-selecting the most recent swarm
+                    updateSwarmList(false);
+                    
+                    // Get updated swarms list
+                    const updatedSwarms = ParticleSystem.getZotSwarms();
+                    
+                    // If we have swarms left, select the next one by index
+                    if (updatedSwarms.length > 0) {
+                        // Calculate next index, but don't exceed array bounds
+                        const nextIndex = Math.min(currentIndex, updatedSwarms.length - 1);
+                        // Select the swarm at the calculated index
+                        swarmDropdown.value = updatedSwarms[nextIndex].id;
+                    }
+                }
+            });
+            removeButton.hasEventListener = true;
+        }
     }
     
     // Update all UI values to match current settings

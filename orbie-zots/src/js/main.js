@@ -371,6 +371,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('newSwarmCohesion').value = preset.cohesion;
                     document.getElementById('newSwarmPerception').value = preset.perception;
                     
+                    // Trigger input events to update the displayed values
+                    updateSliderValueDisplay('newSwarmSpeed');
+                    updateSliderValueDisplay('newSwarmSeparation');
+                    updateSliderValueDisplay('newSwarmAlignment');
+                    updateSliderValueDisplay('newSwarmCohesion');
+                    updateSliderValueDisplay('newSwarmPerception');
+                    
                     // Update displayed values, keeping the current zot count
                     // HIDDEN: All slider values are hidden to protect IP
                     
@@ -405,6 +412,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             });
+        }
+        
+        // Helper function to update slider value display by triggering the input event
+        function updateSliderValueDisplay(sliderId) {
+            const slider = document.getElementById(sliderId);
+            if (slider) {
+                // Create and dispatch an input event to update the displayed value
+                const event = new Event('input', { bubbles: true });
+                slider.dispatchEvent(event);
+            }
         }
         
         // Helper function to update dual slider visuals after changing values
@@ -791,8 +808,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 const swarmDropdown = document.getElementById('swarmList');
                 const selectedSwarmId = swarmDropdown.value;
                 if (selectedSwarmId) {
+                    // Store current index before removal
+                    const swarms = ParticleSystem.getZotSwarms();
+                    const currentIndex = swarms.findIndex(swarm => swarm.id === selectedSwarmId);
+                    
+                    // Remove the swarm
                     ParticleSystem.removeZotSwarm(selectedSwarmId);
-                    updateSwarmList();
+                    
+                    // Update the dropdown without auto-selecting the most recent swarm
+                    updateSwarmList(false);
+                    
+                    // Get updated swarms list
+                    const updatedSwarms = ParticleSystem.getZotSwarms();
+                    
+                    // If we have swarms left, select the next one by index
+                    if (updatedSwarms.length > 0) {
+                        // Calculate next index, but don't exceed array bounds
+                        const nextIndex = Math.min(currentIndex, updatedSwarms.length - 1);
+                        // Select the swarm at the calculated index
+                        swarmDropdown.value = updatedSwarms[nextIndex].id;
+                    }
                 }
             });
             removeButton.hasEventListener = true;
@@ -800,7 +835,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Update the list of active swarms
-    function updateSwarmList() {
+    function updateSwarmList(selectMostRecent = true) {
         const swarmDropdown = document.getElementById('swarmList');
         const removeButton = document.getElementById('removeSwarmBtn');
         const clearSwarmsButton = document.getElementById('clearSwarmsButton');
@@ -849,6 +884,12 @@ document.addEventListener('DOMContentLoaded', function() {
             option.textContent = `${presetDisplayName} ${colorThemeName} (${swarm.zotCount})`;
             swarmDropdown.appendChild(option);
         });
+        
+        // Select the most recently created swarm (last in the array) only when requested
+        if (selectMostRecent && swarms.length > 0) {
+            const mostRecentSwarm = swarms[swarms.length - 1];
+            swarmDropdown.value = mostRecentSwarm.id;
+        }
     }
     
     // Update all UI values to match current settings

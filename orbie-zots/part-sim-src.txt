@@ -1095,14 +1095,14 @@
         <div class="section-title">Color Themes</div>
 
         <div class="color-presets-container" data-tooltip="Select a color theme for particles">
-            <div class="color-preset active" data-theme="rainbow" data-tooltip="Rainbow" style="background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);"></div>
-            <div class="color-preset" data-theme="blue" data-tooltip="Twilight" style="background: linear-gradient(to right, #041c41, #abd6f9);"></div>
-            <div class="color-preset" data-theme="green" data-tooltip="Forest" style="background: linear-gradient(to right, #012804, #a3ffa8);"></div>
-            <div class="color-preset" data-theme="fire" data-tooltip="Fire" style="background: linear-gradient(to right, #b71c1c, #ffdd98);"></div>
-            <div class="color-preset" data-theme="neon" data-tooltip="Neon" style="background: linear-gradient(to right, #ff00ff, #00ffff);"></div>
-            <div class="color-preset" data-theme="gold" data-tooltip="Gold" style="background: linear-gradient(to right, #ffd700, #ffa500);"></div>
-            <div class="color-preset" data-theme="mono" data-tooltip="Sparkle" style="background: linear-gradient(to right, #333333, #ffffff);"></div>
-            <div class="color-preset" data-theme="colorblind" data-tooltip="Colorblind-friendly" style="background: linear-gradient(to right, #0072B2, #F0E442, #009E73, #E69F00, #9e008e);"></div>
+            <div class="color-preset active" data-theme="rainbow" data-tooltip="Rainbow" style="background: radial-gradient(circle, violet, indigo, blue, green, yellow, orange, red);"></div>
+            <div class="color-preset" data-theme="blue" data-tooltip="Twilight" style="background: radial-gradient(circle, #abd6f9, #041c41);"></div>
+            <div class="color-preset" data-theme="green" data-tooltip="Forest" style="background: radial-gradient(circle, #a3ffa8, #012804);"></div>
+            <div class="color-preset" data-theme="fire" data-tooltip="Fire" style="background: radial-gradient(circle, #ffdd98, #b71c1c);"></div>
+            <div class="color-preset" data-theme="neon" data-tooltip="Neon" style="background: radial-gradient(circle, #00ffff, #ff00ff);"></div>
+            <div class="color-preset" data-theme="gold" data-tooltip="Gold" style="background: radial-gradient(circle, #ffd700, #ffa500);"></div>
+            <div class="color-preset sparkle-animate" data-theme="mono" data-tooltip="Sparkle" style="background: radial-gradient(circle, #ffffff, #e0e0e0, #aaaaaa, #333333);"></div>
+            <div class="color-preset" data-theme="colorblind" data-tooltip="Colorblind-friendly" style="background: radial-gradient(circle, #9e008e, #E69F00, #009E73, #F0E442, #0072B2);"></div>
         </div>
 
         <div class="section-divider"></div>
@@ -1117,7 +1117,7 @@
                 <option value="ordered">Lava Lamp</option>
                 <option value="school">Cooking Oil</option>
                 <option value="insects">Jelly Orbs</option>
-                <option value="atomic">Atomic Neucleation</option>
+                <option value="ringer">Ringer</option>
                 <option value="plasmaDrift">Plasma Drift</option>
             </select>
             <div class="tooltip"></div>
@@ -1483,6 +1483,17 @@
                 mouseForce: 10,
                 trailLength: 0,
                 wallForce: 1.0
+            },
+            ringer: {
+                particleCount: 650,
+                speed: 3,
+                separation: 0.1,
+                alignment: 0.1,
+                cohesion: 5,
+                perception: 200,
+                mouseForce: 10,
+                trailLength: 0,
+                wallForce: 1.0
             }
         };
         
@@ -1518,7 +1529,7 @@
             
             // Set mouseMode based on preset
             const mouseModeToggle = document.getElementById('mouseMode');
-            if (presetName === 'atomic') {
+            if (presetName === 'ringer') {
                 mouse.attract = true;
                 mouseModeToggle.checked = true;
             } else {
@@ -1527,7 +1538,7 @@
             }
             
             // Set color theme based on preset
-            if (presetName === 'atomic') {
+            if (presetName === 'ringer') {
                 changeColorTheme('neon');
             } else if (presetName === 'school') {
                 changeColorTheme('gold');

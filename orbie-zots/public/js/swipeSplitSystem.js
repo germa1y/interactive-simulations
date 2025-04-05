@@ -450,10 +450,38 @@ const SwipeSplitSystem = (function() {
             }
             
             // Force settings
-            if (settings.forceRadius !== undefined) forceRadius = settings.forceRadius;
-            if (settings.forceIntensity !== undefined) forceIntensity = settings.forceIntensity;
-            if (settings.attractMultiplier !== undefined) attractMultiplier = settings.attractMultiplier;
-            if (settings.repelMultiplier !== undefined) repelMultiplier = settings.repelMultiplier;
+            if (settings.forceRadius !== undefined) {
+                forceRadius = settings.forceRadius;
+                // Update displayed value
+                const radiusDisplay = document.getElementById('swipeForceRadiusValue');
+                if (radiusDisplay) {
+                    radiusDisplay.textContent = forceRadius;
+                }
+            }
+            if (settings.forceIntensity !== undefined) {
+                forceIntensity = settings.forceIntensity;
+                // Update displayed value
+                const intensityDisplay = document.getElementById('swipeForceIntensityValue');
+                if (intensityDisplay) {
+                    intensityDisplay.textContent = forceIntensity.toFixed(1);
+                }
+            }
+            if (settings.attractMultiplier !== undefined) {
+                attractMultiplier = settings.attractMultiplier;
+                // Update displayed value
+                const attractDisplay = document.getElementById('swipeAttractMultiplierValue');
+                if (attractDisplay) {
+                    attractDisplay.textContent = attractMultiplier.toFixed(1);
+                }
+            }
+            if (settings.repelMultiplier !== undefined) {
+                repelMultiplier = settings.repelMultiplier;
+                // Update displayed value
+                const repelDisplay = document.getElementById('swipeRepelMultiplierValue');
+                if (repelDisplay) {
+                    repelDisplay.textContent = repelMultiplier.toFixed(1);
+                }
+            }
             if (settings.forceActive !== undefined) forceActive = settings.forceActive;
             
             // If we have an active path, recalculate the decay speed

@@ -262,6 +262,55 @@ select:focus {
     height: 2.2rem;
     display: flex;
     align-items: center;
+    padding: 0 2.6rem; /* Add padding to make room for buttons */
+}
+
+/* Slider increment/decrement buttons */
+.slider-button {
+    position: absolute;
+    width: 2.5rem;
+    height: 2.5rem;
+    background-color: #FF5722; /* Bright orange */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.8rem; /* Much larger font */
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 0 15px rgba(255, 87, 34, 0.9); /* Strong glow */
+    z-index: 100; /* Very high z-index */
+    user-select: none;
+    transition: transform 0.1s ease, background-color 0.2s ease;
+    border: 3px solid white; /* Thicker white border */
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.slider-button:hover {
+    background-color: #FF8A65; /* Lighter orange on hover */
+    transform: translateY(-50%) scale(1.1);
+}
+
+.slider-button:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+.slider-button.disabled {
+    opacity: 0.5;
+    background-color: #888;
+    cursor: not-allowed;
+    transform: translateY(-50%);
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
+}
+
+.slider-button.decrease {
+    left: -1.2rem; /* Position far to the left */
+}
+
+.slider-button.increase {
+    right: -1.2rem; /* Position far to the right */
 }
 
 .slider-overlay-label {
@@ -275,6 +324,7 @@ select:focus {
     pointer-events: none;
     z-index: 2;
     line-height: 1;
+    transition: top 0.2s ease-out; /* Added for smooth movement */
 }
 
 .slider-overlay-value {
@@ -330,6 +380,9 @@ select:focus {
     margin-top: calc(-0.7rem + 0.4375rem);
     cursor: pointer;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+    transform: translateZ(0); /* Force hardware acceleration to fix positioning */
+    will-change: transform; /* Hint to browser that transform may change */
+    position: relative; /* Ensure positioning context */
 }
 
 .slider-with-overlay::-moz-range-thumb {
@@ -349,6 +402,19 @@ select:focus {
     margin-bottom: 0.8rem;
     display: flex;
     align-items: center;
+    padding: 0 2.2rem; /* Add padding to make room for buttons */
+    max-width: calc(100% - 75px); /* Adjust width by moving right side 75px to the left */
+    margin-right: 75px; /* Add right margin of 75px */
+}
+
+/* Position the increase button correctly for range slider */
+.range-slider-container > div:last-of-type {
+    right: -75px; /* Adjust position to account for the margin */
+}
+
+/* More specific selector to ensure we target the increment button */
+.range-slider-container div[style*="right: -0.2rem"] {
+    right: -75px !important; /* Override the inline style */
 }
 
 .range-slider {
@@ -423,6 +489,21 @@ select:focus {
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
 }
 
+/* Active thumb styling for dual sliders */
+.range-slider-min.active::-webkit-slider-thumb,
+.range-slider-max.active::-webkit-slider-thumb {
+    background-color: #ffbb00;
+    box-shadow: 0 0 8px rgba(255, 187, 0, 0.7);
+    transform: scale(1.1) translateZ(0);
+}
+
+.range-slider-min.active::-moz-range-thumb,
+.range-slider-max.active::-moz-range-thumb {
+    background-color: #ffbb00;
+    box-shadow: 0 0 8px rgba(255, 187, 0, 0.7);
+    transform: scale(1.1);
+}
+
 /* ZotSwarm creation UI */
 .swarm-creation {
     margin-top: 1rem;
@@ -495,15 +576,77 @@ select:focus {
     display: inline-block;
     cursor: pointer;
     border: 2px solid transparent;
-    transition: transform 0.15s ease-out;
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .color-preset:hover {
-    transform: scale(1.1);
+    transform: scale(1.15);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
 }
 
 .color-preset.active {
     border-color: white;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+}
+
+/* Sparkle animation for the sparkle color theme */
+@keyframes sparkleShift {
+    0% {
+        background-position: 0% 0%;
+        box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        opacity: 0.9;
+    }
+    25% {
+        background-position: 100% 0%;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+        opacity: 1;
+    }
+    50% {
+        background-position: 100% 100%;
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.9);
+        opacity: 0.9;
+    }
+    75% {
+        background-position: 0% 100%;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+        opacity: 1;
+    }
+    100% {
+        background-position: 0% 0%;
+        box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        opacity: 0.9;
+    }
+}
+
+.sparkle-animate {
+    background-size: 200% 200% !important;
+    animation: sparkleShift 5s ease-in-out infinite !important;
+    position: relative;
+    overflow: visible !important;
+    z-index: 2;
+}
+
+.sparkle-animate::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border-radius: 50%;
+    background: transparent;
+    z-index: -1;
+    animation: sparkleGlow 3s ease-in-out infinite alternate;
+}
+
+@keyframes sparkleGlow {
+    0% {
+        box-shadow: 0 0 2px #fff, 0 0 4px #fff, 0 0 6px #ffffff;
+    }
+    100% {
+        box-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #ffffff;
+    }
 }
 
 /* Touch effect styles */
@@ -612,6 +755,27 @@ select:focus {
     .slider-with-overlay::-moz-range-thumb {
         width: 1.8rem;
         height: 1.8rem;
+    }
+    
+    /* Larger slider buttons for mobile */
+    .slider-button {
+        width: 2.2rem;
+        height: 2.2rem;
+        font-size: 1.4rem;
+    }
+    
+    .slider-button.decrease {
+        left: 0;
+    }
+    
+    .slider-button.increase {
+        right: 0;
+    }
+    
+    /* Update container padding for larger buttons */
+    .slider-overlay-container,
+    .range-slider-container {
+        padding: 0 2.6rem;
     }
     
     /* Enhance size range sliders */
@@ -875,8 +1039,6 @@ input:checked + .toggle-slider:before {
 #newSwarmMinSizeValue {
     display: block !important; /* Show min size value */
     position: absolute;
-    left: 0.6rem !important;
-    transform: translateY(-50%) !important;
     text-align: left;
     color: white;
     font-weight: bold;

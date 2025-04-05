@@ -14,6 +14,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Particle Swarm Simulation</title>
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/hide-value-labels.css">
 </head>
 <body>
     <canvas id="canvas"></canvas>
@@ -33,17 +34,14 @@
     
     <!-- Controls Panel -->
     <div id="controls" class="controls collapsed">
-        <h1>Orbie Zot Parameters</h1>
+        <h1>Parameters</h1>
         
         <!-- Parameter Group Selector -->
         <div class="control-group">
             <label for="paramGroup">Control:</label>
             <select id="paramGroup">
-                <option value="orbie">Orbie</option>
-                <option value="orbieSwarm">Orbie Swarm</option>
                 <option value="zotSwarms" selected>Zot Swarms</option>
                 <option value="forces">Forces</option>
-                <option value="walls">Walls</option>
             </select>
         </div>
         
@@ -224,7 +222,7 @@
                         <option value="cookingOil">Cooking Oil</option>
                         <option value="jellyOrbs">Jelly Orbs</option>
                         <option value="bubble">Bubble</option>
-                        <option value="atomic">Atomic</option>
+                        <option value="ringer">Ringer</option>
                         <option value="fizzyPop">Fizzy Pop</option>
                         <option value="torrential">Torrential</option>
                     </select>
@@ -233,23 +231,23 @@
                 <!-- Color theme selector -->
                 <div class="section-title">Color Theme</div>
                 <div class="color-presets-container" id="colorPresets">
-                    <div class="color-preset active" data-theme="rainbow" data-tooltip="Rainbow" style="background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);"></div>
-                    <div class="color-preset" data-theme="colorblind" data-tooltip="Colorblind-friendly" style="background: linear-gradient(to right, #0072B2, #F0E442, #009E73, #E69F00, #9e008e);"></div>
-                    <div class="color-preset" data-theme="neon" data-tooltip="Neon" style="background: linear-gradient(to right, #ff00ff, #00ffff);"></div>
-                    <div class="color-preset" data-theme="blue" data-tooltip="Twilight" style="background: linear-gradient(to right, #041c41, #abd6f9);"></div>
-                    <div class="color-preset" data-theme="green" data-tooltip="Forest" style="background: linear-gradient(to right, #012804, #a3ffa8);"></div>
-                    <div class="color-preset" data-theme="fire" data-tooltip="Fire" style="background: linear-gradient(to right, #b71c1c, #ffdd98);"></div>
-                    <div class="color-preset" data-theme="gold" data-tooltip="Gold" style="background: linear-gradient(to right, #ffd700, #ffa500);"></div>
-                    <div class="color-preset" data-theme="mono" data-tooltip="Monochrome" style="background: linear-gradient(to right, #111111, #cccccc);"></div>
-                    <div class="color-preset" data-theme="sparkle" data-tooltip="Sparkle" style="background: linear-gradient(to right, #333333, #ffffff);"></div>
-                    <div class="color-preset" data-theme="bumble" data-tooltip="Bumble" style="background: linear-gradient(to right, #ffd700, #333333);"></div>
+                    <div class="color-preset active" data-theme="rainbow" data-tooltip="Rainbow" style="background: radial-gradient(circle, red, orange, yellow, green, blue, indigo, violet);"></div>
+                    <div class="color-preset" data-theme="colorblind" data-tooltip="Colorblind-friendly" style="background: radial-gradient(circle, #9e008e, #E69F00, #009E73, #F0E442, #0072B2);"></div>
+                    <div class="color-preset" data-theme="neon" data-tooltip="Neon" style="background: radial-gradient(circle, #00ffff, #ff00ff);"></div>
+                    <div class="color-preset" data-theme="blue" data-tooltip="Twilight" style="background: radial-gradient(circle, #abd6f9, #041c41);"></div>
+                    <div class="color-preset" data-theme="green" data-tooltip="Forest" style="background: radial-gradient(circle, #a3ffa8, #012804);"></div>
+                    <div class="color-preset" data-theme="fire" data-tooltip="Fire" style="background: radial-gradient(circle, #ffdd98, #b71c1c);"></div>
+                    <div class="color-preset" data-theme="gold" data-tooltip="Gold" style="background: radial-gradient(circle, #ffd700, #ffa500);"></div>
+                    <div class="color-preset" data-theme="mono" data-tooltip="Monochrome" style="background: radial-gradient(circle, #cccccc, #111111);"></div>
+                    <div class="color-preset sparkle-animate" data-theme="sparkle" data-tooltip="Sparkle" style="background: radial-gradient(circle, #ffffff, #e0e0e0, #aaaaaa, #333333);"></div>
+                    <div class="color-preset" data-theme="bumble" data-tooltip="Bumble" style="background: radial-gradient(circle, #ffd700, #333333);"></div>
                 </div>
                 
                 <div class="control-group">
                     <div class="slider-overlay-container">
                         <span class="slider-overlay-label">Zot Count</span>
-                        <input type="range" id="newSwarmZotCount" class="slider-with-overlay" min="2" max="50" step="1" value="25">
-                        <span class="slider-overlay-value" id="newSwarmZotCountValue">25</span>
+                        <input type="range" id="newSwarmZotCount" class="slider-with-overlay" min="2" max="200" step="1" value="50">
+                        <span class="slider-overlay-value" id="newSwarmZotCountValue">50</span>
                     </div>
                 </div>
                 
@@ -351,7 +349,7 @@
             </div>
             
             <div class="section-divider"></div>
-            <div class="section-title">Swipe Split Forces</div>
+            <div class="section-title">Swipe Forces</div>
             
             <div class="control-group">
                 <div class="toggle-container">
@@ -448,6 +446,8 @@
     
     <!-- Music Controller -->
     <script src="js/musicController.js"></script>
+    <!-- Slider tooltip controller -->
+    <script src="js/slider-tooltip.js"></script>
     <script>
         // Initialize on window load
         window.addEventListener('load', function() {
@@ -477,6 +477,459 @@
                 DemoMode.start();
             }
         });
+    </script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // Function to position all slider value labels
+        function positionAllValueLabels() {
+          console.log('Positioning all value labels');
+          // Force layout recalculation to get accurate dimensions
+          document.body.getBoundingClientRect();
+          
+          const allSliders = document.querySelectorAll('input[type="range"]');
+          allSliders.forEach(slider => updateValuePosition(slider));
+          
+          // Special handling for Size Range min/max sliders
+          positionSizeRangeLabels();
+        }
+        
+        // Function specifically for size range labels
+        function positionSizeRangeLabels() {
+          const minSizeSlider = document.getElementById('newSwarmMinSize');
+          const maxSizeSlider = document.getElementById('newSwarmMaxSize');
+          const minSizeValue = document.getElementById('newSwarmMinSizeValue');
+          const maxSizeValue = document.getElementById('newSwarmMaxSizeValue');
+          
+          if (minSizeSlider && minSizeValue) {
+            const container = minSizeSlider.closest('.range-slider-container');
+            if (container) {
+              // Force layout calculation
+              container.getBoundingClientRect();
+              const sliderRect = minSizeSlider.getBoundingClientRect();
+              
+              // Position the min value at the left of the slider
+              const minPercentage = (parseFloat(minSizeSlider.value) - parseFloat(minSizeSlider.min)) / 
+                                   (parseFloat(minSizeSlider.max) - parseFloat(minSizeSlider.min));
+              const minThumbPosition = minPercentage * (sliderRect.width - 24) + 12;
+              
+              minSizeValue.style.position = 'absolute';
+              minSizeValue.style.left = (minThumbPosition + 25) + 'px'; // Add 25px offset to the right
+              minSizeValue.style.transform = 'translateX(-50%)';
+              minSizeValue.style.color = '#4CAF50'; // Green text color
+              minSizeValue.style.fontSize = '1.2em'; // Increase font size by 0.2x
+              minSizeValue.style.textShadow = '-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff'; // 1px white stroke
+              minSizeValue.style.zIndex = '999'; // Ensure it's on top
+              
+              // Get max slider thumb position as well
+              const maxPercentage = (parseFloat(maxSizeSlider.value) - parseFloat(maxSizeSlider.min)) / 
+                                   (parseFloat(maxSizeSlider.max) - parseFloat(maxSizeSlider.min));
+              const maxThumbPosition = maxPercentage * (sliderRect.width - 24) + 12;
+              
+              // Check for center label and handle collision
+              const centerLabel = container.querySelector('.slider-overlay-center');
+              if (centerLabel) {
+                const centerLabelRect = centerLabel.getBoundingClientRect();
+                const minThumbLeft = sliderRect.left + minThumbPosition - 12; // 12 is half thumb width
+                const minThumbRight = minThumbLeft + 24; // thumb width
+                const maxThumbLeft = sliderRect.left + maxThumbPosition - 12;
+                const maxThumbRight = maxThumbLeft + 24;
+                
+                // Check if either thumb is colliding with center label
+                if ((minThumbLeft <= centerLabelRect.right && minThumbRight >= centerLabelRect.left) ||
+                    (maxThumbLeft <= centerLabelRect.right && maxThumbRight >= centerLabelRect.left)) {
+                  // Move label up to avoid collision
+                  centerLabel.style.top = '10%';
+                  if (!centerLabel.style.transition) {
+                    centerLabel.style.transition = 'top 0.2s ease-out';
+                  }
+                } else {
+                  // Reset position if no collision
+                  centerLabel.style.top = '50%';
+                }
+              }
+            }
+          }
+          
+          if (maxSizeSlider && maxSizeValue) {
+            const container = maxSizeSlider.closest('.range-slider-container');
+            if (container) {
+              // Force layout calculation
+              container.getBoundingClientRect();
+              const sliderRect = maxSizeSlider.getBoundingClientRect();
+              
+              // Position the max value at the right of the slider
+              const maxPercentage = (parseFloat(maxSizeSlider.value) - parseFloat(maxSizeSlider.min)) / 
+                                   (parseFloat(maxSizeSlider.max) - parseFloat(maxSizeSlider.min));
+              const maxThumbPosition = maxPercentage * (sliderRect.width - 24) + 12;
+              
+              maxSizeValue.style.position = 'absolute';
+              maxSizeValue.style.left = (maxThumbPosition + 25) + 'px'; // Add 25px offset to the right
+              maxSizeValue.style.transform = 'translateX(-50%)';
+              maxSizeValue.style.color = '#4CAF50'; // Green text color
+              maxSizeValue.style.fontSize = '1.2em'; // Increase font size by 0.2x
+              maxSizeValue.style.textShadow = '-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff'; // 1px white stroke
+              maxSizeValue.style.zIndex = '999'; // Ensure it's on top
+            }
+          }
+        }
+
+        // Make slider values follow the thumb position
+        function updateValuePosition(slider) {
+          const valueDisplay = document.getElementById(slider.id + 'Value');
+          if (!valueDisplay) return;
+          
+          // Get slider dimensions
+          const sliderRect = slider.getBoundingClientRect();
+          const container = slider.closest('.slider-overlay-container, .range-slider-container');
+          if (!container) return;
+          
+          // Force layout calculation
+          container.getBoundingClientRect();
+          
+          const containerRect = container.getBoundingClientRect();
+          const min = parseFloat(slider.min);
+          const max = parseFloat(slider.max);
+          const value = parseFloat(slider.value);
+          const thumbWidth = 24; // Approximate thumb width
+          
+          // Calculate position percentage
+          const percentage = (value - min) / (max - min);
+          
+          // Available travel width accounting for thumb width
+          const availableWidth = sliderRect.width - thumbWidth;
+          // Position of the thumb's center
+          const thumbCenterPosition = (percentage * availableWidth) + (thumbWidth / 2);
+          
+          // Position relative to slider start, offset by 44px to the right
+          const relativePosition = thumbCenterPosition + 44;
+          
+          // Update value display position
+          valueDisplay.style.position = 'absolute';
+          valueDisplay.style.left = relativePosition + 'px';
+          valueDisplay.style.right = 'auto';
+          valueDisplay.style.transform = 'translate(-50%, -50%)';
+          valueDisplay.style.background = 'transparent'; // Remove background
+          valueDisplay.style.padding = '2px 5px';
+          valueDisplay.style.borderRadius = '3px';
+          valueDisplay.style.top = '50%';
+          valueDisplay.style.zIndex = '999'; // Ensure it's on top in foreground
+          valueDisplay.style.color = '#4CAF50'; // Green text color
+          valueDisplay.style.fontSize = '1.2em'; // Increase font size by 0.2x
+          valueDisplay.style.textShadow = '-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff'; // 1px white stroke
+          
+          // Check for slider name label
+          const nameLabel = container.querySelector('.slider-overlay-label:not([id])');
+          if (nameLabel) {
+            // Get the name label's position and width
+            const nameLabelRect = nameLabel.getBoundingClientRect();
+            
+            // Calculate thumb's absolute position
+            const thumbLeft = sliderRect.left + thumbCenterPosition - (thumbWidth / 2);
+            const thumbRight = thumbLeft + thumbWidth;
+            
+            // Check for collision with the thumb
+            const labelRight = nameLabelRect.right;
+            const labelLeft = nameLabelRect.left;
+            
+            // Detect collision
+            if ((thumbLeft <= labelRight && thumbRight >= labelLeft)) {
+              // If collision detected, move the label up
+              nameLabel.style.top = '10%';
+              // Add a transition for smooth movement
+              if (!nameLabel.style.transition) {
+                nameLabel.style.transition = 'top 0.2s ease-out';
+              }
+            } else {
+              // Reset label position if no collision
+              nameLabel.style.top = '50%';
+            }
+          }
+        }
+
+        setTimeout(function() {
+          // Find all slider containers
+          const sliderContainers = document.querySelectorAll('.slider-overlay-container, .range-slider-container');
+          
+          sliderContainers.forEach(container => {
+            // Create decrease button
+            const decreaseBtn = document.createElement('div');
+            decreaseBtn.style.cssText = `
+              position: absolute;
+              left: -0.2rem;
+              top: 50%;
+              transform: translateY(-50%);
+              width: 2rem;
+              height: 2rem;
+              background-color: transparent;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              cursor: pointer;
+              z-index: 100;
+              user-select: none;
+              text-align: center;
+              overflow: hidden;
+              pointer-events: none; /* Disable pointer events on the container */
+            `;
+            
+            // Create a smaller hitbox element inside the button
+            const decreaseHitbox = document.createElement('div');
+            decreaseHitbox.style.cssText = `
+              width: 1.8rem;
+              height: 1.2rem;
+              position: absolute;
+              left: 0;
+              top: 50%;
+              transform: translateY(-50%);
+              cursor: pointer;
+              pointer-events: auto; /* Enable pointer events on the hitbox */
+            `;
+            
+            decreaseBtn.innerHTML = `<svg width="120" height="120" viewBox="0 0 24 24" style="pointer-events: none; height: 100%; width: 100%;">
+              <rect x="4" y="9" width="16" height="6" rx="2" fill="#4CAF50" />
+            </svg>`;
+            
+            decreaseBtn.appendChild(decreaseHitbox);
+            
+            // Create increase button
+            const increaseBtn = document.createElement('div');
+            increaseBtn.style.cssText = `
+              position: absolute;
+              right: -0.2rem;
+              top: 50%;
+              transform: translateY(-50%);
+              width: 2rem;
+              height: 2rem;
+              background-color: transparent;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              cursor: pointer;
+              z-index: 100;
+              user-select: none;
+              text-align: center;
+              overflow: hidden;
+              pointer-events: none; /* Disable pointer events on the container */
+            `;
+            
+            // Create a smaller hitbox element inside the button
+            const increaseHitbox = document.createElement('div');
+            increaseHitbox.style.cssText = `
+              width: 1.8rem;
+              height: 1.2rem;
+              position: absolute;
+              right: 0;
+              top: 50%;
+              transform: translateY(-50%);
+              cursor: pointer;
+              pointer-events: auto; /* Enable pointer events on the hitbox */
+            `;
+            
+            increaseBtn.innerHTML = `<svg width="120" height="120" viewBox="0 0 24 24" style="pointer-events: none; height: 100%; width: 100%;">
+              <rect x="4" y="9" width="16" height="6" rx="2" fill="#4CAF50" />
+              <rect x="9" y="4" width="6" height="16" rx="2" fill="#4CAF50" />
+            </svg>`;
+            
+            increaseBtn.appendChild(increaseHitbox);
+            
+            // Add to container
+            container.appendChild(decreaseBtn);
+            container.appendChild(increaseBtn);
+            
+            // Get the slider
+            const slider = container.querySelector('input[type="range"]');
+            if (slider) {
+              // Add event handlers for the buttons
+              decreaseHitbox.addEventListener('click', function() {
+                const step = parseFloat(slider.step) || 1;
+                const min = parseFloat(slider.min);
+                slider.value = Math.max(min, parseFloat(slider.value) - step);
+                
+                // Trigger input event
+                const event = new Event('input', { bubbles: true });
+                slider.dispatchEvent(event);
+              });
+              
+              increaseHitbox.addEventListener('click', function() {
+                const step = parseFloat(slider.step) || 1;
+                const max = parseFloat(slider.max);
+                slider.value = Math.min(max, parseFloat(slider.value) + step);
+                
+                // Trigger input event
+                const event = new Event('input', { bubbles: true });
+                slider.dispatchEvent(event);
+              });
+            }
+          });
+          
+          // Add event listeners to all sliders for thumb following
+          const allSliders = document.querySelectorAll('input[type="range"]');
+          allSliders.forEach(slider => {
+            // Initial position update
+            updateValuePosition(slider);
+            
+            // Update on input/change
+            slider.addEventListener('input', function() {
+              updateValuePosition(this);
+            });
+            
+            // Update on window resize
+            window.addEventListener('resize', function() {
+              updateValuePosition(slider);
+            });
+          });
+          
+          // Setup special event listeners for Size Range sliders
+          const minSizeSlider = document.getElementById('newSwarmMinSize');
+          const maxSizeSlider = document.getElementById('newSwarmMaxSize');
+          const minSizeValue = document.getElementById('newSwarmMinSizeValue');
+          const maxSizeValue = document.getElementById('newSwarmMaxSizeValue');
+          
+          if (minSizeSlider && minSizeValue) {
+            minSizeSlider.addEventListener('input', function() {
+              const container = this.closest('.range-slider-container');
+              if (container) {
+                const sliderRect = this.getBoundingClientRect();
+                const minPercentage = (parseFloat(this.value) - parseFloat(this.min)) / 
+                                    (parseFloat(this.max) - parseFloat(this.min));
+                const minThumbPosition = minPercentage * (sliderRect.width - 24) + 12;
+                
+                minSizeValue.textContent = parseFloat(this.value).toFixed(1);
+                minSizeValue.style.left = (minThumbPosition + 25) + 'px';
+              }
+            });
+          }
+          
+          if (maxSizeSlider && maxSizeValue) {
+            maxSizeSlider.addEventListener('input', function() {
+              const container = this.closest('.range-slider-container');
+              if (container) {
+                const sliderRect = this.getBoundingClientRect();
+                const maxPercentage = (parseFloat(this.value) - parseFloat(this.min)) / 
+                                    (parseFloat(this.max) - parseFloat(this.min));
+                const maxThumbPosition = maxPercentage * (sliderRect.width - 24) + 12;
+                
+                maxSizeValue.textContent = parseFloat(this.value).toFixed(1);
+                maxSizeValue.style.left = (maxThumbPosition + 25) + 'px';
+              }
+            });
+          }
+          
+          // Position all labels initially
+          positionAllValueLabels();
+        }, 500); // Reduced delay to ensure everything loads faster
+
+        // Initial positioning with increasing delays for more reliability
+        setTimeout(positionAllValueLabels, 10);
+        setTimeout(positionAllValueLabels, 100);
+        setTimeout(positionAllValueLabels, 300); 
+        setTimeout(positionAllValueLabels, 700);
+
+        // Attempt to position labels at multiple points to ensure they're properly positioned
+        window.addEventListener('load', function() {
+          // Force reflow before positioning
+          document.body.getBoundingClientRect();
+          positionAllValueLabels();
+          
+          // Try multiple times with increasing delays
+          setTimeout(positionAllValueLabels, 0);
+          setTimeout(positionAllValueLabels, 100);
+          setTimeout(positionAllValueLabels, 300);
+          setTimeout(positionAllValueLabels, 500);
+          setTimeout(positionAllValueLabels, 1000);
+          setTimeout(positionAllValueLabels, 1500);
+          setTimeout(positionAllValueLabels, 2500);
+        });
+        
+        // Use ResizeObserver to detect size changes
+        if (window.ResizeObserver) {
+          const resizeObserver = new ResizeObserver(entries => {
+            positionAllValueLabels();
+          });
+          
+          document.querySelectorAll('.slider-overlay-container, .range-slider-container').forEach(container => {
+            resizeObserver.observe(container);
+          });
+        }
+        
+        // Also position when tabs/groups are changed 
+        const paramGroup = document.getElementById('paramGroup');
+        if (paramGroup) {
+          paramGroup.addEventListener('change', function() {
+            setTimeout(positionAllValueLabels, 0);
+            setTimeout(positionAllValueLabels, 100);
+            setTimeout(positionAllValueLabels, 200);
+          });
+        }
+        
+        // Add listeners for visibility changes
+        document.addEventListener('visibilitychange', function() {
+          if (!document.hidden) {
+            setTimeout(positionAllValueLabels, 100);
+          }
+        });
+      });
+    </script>
+
+    <!-- Initialize sparkle animation effects -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // Enhance sparkle animation with random sparkle effects
+        const sparklePreset = document.querySelector('.color-preset[data-theme="sparkle"]');
+        if (sparklePreset) {
+          // Create occasional random sparkle particles
+          function createSparkleParticle() {
+            const particle = document.createElement('div');
+            particle.classList.add('sparkle-particle');
+            
+            // Random position within the thumbnail
+            const posX = Math.random() * 100;
+            const posY = Math.random() * 100;
+            
+            // Style the particle
+            particle.style.cssText = `
+              position: absolute;
+              top: ${posY}%;
+              left: ${posX}%;
+              width: 2px;
+              height: 2px;
+              background-color: white;
+              border-radius: 50%;
+              opacity: 0;
+              z-index: 3;
+              animation: particleBlink 0.6s ease-in-out;
+            `;
+            
+            sparklePreset.appendChild(particle);
+            
+            // Remove after animation completes
+            setTimeout(() => {
+              particle.remove();
+            }, 600);
+          }
+          
+          // Add particle blink animation to stylesheet
+          if (!document.getElementById('particle-style')) {
+            const style = document.createElement('style');
+            style.id = 'particle-style';
+            style.textContent = `
+              @keyframes particleBlink {
+                0% { transform: scale(0); opacity: 0; }
+                50% { transform: scale(1.5); opacity: 1; }
+                100% { transform: scale(0); opacity: 0; }
+              }
+            `;
+            document.head.appendChild(style);
+          }
+          
+          // Create random sparkles periodically
+          setInterval(() => {
+            if (Math.random() > 0.5 && document.visibilityState === 'visible') {
+              createSparkleParticle();
+            }
+          }, 300);
+        }
+      });
     </script>
 </body>
 </html>

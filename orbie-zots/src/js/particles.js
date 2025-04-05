@@ -889,6 +889,64 @@ const ParticleSystem = (function() {
         animationFrameId = requestAnimationFrame(animate);
     }
     
+    // Add new getter methods for force settings
+    function getForceSettings() {
+        // Return a copy of the force settings object
+        return { ...forceSettings };
+    }
+    
+    function getForceSettingValue(setting) {
+        // Return a specific force setting value
+        if (forceSettings.hasOwnProperty(setting)) {
+            return forceSettings[setting];
+        }
+        return undefined;
+    }
+    
+    function updateForceSettings(setting, value) {
+        // Update a specific force setting
+        if (forceSettings.hasOwnProperty(setting)) {
+            forceSettings[setting] = value;
+            return true;
+        }
+        return false;
+    }
+    
+    function updateSettings(category, setting, value) {
+        // General method to update settings in different categories
+        if (category === 'forces') {
+            return updateForceSettings(setting, value);
+        } else if (category === 'orbieSwarm') {
+            if (orbieSwarmSettings.hasOwnProperty(setting)) {
+                orbieSwarmSettings[setting] = value;
+                return true;
+            }
+        } else if (category === 'orbie') {
+            return updateOrbieSettings(setting, value);
+        }
+        return false;
+    }
+    
+    // Get all zot swarms with their complete data
+    function getZotSwarms() {
+        // Create a copy with the data needed for saving
+        return zotSwarms.map(swarm => {
+            return {
+                id: swarm.id,
+                zotCount: swarm.zots.length,
+                settings: { ...swarm.settings },
+                particles: swarm.zots.map(zot => ({
+                    x: zot.x,
+                    y: zot.y,
+                    size: zot.size,
+                    color: zot.color,
+                    vx: zot.vx,
+                    vy: zot.vy
+                }))
+            };
+        });
+    }
+    
     // Public API - only expose necessary methods
     return {
         init: function(canvasElement, fpsElement) {
@@ -972,36 +1030,9 @@ const ParticleSystem = (function() {
             }
         },
         
-        // Update force settings
-        updateForceSettings: function(property, value) {
-            if (property in forceSettings) {
-                forceSettings[property] = value;
-            }
-        },
-        
-        // Update settings (generic method)
-        updateSettings: function(group, property, value) {
-            if (group === 'forces' && property in forceSettings) {
-                forceSettings[property] = value;
-            }
-        },
-        
-        // Get a force setting value
-        getForceSettingValue: function(property) {
-            return property in forceSettings ? forceSettings[property] : undefined;
-        },
-        
         // Methods for ZotSwarm management
         createZotSwarm: function(config) {
             return createZotSwarm(config);
-        },
-        
-        getZotSwarms: function() {
-            return zotSwarms.map(swarm => ({
-                id: swarm.id,
-                zotCount: swarm.zots.length,
-                settings: {...swarm.settings}
-            }));
         },
         
         removeZotSwarm: function(swarmId) {
@@ -1078,11 +1109,28 @@ const ParticleSystem = (function() {
         // Update an existing ZotSwarm with new parameters
         updateZotSwarm: function(swarmId, config) {
             return updateZotSwarm(swarmId, config);
-        }
+        },
+        
+        // Add new public methods for force settings access
+        getForceSettings: getForceSettings,
+        getForceSettingValue: getForceSettingValue,
+        updateForceSettings: function(property, value) {
+            if (property in forceSettings) {
+                forceSettings[property] = value;
+            }
+        },
+        updateSettings: function(group, property, value) {
+            if (group === 'forces' && property in forceSettings) {
+                forceSettings[property] = value;
+            }
+        },
+        
+        // Enhanced getZotSwarms method that includes particle data
+        getZotSwarms: getZotSwarms
     };
 })();
 
-// Export for module system
-if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+// Export for use in other modules
+if (typeof module !== 'undefined' && module.exports) {
     module.exports = ParticleSystem;
 }
