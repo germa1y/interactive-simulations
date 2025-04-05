@@ -116,6 +116,46 @@ const SubmitSwarms = (function() {
                 margin-bottom: 20px;
             }
             
+            .form-group {
+                margin-bottom: 15px;
+            }
+            
+            .form-group label {
+                display: block;
+                margin-bottom: 5px;
+                font-weight: bold;
+                color: #ddd;
+            }
+            
+            .form-group input, .form-group textarea {
+                width: 100%;
+                padding: 8px;
+                border-radius: 4px;
+                border: 1px solid #555;
+                background-color: #444;
+                color: white;
+                font-family: inherit;
+            }
+            
+            .form-group input:focus, .form-group textarea:focus {
+                outline: none;
+                border-color: #2196F3;
+            }
+            
+            .submission-note {
+                margin-top: 15px;
+                padding: 10px;
+                background-color: rgba(33, 150, 243, 0.1);
+                border-left: 3px solid #2196F3;
+                font-size: 14px;
+                line-height: 1.4;
+            }
+            
+            .submission-note p {
+                margin: 0;
+                color: #bbb;
+            }
+            
             .popup-buttons {
                 display: flex;
                 justify-content: flex-end;
@@ -366,12 +406,24 @@ const SubmitSwarms = (function() {
         // Create popup container
         popupContainer = document.createElement('div');
         popupContainer.className = 'popup-container';
+        popupContainer.style.width = '400px'; // Make wider for the input fields
         
         // Popup content
         popupContainer.innerHTML = `
             <h3 class="popup-title">Save Zots</h3>
             <div class="popup-content">
-                Are you ready to save your zot swarms?
+                <div class="form-group">
+                    <label for="presetName">Preset Name (optional):</label>
+                    <input type="text" id="presetName" placeholder="Give your creation a name">
+                </div>
+                <div class="form-group">
+                    <label for="presetDescription">Description (optional):</label>
+                    <textarea id="presetDescription" placeholder="Tell us about your swarm or any feedback" rows="3"></textarea>
+                </div>
+                <div class="submission-note">
+                    <p>Your preset might be featured in the app or demo for everyone to enjoy! 
+                    Share your awesome creations with the community.</p>
+                </div>
             </div>
             <div id="submitError" class="error-message" style="display: none;"></div>
             <div class="popup-buttons">
@@ -394,6 +446,10 @@ const SubmitSwarms = (function() {
         
         submitBtn.addEventListener('click', function() {
             console.log('[SAVE] Save button clicked');
+            
+            // Get preset name and description
+            const presetName = document.getElementById('presetName').value.trim();
+            const presetDescription = document.getElementById('presetDescription').value.trim();
             
             // Validate if there are particles on screen
             if (typeof ParticleSystem !== 'undefined' && ParticleSystem.getZotSwarms) {
@@ -454,6 +510,10 @@ const SubmitSwarms = (function() {
     // Save zot swarms data as JSON file
     function saveZotSwarms(swarms) {
         try {
+            // Get preset name and description from DOM elements
+            const presetName = document.getElementById('presetName')?.value.trim() || '';
+            const presetDescription = document.getElementById('presetDescription')?.value.trim() || '';
+            
             // Collect global force settings from ParticleSystem
             const forceSettings = {};
             
@@ -482,6 +542,8 @@ const SubmitSwarms = (function() {
             const data = {
                 timestamp: new Date().toISOString(),
                 userAgent: navigator.userAgent,
+                presetName: presetName,
+                description: presetDescription,
                 screenSize: {
                     width: window.innerWidth,
                     height: window.innerHeight

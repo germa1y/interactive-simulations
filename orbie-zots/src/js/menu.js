@@ -327,15 +327,23 @@ const MenuSystem = (function() {
                 input.value = initialValue;
             }
             
-            // Set initial value display
-            // HIDDEN: All slider values are hidden to protect IP
-            // valueDisplay.textContent = parseFloat(input.value).toFixed(input.step.includes('.') ? 2 : 0);
+            // Only show value for zot count slider, hide all others
+            if (id === 'newSwarmZotCount') {
+                valueDisplay.textContent = parseFloat(input.value).toFixed(input.step.includes('.') ? 2 : 0);
+                valueDisplay.style.display = '';  // Use default display
+            } else {
+                valueDisplay.textContent = '';
+                valueDisplay.style.display = 'none';
+            }
             
             // Add event listeners for input changes
             input.addEventListener('input', function() {
                 const value = parseFloat(this.value);
-                // HIDDEN: All slider values are hidden to protect IP
-                // valueDisplay.textContent = value.toFixed(this.step.includes('.') ? 2 : 0);
+                
+                // Only update value display for zot count slider
+                if (id === 'newSwarmZotCount') {
+                    valueDisplay.textContent = value.toFixed(this.step.includes('.') ? 2 : 0);
+                }
                 
                 // Call the callback with the new value
                 if (changeCallback) {
@@ -397,20 +405,24 @@ const MenuSystem = (function() {
         const maxValue = document.getElementById('newSwarmMaxSizeValue');
 
         if (minSlider && maxSlider && minValue && maxValue) {
+            // Hide value displays for size range sliders
+            minValue.textContent = '';
+            minValue.style.display = 'none';
+            maxValue.textContent = '';
+            maxValue.style.display = 'none';
+            
             minSlider.addEventListener('input', function() {
                 if (parseFloat(this.value) > parseFloat(maxSlider.value)) {
                     this.value = maxSlider.value;
                 }
-                // HIDDEN: All slider values are hidden to protect IP
-                // minValue.textContent = parseFloat(this.value).toFixed(1);
+                // Values are hidden
             });
 
             maxSlider.addEventListener('input', function() {
                 if (parseFloat(this.value) < parseFloat(minSlider.value)) {
                     this.value = minSlider.value;
                 }
-                // HIDDEN: All slider values are hidden to protect IP
-                // maxValue.textContent = parseFloat(this.value).toFixed(1);
+                // Values are hidden
             });
         }
     }

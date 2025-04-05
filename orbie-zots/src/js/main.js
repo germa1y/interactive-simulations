@@ -647,14 +647,23 @@ document.addEventListener('DOMContentLoaded', function() {
             const precision = shouldRound ? 0 : 
                              input.step.includes('.01') ? 2 : 1;
             
-            // HIDDEN: All slider values are hidden to protect IP
-            valueDisplay.textContent = parseFloat(input.value).toFixed(precision);
+            // Only show value for zot count slider, hide all others
+            if (id === 'newSwarmZotCount') {
+                valueDisplay.textContent = parseFloat(input.value).toFixed(precision);
+                valueDisplay.style.display = '';  // Use default display
+            } else {
+                valueDisplay.textContent = '';
+                valueDisplay.style.display = 'none';
+            }
             
             // Add event listeners for input changes
             input.addEventListener('input', function() {
                 const value = parseFloat(this.value);
-                // HIDDEN: All slider values are hidden to protect IP
-                valueDisplay.textContent = value.toFixed(precision);
+                
+                // Only update value display for zot count slider
+                if (id === 'newSwarmZotCount') {
+                    valueDisplay.textContent = value.toFixed(precision);
+                }
                 
                 // Call the callback with the new value
                 if (changeCallback) {
@@ -672,20 +681,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const maxValueDisplay = document.getElementById(maxId + 'Value');
         
         if (minSlider && maxSlider && minValueDisplay && maxValueDisplay) {
-            // Set initial values display
-            const minVal = parseFloat(minSlider.value);
-            const maxVal = parseFloat(maxSlider.value);
-            minValueDisplay.textContent = minVal.toFixed(1);
-            maxValueDisplay.textContent = maxVal.toFixed(1);
+            // Hide value displays for all dual range sliders
+            minValueDisplay.textContent = '';
+            maxValueDisplay.textContent = '';
+            minValueDisplay.style.display = 'none';
+            maxValueDisplay.style.display = 'none';
             
-            // Update values displays
+            // Update values displays but keep them hidden
             function updateValues() {
                 const minVal = parseFloat(minSlider.value);
                 const maxVal = parseFloat(maxSlider.value);
                 
-                // HIDDEN: All slider values are hidden to protect IP
-                minValueDisplay.textContent = minVal.toFixed(1);
-                maxValueDisplay.textContent = maxVal.toFixed(1);
+                // Values are now hidden
                 
                 // Ensure thumb positions are visually reflecting the values
                 updateThumbPositions();
@@ -1098,16 +1105,18 @@ function initializeSimulation() {
 
 // Helper function to handle input events on sliders
 function updateSliderValue(input, valueDisplay, precision = 1) {
-    // Don't update text content for sliders since we've hidden them to protect IP
-    // valueDisplay.textContent = parseFloat(input.value).toFixed(precision);
+    // Only show value for zot count slider
+    if (input.id === 'newSwarmZotCount' && valueDisplay) {
+        valueDisplay.textContent = parseFloat(input.value).toFixed(precision);
+    }
 }
 
 // Event handler for slider input events
 function handleSliderInput(event, precision = 1) {
     const value = parseFloat(this.value);
     const valueDisplay = document.getElementById(this.id + 'Value');
-    if (valueDisplay) {
-        // Don't update text content for sliders since we've hidden them to protect IP
-        // valueDisplay.textContent = value.toFixed(precision);
+    // Only show value for zot count slider
+    if (this.id === 'newSwarmZotCount' && valueDisplay) {
+        valueDisplay.textContent = value.toFixed(precision);
     }
 }

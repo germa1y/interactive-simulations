@@ -1,7 +1,7 @@
 /**
  * Orbie Zots - Particle Swarm Simulation
  * Copyright (c) 2025
- * Built: 2025-04-05T14:45:45.005Z
+ * Built: 2025-04-05T15:11:52.593Z
  */
 
 // config.js - Environment-specific configuration
@@ -1212,15 +1212,23 @@ const MenuSystem = (function() {
                 input.value = initialValue;
             }
             
-            // Set initial value display
-            // HIDDEN: All slider values are hidden to protect IP
-            // valueDisplay.textContent = parseFloat(input.value).toFixed(input.step.includes('.') ? 2 : 0);
+            // Only show value for zot count slider, hide all others
+            if (id === 'newSwarmZotCount') {
+                valueDisplay.textContent = parseFloat(input.value).toFixed(input.step.includes('.') ? 2 : 0);
+                valueDisplay.style.display = '';  // Use default display
+            } else {
+                valueDisplay.textContent = '';
+                valueDisplay.style.display = 'none';
+            }
             
             // Add event listeners for input changes
             input.addEventListener('input', function() {
                 const value = parseFloat(this.value);
-                // HIDDEN: All slider values are hidden to protect IP
-                // valueDisplay.textContent = value.toFixed(this.step.includes('.') ? 2 : 0);
+                
+                // Only update value display for zot count slider
+                if (id === 'newSwarmZotCount') {
+                    valueDisplay.textContent = value.toFixed(this.step.includes('.') ? 2 : 0);
+                }
                 
                 // Call the callback with the new value
                 if (changeCallback) {
@@ -1282,20 +1290,24 @@ const MenuSystem = (function() {
         const maxValue = document.getElementById('newSwarmMaxSizeValue');
 
         if (minSlider && maxSlider && minValue && maxValue) {
+            // Hide value displays for size range sliders
+            minValue.textContent = '';
+            minValue.style.display = 'none';
+            maxValue.textContent = '';
+            maxValue.style.display = 'none';
+            
             minSlider.addEventListener('input', function() {
                 if (parseFloat(this.value) > parseFloat(maxSlider.value)) {
                     this.value = maxSlider.value;
                 }
-                // HIDDEN: All slider values are hidden to protect IP
-                // minValue.textContent = parseFloat(this.value).toFixed(1);
+                // Values are hidden
             });
 
             maxSlider.addEventListener('input', function() {
                 if (parseFloat(this.value) < parseFloat(minSlider.value)) {
                     this.value = minSlider.value;
                 }
-                // HIDDEN: All slider values are hidden to protect IP
-                // maxValue.textContent = parseFloat(this.value).toFixed(1);
+                // Values are hidden
             });
         }
     }
@@ -5957,6 +5969,46 @@ const SubmitSwarms = (function() {
                 margin-bottom: 20px;
             }
             
+            .form-group {
+                margin-bottom: 15px;
+            }
+            
+            .form-group label {
+                display: block;
+                margin-bottom: 5px;
+                font-weight: bold;
+                color: #ddd;
+            }
+            
+            .form-group input, .form-group textarea {
+                width: 100%;
+                padding: 8px;
+                border-radius: 4px;
+                border: 1px solid #555;
+                background-color: #444;
+                color: white;
+                font-family: inherit;
+            }
+            
+            .form-group input:focus, .form-group textarea:focus {
+                outline: none;
+                border-color: #2196F3;
+            }
+            
+            .submission-note {
+                margin-top: 15px;
+                padding: 10px;
+                background-color: rgba(33, 150, 243, 0.1);
+                border-left: 3px solid #2196F3;
+                font-size: 14px;
+                line-height: 1.4;
+            }
+            
+            .submission-note p {
+                margin: 0;
+                color: #bbb;
+            }
+            
             .popup-buttons {
                 display: flex;
                 justify-content: flex-end;
@@ -6207,12 +6259,24 @@ const SubmitSwarms = (function() {
         // Create popup container
         popupContainer = document.createElement('div');
         popupContainer.className = 'popup-container';
+        popupContainer.style.width = '400px'; // Make wider for the input fields
         
         // Popup content
         popupContainer.innerHTML = `
             <h3 class="popup-title">Save Zots</h3>
             <div class="popup-content">
-                Are you ready to save your zot swarms?
+                <div class="form-group">
+                    <label for="presetName">Preset Name (optional):</label>
+                    <input type="text" id="presetName" placeholder="Give your creation a name">
+                </div>
+                <div class="form-group">
+                    <label for="presetDescription">Description (optional):</label>
+                    <textarea id="presetDescription" placeholder="Tell us about your swarm or any feedback" rows="3"></textarea>
+                </div>
+                <div class="submission-note">
+                    <p>Your preset might be featured in the app or even the demo for everyone to enjoy! 
+                    Share your incredible creations with the community. Be sure to tag me on TikTok @germa1y #zoticles #zotswarms</p>
+                </div>
             </div>
             <div id="submitError" class="error-message" style="display: none;"></div>
             <div class="popup-buttons">
@@ -6235,6 +6299,10 @@ const SubmitSwarms = (function() {
         
         submitBtn.addEventListener('click', function() {
             console.log('[SAVE] Save button clicked');
+            
+            // Get preset name and description
+            const presetName = document.getElementById('presetName').value.trim();
+            const presetDescription = document.getElementById('presetDescription').value.trim();
             
             // Validate if there are particles on screen
             if (typeof ParticleSystem !== 'undefined' && ParticleSystem.getZotSwarms) {
@@ -6295,6 +6363,10 @@ const SubmitSwarms = (function() {
     // Save zot swarms data as JSON file
     function saveZotSwarms(swarms) {
         try {
+            // Get preset name and description from DOM elements
+            const presetName = document.getElementById('presetName')?.value.trim() || '';
+            const presetDescription = document.getElementById('presetDescription')?.value.trim() || '';
+            
             // Collect global force settings from ParticleSystem
             const forceSettings = {};
             
@@ -6323,6 +6395,8 @@ const SubmitSwarms = (function() {
             const data = {
                 timestamp: new Date().toISOString(),
                 userAgent: navigator.userAgent,
+                presetName: presetName,
+                description: presetDescription,
                 screenSize: {
                     width: window.innerWidth,
                     height: window.innerHeight
@@ -7052,14 +7126,23 @@ document.addEventListener('DOMContentLoaded', function() {
             const precision = shouldRound ? 0 : 
                              input.step.includes('.01') ? 2 : 1;
             
-            // HIDDEN: All slider values are hidden to protect IP
-            valueDisplay.textContent = parseFloat(input.value).toFixed(precision);
+            // Only show value for zot count slider, hide all others
+            if (id === 'newSwarmZotCount') {
+                valueDisplay.textContent = parseFloat(input.value).toFixed(precision);
+                valueDisplay.style.display = '';  // Use default display
+            } else {
+                valueDisplay.textContent = '';
+                valueDisplay.style.display = 'none';
+            }
             
             // Add event listeners for input changes
             input.addEventListener('input', function() {
                 const value = parseFloat(this.value);
-                // HIDDEN: All slider values are hidden to protect IP
-                valueDisplay.textContent = value.toFixed(precision);
+                
+                // Only update value display for zot count slider
+                if (id === 'newSwarmZotCount') {
+                    valueDisplay.textContent = value.toFixed(precision);
+                }
                 
                 // Call the callback with the new value
                 if (changeCallback) {
@@ -7077,20 +7160,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const maxValueDisplay = document.getElementById(maxId + 'Value');
         
         if (minSlider && maxSlider && minValueDisplay && maxValueDisplay) {
-            // Set initial values display
-            const minVal = parseFloat(minSlider.value);
-            const maxVal = parseFloat(maxSlider.value);
-            minValueDisplay.textContent = minVal.toFixed(1);
-            maxValueDisplay.textContent = maxVal.toFixed(1);
+            // Hide value displays for all dual range sliders
+            minValueDisplay.textContent = '';
+            maxValueDisplay.textContent = '';
+            minValueDisplay.style.display = 'none';
+            maxValueDisplay.style.display = 'none';
             
-            // Update values displays
+            // Update values displays but keep them hidden
             function updateValues() {
                 const minVal = parseFloat(minSlider.value);
                 const maxVal = parseFloat(maxSlider.value);
                 
-                // HIDDEN: All slider values are hidden to protect IP
-                minValueDisplay.textContent = minVal.toFixed(1);
-                maxValueDisplay.textContent = maxVal.toFixed(1);
+                // Values are now hidden
                 
                 // Ensure thumb positions are visually reflecting the values
                 updateThumbPositions();
@@ -7503,17 +7584,19 @@ function initializeSimulation() {
 
 // Helper function to handle input events on sliders
 function updateSliderValue(input, valueDisplay, precision = 1) {
-    // Don't update text content for sliders since we've hidden them to protect IP
-    // valueDisplay.textContent = parseFloat(input.value).toFixed(precision);
+    // Only show value for zot count slider
+    if (input.id === 'newSwarmZotCount' && valueDisplay) {
+        valueDisplay.textContent = parseFloat(input.value).toFixed(precision);
+    }
 }
 
 // Event handler for slider input events
 function handleSliderInput(event, precision = 1) {
     const value = parseFloat(this.value);
     const valueDisplay = document.getElementById(this.id + 'Value');
-    if (valueDisplay) {
-        // Don't update text content for sliders since we've hidden them to protect IP
-        // valueDisplay.textContent = value.toFixed(precision);
+    // Only show value for zot count slider
+    if (this.id === 'newSwarmZotCount' && valueDisplay) {
+        valueDisplay.textContent = value.toFixed(precision);
     }
 }
 
