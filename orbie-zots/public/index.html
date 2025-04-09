@@ -213,9 +213,11 @@
                 
                 <!-- Preset selector -->
                 <div class="control-group">
-                    <label for="swarmPreset">Preset:</label>
+                    <div class="preset-header">
+                        <label for="swarmPreset">Preset:</label>
+                        <button id="randomizeButton" class="randomize-btn" title="Randomize colors and settings">Randomize</button>
+                    </div>
                     <select id="swarmPreset">
-                        <option value="random">Random</option>
                         <option value="murmuration">Bird Flock</option>
                         <option value="lavaLamp">Lava Lamp</option>
                         <option value="cookingOil">Cooking Oil</option>

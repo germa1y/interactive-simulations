@@ -327,22 +327,25 @@ const MenuSystem = (function() {
                 input.value = initialValue;
             }
             
-            // Only show value for zot count slider, hide all others
+            // Always show zot count, respect SliderControls.hideLabels for others
             if (id === 'newSwarmZotCount') {
                 valueDisplay.textContent = parseFloat(input.value).toFixed(input.step.includes('.') ? 2 : 0);
                 valueDisplay.style.display = '';  // Use default display
             } else {
-                valueDisplay.textContent = '';
-                valueDisplay.style.display = 'none';
+                valueDisplay.textContent = parseFloat(input.value).toFixed(input.step.includes('.') ? 2 : 0);
+                valueDisplay.style.display = window.SliderControls && window.SliderControls.hideLabels ? 'none' : '';
             }
             
             // Add event listeners for input changes
             input.addEventListener('input', function() {
                 const value = parseFloat(this.value);
                 
-                // Only update value display for zot count slider
-                if (id === 'newSwarmZotCount') {
-                    valueDisplay.textContent = value.toFixed(this.step.includes('.') ? 2 : 0);
+                // Always update value text even if hidden
+                valueDisplay.textContent = value.toFixed(this.step.includes('.') ? 2 : 0);
+                
+                // For non-zot-count sliders, respect the hideLabels setting
+                if (id !== 'newSwarmZotCount' && window.SliderControls) {
+                    valueDisplay.style.display = window.SliderControls.hideLabels ? 'none' : '';
                 }
                 
                 // Call the callback with the new value
@@ -405,24 +408,29 @@ const MenuSystem = (function() {
         const maxValue = document.getElementById('newSwarmMaxSizeValue');
 
         if (minSlider && maxSlider && minValue && maxValue) {
-            // Hide value displays for size range sliders
-            minValue.textContent = '';
-            minValue.style.display = 'none';
-            maxValue.textContent = '';
-            maxValue.style.display = 'none';
+            // Set initial values with respect to hideLabels setting
+            minValue.textContent = parseFloat(minSlider.value).toFixed(1);
+            maxValue.textContent = parseFloat(maxSlider.value).toFixed(1);
+            
+            // Apply visibility based on SliderControls
+            const hideLabels = window.SliderControls ? window.SliderControls.hideLabels : true;
+            minValue.style.display = hideLabels ? 'none' : '';
+            maxValue.style.display = hideLabels ? 'none' : '';
             
             minSlider.addEventListener('input', function() {
                 if (parseFloat(this.value) > parseFloat(maxSlider.value)) {
                     this.value = maxSlider.value;
                 }
-                // Values are hidden
+                // Always update the content even if hidden
+                minValue.textContent = parseFloat(this.value).toFixed(1);
             });
 
             maxSlider.addEventListener('input', function() {
                 if (parseFloat(this.value) < parseFloat(minSlider.value)) {
                     this.value = minSlider.value;
                 }
-                // Values are hidden
+                // Always update the content even if hidden
+                maxValue.textContent = parseFloat(this.value).toFixed(1);
             });
         }
     }
@@ -441,4 +449,18 @@ const MenuSystem = (function() {
 // Export for module system
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
     module.exports = MenuSystem;
+}
+
+// Add this to any cleanup function or window unload event
+function cleanupAudio() {
+    if (demoAudio) {
+        demoAudio.pause();
+        demoAudio.src = '';
+        demoAudio.load();
+        demoAudio = null;
+    }
+    
+    if (audioContext) {
+        audioContext.close().catch(e => console.error('Error closing AudioContext:', e));
+    }
 }

@@ -21,7 +21,7 @@ const SliderTooltip = (function() {
         
         // Orbie swarm parameters
         'orbieSwarmSpeed': 'Controls how quickly the Orbie swarm members move. Higher speeds create more energetic, chaotic movement. Lower speeds result in more gentle, peaceful motion.',
-        'orbieSwarmDampening': 'Controls how quickly the Orbie swarm slows down. Higher values (closer to 1.0) create more sluggish movement with less momentum. Lower values allow for more persistent motion and inertia.',
+        'orbieSwarmDampening': 'Controls how quickly the Orbie swarm slows down. Higher values create more sluggish movement with less momentum. Lower values allow for more persistent motion and inertia.',
         'orbieSwarmSeparation': 'Controls how strongly swarm members avoid each other. Higher values prevent clumping, keeping particles well-spaced. Lower values allow particles to move closer together.',
         'orbieSwarmAlignment': 'Controls how strongly swarm members align their direction with neighbors. Higher values create more uniform, flock-like movement. Lower values allow for more independent motion.',
         'orbieSwarmCohesion': 'Controls how strongly swarm members are attracted to each other. Higher values pull particles together into tighter groups. Lower values allow particles to spread out more widely.',
@@ -33,10 +33,10 @@ const SliderTooltip = (function() {
         'newSwarmMinSize': 'Sets the minimum size of individual Zots in the swarm. This establishes the smallest Zots that will appear. Smaller minimum sizes allow for more variation in your swarm.',
         'newSwarmMaxSize': 'Sets the maximum size of individual Zots in the swarm. This establishes the largest Zots that will appear. Larger maximum sizes create more variety and visual interest.',
         'newSwarmSpeed': 'Controls how quickly the Zots move in the swarm. Higher speeds create more dynamic, energetic movement. Lower speeds create calmer, more controlled behaviors.',
-        'newSwarmSeparation': 'Controls how strongly Zots avoid each other. Higher values (above 1.0) cause Zots to actively maintain distance from each other. Lower values allow for more grouping and clustering.',
-        'newSwarmAlignment': 'Controls how strongly Zots align with neighbors. Higher values (above 0.5) cause Zots to follow the same direction as nearby Zots, creating flowing, stream-like motion.',
+        'newSwarmSeparation': 'Controls how strongly Zots avoid each other. Higher values cause Zots to actively maintain distance from each other. Lower values allow for more grouping and clustering.',
+        'newSwarmAlignment': 'Controls how strongly Zots align with neighbors. Higher values cause Zots to follow the same direction as nearby Zots, creating flowing, stream-like motion.',
         'newSwarmCohesion': 'Controls how strongly Zots are attracted to their group. Higher values create tightly clustered swarms that stick together. Lower values allow for more scattered, independent movement.',
-        'newSwarmPerception': 'Controls how far Zots can perceive their neighbors. Higher values (above 50) allow for larger scale coordinated behaviors. Lower values create more local, smaller group behaviors.',
+        'newSwarmPerception': 'Controls how far Zots can perceive their neighbors. Higher values allow for larger scale coordinated behaviors. Lower values create more local, smaller group behaviors.',
         
         // Forces parameters
         'touchForce': 'Controls how strongly your touch affects particles. Higher values create more dramatic push/pull effects when interacting. Lower values allow for more gentle, subtle influences.',

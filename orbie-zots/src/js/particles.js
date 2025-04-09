@@ -182,11 +182,25 @@ const ParticleSystem = (function() {
     
     // Create a new ZotSwarm
     function createZotSwarm(config) {
+        console.log("Creating new zot swarm with config:", config);
+        
+        // Get a unique ID for this swarm
+        const swarmId = generateSwarmId();
+        
+        // Set default center position if not specified
+        const centerX = config.centerX !== undefined ? config.centerX : canvas.width / 2;
+        const centerY = config.centerY !== undefined ? config.centerY : canvas.height / 2;
+        
+        // Create a copy of config to store settings and add isRandomized property
+        const settings = {...config};
+        
+        // Create the swarm object with settings
         const swarm = {
-            id: generateSwarmId(),
+            id: swarmId,
+            zotCount: config.zotCount || 25,
             zots: [],
-            settings: {...config},
-            originalSettings: {...config}, // Store original settings to revert to when leaving Orbie's influence
+            settings: settings,
+            originalSettings: {...settings}, // Store original settings to revert to when leaving Orbie's influence
             inOrbieInfluence: false // Track if this swarm is in Orbie's influence
         };
         
@@ -196,21 +210,30 @@ const ParticleSystem = (function() {
         
         // Generate particles for this swarm
         for (let i = 0; i < config.zotCount; i++) {
-            swarm.zots.push({
-                x: config.centerX + (Math.random() * 100 - 50), // Cluster around center
-                y: config.centerY + (Math.random() * 100 - 50), // Cluster around center
-                vx: (Math.random() * 2 - 1) * config.speed,
-                vy: (Math.random() * 2 - 1) * config.speed,
-                color: getColor(),
+            const zot = {
+                x: centerX + (Math.random() * 100 - 50), // Cluster around center
+                y: centerY + (Math.random() * 100 - 50), // Cluster around center
+                vx: (Math.random() * 2 - 1) * (config.speed || 2),
+                vy: (Math.random() * 2 - 1) * (config.speed || 2),
                 size: config.minSize + Math.random() * (config.maxSize - config.minSize),
+                color: getColor(),
                 history: [],
-                inOrbieSwarm: false, // Track if particle is in Orbie's swarm
-                swarmId: swarm.id, // Assign swarm ID to each particle for identification
-                fromGlobalTheme: false // Mark particles as NOT using the global theme
-            });
+                inOrbieSwarm: false,
+                swarmId: swarm.id,
+                fromGlobalTheme: false
+            };
+            
+            swarm.zots.push(zot);
         }
         
+        console.log(`Created swarm with ID ${swarm.id} containing ${swarm.zots.length} zots`);
+        
+        // Add the new swarm to our collection
         zotSwarms.push(swarm);
+        
+        // Update zot counter
+        updateZotsCounter();
+        
         return swarm.id;
     }
     
@@ -337,25 +360,6 @@ const ParticleSystem = (function() {
     
     // Apply preset to new swarm settings
     function applyPresetToNewSwarm(presetName) {
-        // Special handling for the random preset
-        if (presetName === 'random') {
-            return {
-                ...Presets.defaults.zotSwarm,
-                name: "Random",
-                zotCount: 25, // Keep fixed at 25
-                speed: 2,     // Keep fixed at 2
-                separation: Math.random() * 4, // Random between 0-4
-                alignment: Math.random() * 3,  // Random between 0-3
-                cohesion: Math.random() * 5,   // Random between 0-5
-                perception: Math.floor(Math.random() * 180) + 20, // Random between 20-200
-                // Random size range
-                minSize: 0.5 + Math.random() * 2, // 0.5-2.5
-                maxSize: 3 + Math.random() * 2,   // 3-5
-                // Random color theme from available themes
-                colorTheme: getRandomColorTheme()
-            };
-        }
-        
         // Regular preset handling
         const preset = Presets.swarmPresets[presetName];
         if (!preset) return null;

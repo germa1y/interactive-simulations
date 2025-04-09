@@ -1,7 +1,7 @@
 /**
  * Orbie Zots - Particle Swarm Simulation
  * Copyright (c) 2025
- * Built: 2025-04-05T15:11:52.593Z
+ * Built: 2025-04-09T04:14:23.175Z
  */
 
 // config.js - Environment-specific configuration
@@ -1212,22 +1212,25 @@ const MenuSystem = (function() {
                 input.value = initialValue;
             }
             
-            // Only show value for zot count slider, hide all others
+            // Always show zot count, respect SliderControls.hideLabels for others
             if (id === 'newSwarmZotCount') {
                 valueDisplay.textContent = parseFloat(input.value).toFixed(input.step.includes('.') ? 2 : 0);
                 valueDisplay.style.display = '';  // Use default display
             } else {
-                valueDisplay.textContent = '';
-                valueDisplay.style.display = 'none';
+                valueDisplay.textContent = parseFloat(input.value).toFixed(input.step.includes('.') ? 2 : 0);
+                valueDisplay.style.display = window.SliderControls && window.SliderControls.hideLabels ? 'none' : '';
             }
             
             // Add event listeners for input changes
             input.addEventListener('input', function() {
                 const value = parseFloat(this.value);
                 
-                // Only update value display for zot count slider
-                if (id === 'newSwarmZotCount') {
-                    valueDisplay.textContent = value.toFixed(this.step.includes('.') ? 2 : 0);
+                // Always update value text even if hidden
+                valueDisplay.textContent = value.toFixed(this.step.includes('.') ? 2 : 0);
+                
+                // For non-zot-count sliders, respect the hideLabels setting
+                if (id !== 'newSwarmZotCount' && window.SliderControls) {
+                    valueDisplay.style.display = window.SliderControls.hideLabels ? 'none' : '';
                 }
                 
                 // Call the callback with the new value
@@ -1290,24 +1293,29 @@ const MenuSystem = (function() {
         const maxValue = document.getElementById('newSwarmMaxSizeValue');
 
         if (minSlider && maxSlider && minValue && maxValue) {
-            // Hide value displays for size range sliders
-            minValue.textContent = '';
-            minValue.style.display = 'none';
-            maxValue.textContent = '';
-            maxValue.style.display = 'none';
+            // Set initial values with respect to hideLabels setting
+            minValue.textContent = parseFloat(minSlider.value).toFixed(1);
+            maxValue.textContent = parseFloat(maxSlider.value).toFixed(1);
+            
+            // Apply visibility based on SliderControls
+            const hideLabels = window.SliderControls ? window.SliderControls.hideLabels : true;
+            minValue.style.display = hideLabels ? 'none' : '';
+            maxValue.style.display = hideLabels ? 'none' : '';
             
             minSlider.addEventListener('input', function() {
                 if (parseFloat(this.value) > parseFloat(maxSlider.value)) {
                     this.value = maxSlider.value;
                 }
-                // Values are hidden
+                // Always update the content even if hidden
+                minValue.textContent = parseFloat(this.value).toFixed(1);
             });
 
             maxSlider.addEventListener('input', function() {
                 if (parseFloat(this.value) < parseFloat(minSlider.value)) {
                     this.value = minSlider.value;
                 }
-                // Values are hidden
+                // Always update the content even if hidden
+                maxValue.textContent = parseFloat(this.value).toFixed(1);
             });
         }
     }
@@ -1326,6 +1334,20 @@ const MenuSystem = (function() {
 // Export for module system
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
     module.exports = MenuSystem;
+}
+
+// Add this to any cleanup function or window unload event
+function cleanupAudio() {
+    if (demoAudio) {
+        demoAudio.pause();
+        demoAudio.src = '';
+        demoAudio.load();
+        demoAudio = null;
+    }
+    
+    if (audioContext) {
+        audioContext.close().catch(e => console.error('Error closing AudioContext:', e));
+    }
 }
 
 // particles.js - Core particle simulation with encapsulated proprietary logic
@@ -1512,11 +1534,25 @@ const ParticleSystem = (function() {
     
     // Create a new ZotSwarm
     function createZotSwarm(config) {
+        console.log("Creating new zot swarm with config:", config);
+        
+        // Get a unique ID for this swarm
+        const swarmId = generateSwarmId();
+        
+        // Set default center position if not specified
+        const centerX = config.centerX !== undefined ? config.centerX : canvas.width / 2;
+        const centerY = config.centerY !== undefined ? config.centerY : canvas.height / 2;
+        
+        // Create a copy of config to store settings and add isRandomized property
+        const settings = {...config};
+        
+        // Create the swarm object with settings
         const swarm = {
-            id: generateSwarmId(),
+            id: swarmId,
+            zotCount: config.zotCount || 25,
             zots: [],
-            settings: {...config},
-            originalSettings: {...config}, // Store original settings to revert to when leaving Orbie's influence
+            settings: settings,
+            originalSettings: {...settings}, // Store original settings to revert to when leaving Orbie's influence
             inOrbieInfluence: false // Track if this swarm is in Orbie's influence
         };
         
@@ -1526,21 +1562,30 @@ const ParticleSystem = (function() {
         
         // Generate particles for this swarm
         for (let i = 0; i < config.zotCount; i++) {
-            swarm.zots.push({
-                x: config.centerX + (Math.random() * 100 - 50), // Cluster around center
-                y: config.centerY + (Math.random() * 100 - 50), // Cluster around center
-                vx: (Math.random() * 2 - 1) * config.speed,
-                vy: (Math.random() * 2 - 1) * config.speed,
-                color: getColor(),
+            const zot = {
+                x: centerX + (Math.random() * 100 - 50), // Cluster around center
+                y: centerY + (Math.random() * 100 - 50), // Cluster around center
+                vx: (Math.random() * 2 - 1) * (config.speed || 2),
+                vy: (Math.random() * 2 - 1) * (config.speed || 2),
                 size: config.minSize + Math.random() * (config.maxSize - config.minSize),
+                color: getColor(),
                 history: [],
-                inOrbieSwarm: false, // Track if particle is in Orbie's swarm
-                swarmId: swarm.id, // Assign swarm ID to each particle for identification
-                fromGlobalTheme: false // Mark particles as NOT using the global theme
-            });
+                inOrbieSwarm: false,
+                swarmId: swarm.id,
+                fromGlobalTheme: false
+            };
+            
+            swarm.zots.push(zot);
         }
         
+        console.log(`Created swarm with ID ${swarm.id} containing ${swarm.zots.length} zots`);
+        
+        // Add the new swarm to our collection
         zotSwarms.push(swarm);
+        
+        // Update zot counter
+        updateZotsCounter();
+        
         return swarm.id;
     }
     
@@ -1667,25 +1712,6 @@ const ParticleSystem = (function() {
     
     // Apply preset to new swarm settings
     function applyPresetToNewSwarm(presetName) {
-        // Special handling for the random preset
-        if (presetName === 'random') {
-            return {
-                ...Presets.defaults.zotSwarm,
-                name: "Random",
-                zotCount: 25, // Keep fixed at 25
-                speed: 2,     // Keep fixed at 2
-                separation: Math.random() * 4, // Random between 0-4
-                alignment: Math.random() * 3,  // Random between 0-3
-                cohesion: Math.random() * 5,   // Random between 0-5
-                perception: Math.floor(Math.random() * 180) + 20, // Random between 20-200
-                // Random size range
-                minSize: 0.5 + Math.random() * 2, // 0.5-2.5
-                maxSize: 3 + Math.random() * 2,   // 3-5
-                // Random color theme from available themes
-                colorTheme: getRandomColorTheme()
-            };
-        }
-        
         // Regular preset handling
         const preset = Presets.swarmPresets[presetName];
         if (!preset) return null;
@@ -6485,6 +6511,69 @@ document.addEventListener('DOMContentLoaded', function() {
     const fpsDisplay = document.getElementById('fps');
     const controlsPanel = document.getElementById('controls');
     
+    // Global control for slider value labels
+    window.SliderControls = {
+        hideLabels: true, // Default state - show all labels
+        
+        // Toggle all slider value labels except for zot count and size ranges
+        toggleLabels: function() {
+            this.hideLabels = !this.hideLabels;
+            this.updateAllLabelVisibility();
+            console.log(`Slider labels are now ${this.hideLabels ? 'hidden' : 'visible'} (except zot count which is always visible)`);
+            return this.hideLabels;
+        },
+        
+        // Update all slider value displays based on current state
+        updateAllLabelVisibility: function() {
+            const valueDisplays = document.querySelectorAll('[id$="Value"]');
+            valueDisplays.forEach(display => {
+                const sliderId = display.id.replace('Value', '');
+                
+                // Skip zot count and max size - always visible
+                if (sliderId === 'newSwarmZotCount' || sliderId === 'newSwarmMaxSize') {
+                    const slider = document.getElementById(sliderId);
+                    if (slider) {
+                        const precision = sliderId === 'newSwarmMaxSize' ? 1 : 
+                                         (slider.step === '1' || parseFloat(slider.step) === 1) ? 0 : 
+                                         slider.step.includes('.01') ? 2 : 1;
+                        display.textContent = parseFloat(slider.value).toFixed(precision);
+                    }
+                    display.style.display = '';
+                    return;
+                }
+                
+                // For min size slider - show when labels are visible
+                if (sliderId === 'newSwarmMinSize') {
+                    display.style.display = this.hideLabels ? 'none' : '';
+                    if (!this.hideLabels) {
+                        // Update value if showing
+                        const slider = document.getElementById(sliderId);
+                        if (slider) {
+                            display.textContent = parseFloat(slider.value).toFixed(1);
+                        }
+                    }
+                    return;
+                }
+                
+                // For all other sliders
+                display.style.display = this.hideLabels ? 'none' : '';
+                if (!this.hideLabels) {
+                    // Update value if showing
+                    const slider = document.getElementById(sliderId);
+                    if (slider) {
+                        const shouldRound = slider.step === '1' || parseFloat(slider.step) === 1;
+                        const precision = shouldRound ? 0 : 
+                                         slider.step.includes('.01') ? 2 : 1;
+                        display.textContent = parseFloat(slider.value).toFixed(precision);
+                    }
+                }
+            });
+        }
+    };
+    
+    // Document the toggle function in console for easy access
+    console.log("To toggle slider value labels, use: SliderControls.toggleLabels()");
+    
     console.log("DOM loaded - Menu elements:", menuToggle ? "✓" : "✗", controlsPanel ? "✓" : "✗", homeButton ? "✓" : "✗");
     
     // Initialize the particle system
@@ -6784,61 +6873,50 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Setup Zot Swarm controls
     function setupZotSwarmControls() {
-        // Regular sliders
+        // Flag to track if randomize was used or settings were manually changed
+        let isRandomized = false;
+        
+        // Regular sliders with manual change detection
         setupRangeInput('newSwarmZotCount');
-        setupRangeInput('newSwarmSpeed');
-        setupRangeInput('newSwarmSeparation');
-        setupRangeInput('newSwarmAlignment');
-        setupRangeInput('newSwarmCohesion');
-        setupRangeInput('newSwarmPerception');
+        setupRangeInput('newSwarmSpeed', function() { isRandomized = true; });
+        setupRangeInput('newSwarmSeparation', function() { isRandomized = true; });
+        setupRangeInput('newSwarmAlignment', function() { isRandomized = true; });
+        setupRangeInput('newSwarmCohesion', function() { isRandomized = true; });
+        setupRangeInput('newSwarmPerception', function() { isRandomized = true; });
         
         // Min/Max size range slider
         setupDualRangeSlider('newSwarmMinSize', 'newSwarmMaxSize');
         
-        // Preset selector
+        // Set up color theme selection to mark as randomized
+        const colorPresets = document.querySelectorAll('.color-preset');
+        colorPresets.forEach(preset => {
+            preset.addEventListener('click', function() {
+                // Mark as randomized when manually changing color theme
+                // (But not when a preset is selected, which also sets color theme)
+                if (!preset.hasAttribute('data-from-preset')) {
+                    isRandomized = true;
+                }
+                // Remove the attribute after handling, so next click is treated as manual
+                colorPresets.forEach(p => p.removeAttribute('data-from-preset'));
+            });
+        });
+        
+        // Randomize button
+        const randomizeButton = document.getElementById('randomizeButton');
+        if (randomizeButton) {
+            randomizeButton.addEventListener('click', function() {
+                randomizeZotSwarmSettings();
+                isRandomized = true;
+            });
+        }
+        
+        // When preset is selected, reset randomized flag
         const presetSelect = document.getElementById('swarmPreset');
         if (presetSelect) {
             presetSelect.addEventListener('change', function() {
-                if (this.value === 'random') {
-                    // Apply random values to UI but keep count=25 and speed=2
-                    const randomConfig = {
-                        zotCount: 25, // Keep fixed at 25
-                        speed: 2,     // Keep fixed at 2
-                        separation: Math.random() * 4, // Random between 0-4
-                        alignment: Math.random() * 3,  // Random between 0-3
-                        cohesion: Math.random() * 5,   // Random between 0-5
-                        perception: Math.floor(Math.random() * 180) + 20 // Random between 20-200
-                    };
-                    
-                    // Apply to UI
-                    document.getElementById('newSwarmZotCount').value = randomConfig.zotCount;
-                    document.getElementById('newSwarmSpeed').value = randomConfig.speed;
-                    document.getElementById('newSwarmSeparation').value = randomConfig.separation;
-                    document.getElementById('newSwarmAlignment').value = randomConfig.alignment;
-                    document.getElementById('newSwarmCohesion').value = randomConfig.cohesion;
-                    document.getElementById('newSwarmPerception').value = randomConfig.perception;
-                    
-                    // Also randomize size range (but keep sensible)
-                    const minSize = 0.5 + Math.random() * 2; // Random between 0.5-2.5
-                    const maxSize = minSize + 1 + Math.random() * 3; // At least 1 larger than min
-                    document.getElementById('newSwarmMinSize').value = minSize;
-                    document.getElementById('newSwarmMaxSize').value = maxSize;
-                    
-                    // Update displayed values
-                    // HIDDEN: All slider values are hidden to protect IP
-                    
-                    document.getElementById('newSwarmZotCountValue').textContent = randomConfig.zotCount;
-                    document.getElementById('newSwarmMinSizeValue').textContent = minSize.toFixed(1);
-                    document.getElementById('newSwarmMaxSizeValue').textContent = maxSize.toFixed(1);
-                    
-                    // Also update the dual slider visuals
-                    updateDualSliderVisuals('newSwarmMinSize', 'newSwarmMaxSize');
-                    
-                    return;
-                }
+                isRandomized = false;
+                const preset = Presets.swarmPresets[this.value];
                 
-                // Apply preset values to UI
-                const preset = ParticleSystem.applyPresetToNewSwarm(this.value);
                 if (preset) {
                     // Keep the current zot count
                     const currentZotCount = document.getElementById('newSwarmZotCount').value;
@@ -6878,6 +6956,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         const colorPresets = document.querySelectorAll('.color-preset');
                         colorPresets.forEach(themeBtn => {
                             if (themeBtn.dataset.theme === preset.colorTheme) {
+                                // Mark this as from preset selection to avoid triggering randomized flag
+                                themeBtn.setAttribute('data-from-preset', 'true');
                                 // Remove active class from all presets
                                 colorPresets.forEach(p => p.classList.remove('active'));
                                 // Add active class to matching preset
@@ -6888,6 +6968,57 @@ document.addEventListener('DOMContentLoaded', function() {
                                 }
                             }
                         });
+                    }
+                }
+            });
+        }
+        
+        // Function to randomize zot swarm settings
+        function randomizeZotSwarmSettings() {
+            // Keep current zot count and size ranges
+            const currentZotCount = document.getElementById('newSwarmZotCount').value;
+            const currentMinSize = document.getElementById('newSwarmMinSize').value;
+            const currentMaxSize = document.getElementById('newSwarmMaxSize').value;
+            
+            // Randomize other settings
+            const randomConfig = {
+                zotCount: currentZotCount, // Keep current value
+                speed: Math.random() * 6,  // Random between 0-6
+                separation: Math.random() * 4, // Random between 0-4
+                alignment: Math.random() * 3,  // Random between 0-3
+                cohesion: Math.random() * 5,   // Random between 0-5
+                perception: Math.floor(Math.random() * 180) + 20 // Random between 20-200
+            };
+            
+            // Apply to UI
+            document.getElementById('newSwarmSpeed').value = randomConfig.speed;
+            document.getElementById('newSwarmSeparation').value = randomConfig.separation;
+            document.getElementById('newSwarmAlignment').value = randomConfig.alignment;
+            document.getElementById('newSwarmCohesion').value = randomConfig.cohesion;
+            document.getElementById('newSwarmPerception').value = randomConfig.perception;
+            
+            // Trigger input events to update the displayed values
+            updateSliderValueDisplay('newSwarmSpeed');
+            updateSliderValueDisplay('newSwarmSeparation');
+            updateSliderValueDisplay('newSwarmAlignment');
+            updateSliderValueDisplay('newSwarmCohesion');
+            updateSliderValueDisplay('newSwarmPerception');
+            
+            // Randomize color theme
+            const colorThemes = Object.keys(Presets.colorThemes);
+            const randomTheme = colorThemes[Math.floor(Math.random() * colorThemes.length)];
+            
+            // Update color theme selector
+            const colorPresets = document.querySelectorAll('.color-preset');
+            colorPresets.forEach(themeBtn => {
+                if (themeBtn.dataset.theme === randomTheme) {
+                    // Remove active class from all presets
+                    colorPresets.forEach(p => p.classList.remove('active'));
+                    // Add active class to matching preset
+                    themeBtn.classList.add('active');
+                    // Update the color theme
+                    if (ColorThemes && typeof ColorThemes.setTheme === 'function') {
+                        ColorThemes.setTheme(randomTheme);
                     }
                 }
             });
@@ -7047,12 +7178,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 config.centerX = centerX;
                 config.centerY = centerY;
                 
+                // Add randomized flag to config
+                config.isRandomized = isRandomized;
+                
                 // Create the swarm directly
                 const swarmId = ParticleSystem.createZotSwarm(config);
                 
                 if (swarmId) {
                     // Update the swarm list
                     updateSwarmList();
+                    // Reset randomized flag after swarm creation
+                    isRandomized = false;
                 }
             });
         }
@@ -7126,26 +7262,29 @@ document.addEventListener('DOMContentLoaded', function() {
             const precision = shouldRound ? 0 : 
                              input.step.includes('.01') ? 2 : 1;
             
-            // Only show value for zot count slider, hide all others
+            // Always show zot count, respect SliderControls.hideLabels for others
             if (id === 'newSwarmZotCount') {
                 valueDisplay.textContent = parseFloat(input.value).toFixed(precision);
                 valueDisplay.style.display = '';  // Use default display
             } else {
-                valueDisplay.textContent = '';
-                valueDisplay.style.display = 'none';
+                valueDisplay.textContent = parseFloat(input.value).toFixed(precision);
+                valueDisplay.style.display = window.SliderControls.hideLabels ? 'none' : '';
             }
             
             // Add event listeners for input changes
             input.addEventListener('input', function() {
                 const value = parseFloat(this.value);
                 
-                // Only update value display for zot count slider
-                if (id === 'newSwarmZotCount') {
-                    valueDisplay.textContent = value.toFixed(precision);
+                // Always update value text even if hidden
+                valueDisplay.textContent = value.toFixed(precision);
+                
+                // For non-zot-count sliders, respect the hideLabels setting
+                if (id !== 'newSwarmZotCount') {
+                    valueDisplay.style.display = window.SliderControls.hideLabels ? 'none' : '';
                 }
                 
-                // Call the callback with the new value
-                if (changeCallback) {
+                // Call the callback with the new value if provided
+                if (typeof changeCallback === 'function') {
                     changeCallback(value);
                 }
             });
@@ -7160,18 +7299,29 @@ document.addEventListener('DOMContentLoaded', function() {
         const maxValueDisplay = document.getElementById(maxId + 'Value');
         
         if (minSlider && maxSlider && minValueDisplay && maxValueDisplay) {
-            // Hide value displays for all dual range sliders
-            minValueDisplay.textContent = '';
-            maxValueDisplay.textContent = '';
-            minValueDisplay.style.display = 'none';
-            maxValueDisplay.style.display = 'none';
+            // Set initial values but respect hideLabels setting for min value only
+            const minVal = parseFloat(minSlider.value);
+            const maxVal = parseFloat(maxSlider.value);
+            minValueDisplay.textContent = minVal.toFixed(1);
+            maxValueDisplay.textContent = maxVal.toFixed(1);
             
-            // Update values displays but keep them hidden
+            // Always show max size value, respect hideLabels setting for min size
+            if (maxId === 'newSwarmMaxSize') {
+                maxValueDisplay.style.display = '';
+            } else {
+                maxValueDisplay.style.display = window.SliderControls.hideLabels ? 'none' : '';
+            }
+            
+            minValueDisplay.style.display = window.SliderControls.hideLabels ? 'none' : '';
+            
+            // Update values displays
             function updateValues() {
                 const minVal = parseFloat(minSlider.value);
                 const maxVal = parseFloat(maxSlider.value);
                 
-                // Values are now hidden
+                // Always update text content
+                minValueDisplay.textContent = minVal.toFixed(1);
+                maxValueDisplay.textContent = maxVal.toFixed(1);
                 
                 // Ensure thumb positions are visually reflecting the values
                 updateThumbPositions();
@@ -7366,7 +7516,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const option = document.createElement('option');
             option.value = swarm.id;
             const colorThemeName = Presets.colorThemes[swarm.settings.colorTheme]?.name || 'Custom';
-            const presetDisplayName = Presets.swarmPresets[swarm.settings.presetName]?.name || 'Custom';
+            
+            // First check if settings match any preset, then check if it was randomized
+            let presetDisplayName;
+            // Check if settings match any preset
+            const matchedPreset = findMatchingPreset(swarm.settings);
+            if (matchedPreset) {
+                presetDisplayName = Presets.swarmPresets[matchedPreset]?.name || 'Custom';
+            } else if (swarm.settings.isRandomized) {
+                presetDisplayName = 'Random';
+            } else {
+                presetDisplayName = 'Random';
+            }
+            
             option.textContent = `${presetDisplayName} ${colorThemeName} (${swarm.zotCount})`;
             swarmDropdown.appendChild(option);
         });
@@ -7376,6 +7538,24 @@ document.addEventListener('DOMContentLoaded', function() {
             const mostRecentSwarm = swarms[swarms.length - 1];
             swarmDropdown.value = mostRecentSwarm.id;
         }
+    }
+    
+    // Helper function to check if swarm settings match a preset
+    function findMatchingPreset(settings) {
+        // Check each preset
+        for (const [presetId, preset] of Object.entries(Presets.swarmPresets)) {
+            if (
+                Math.abs(preset.speed - settings.speed) < 0.01 &&
+                Math.abs(preset.separation - settings.separation) < 0.01 &&
+                Math.abs(preset.alignment - settings.alignment) < 0.01 &&
+                Math.abs(preset.cohesion - settings.cohesion) < 0.01 &&
+                Math.abs(preset.perception - settings.perception) < 0.01 &&
+                preset.colorTheme === settings.colorTheme
+            ) {
+                return presetId;
+            }
+        }
+        return null;
     }
     
     // Update all UI values to match current settings
@@ -7518,6 +7698,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof SubmitSwarms !== 'undefined' && SubmitSwarms.init) {
         SubmitSwarms.init();
     }
+
+    // After all setup is done, ensure all sliders have correct visibility
+    setTimeout(() => {
+        if (window.SliderControls) {
+            window.SliderControls.updateAllLabelVisibility();
+        }
+    }, 100);
 });
 
 // Initialize the simulation
