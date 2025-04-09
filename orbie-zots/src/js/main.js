@@ -673,8 +673,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 config.centerX = centerX;
                 config.centerY = centerY;
                 
-                // Add randomized flag to config
-                config.isRandomized = isRandomized;
+                // Add randomized flag to config if not set by getSwarmConfigFromUI
+                if (config.isRandomized === undefined) {
+                    config.isRandomized = isRandomized;
+                }
                 
                 // Create the swarm directly
                 const swarmId = ParticleSystem.createZotSwarm(config);
@@ -901,6 +903,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const presetSelect = document.getElementById('swarmPreset');
         if (presetSelect && presetSelect.value) {
             config.presetName = presetSelect.value;
+            
+            // When a preset is explicitly selected, ensure it's not marked as randomized
+            // This ensures the preset name appears in the dropdown instead of "Random"
+            config.isRandomized = false;
         }
         
         // Get color theme
@@ -1012,16 +1018,18 @@ document.addEventListener('DOMContentLoaded', function() {
             option.value = swarm.id;
             const colorThemeName = Presets.colorThemes[swarm.settings.colorTheme]?.name || 'Custom';
             
-            // First check if settings match any preset, then check if it was randomized
+            // Check if this is a randomized swarm or settings don't match any preset
             let presetDisplayName;
-            // Check if settings match any preset
-            const matchedPreset = findMatchingPreset(swarm.settings);
-            if (matchedPreset) {
-                presetDisplayName = Presets.swarmPresets[matchedPreset]?.name || 'Custom';
-            } else if (swarm.settings.isRandomized) {
+            if (swarm.settings.isRandomized) {
                 presetDisplayName = 'Random';
             } else {
-                presetDisplayName = 'Random';
+                // Check if settings match any preset
+                const matchedPreset = findMatchingPreset(swarm.settings);
+                if (matchedPreset) {
+                    presetDisplayName = Presets.swarmPresets[matchedPreset]?.name || 'Custom';
+                } else {
+                    presetDisplayName = 'Random';
+                }
             }
             
             option.textContent = `${presetDisplayName} ${colorThemeName} (${swarm.zotCount})`;
