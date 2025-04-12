@@ -12,9 +12,9 @@
             return Promise.reject(new Error('AudioManager not available'));
         }
         
-        if (typeof MusicButton === 'undefined') {
-            console.error('Audio initialization failed: MusicButton not available');
-            return Promise.reject(new Error('MusicButton not available'));
+        if (typeof MusicController === 'undefined') {
+            console.error('Audio initialization failed: MusicController not available');
+            return Promise.reject(new Error('MusicController not available'));
         }
         
         // Initialize Audio Manager first
@@ -32,9 +32,9 @@
                 return Promise.resolve();
             })
             .then(() => {
-                // Initialize Music Button
-                return MusicButton.init()
-                    .then(() => console.log('MusicButton initialized successfully'));
+                // Initialize Music Controller
+                return MusicController.init()
+                    .then(() => console.log('MusicController initialized successfully'));
             })
             .then(() => {
                 console.log('Audio system initialized successfully');
@@ -56,8 +56,8 @@
     function setupDemoModeIntegration() {
         if (typeof DemoMode === 'undefined') {
             console.log('DemoMode not available for audio integration');
-            // MusicButton could still be enabled
-            setTimeout(() => MusicButton.enable(), 3000);
+            // MusicController could still be enabled
+            setTimeout(() => MusicController.enableButton(), 3000);
             return;
         }
         
@@ -70,14 +70,14 @@
                 // If second touch is already detected, enable button now
                 if (DemoMode.isSecondTouchDetected()) {
                     console.log('Second touch already detected, enabling music button');
-                    MusicButton.enable();
+                    MusicController.enableButton();
                     clearInterval(checkInterval);
                 } else {
                     // Set up a one-time check for second touch
                     const secondTouchInterval = setInterval(function() {
                         if (DemoMode.isSecondTouchDetected()) {
                             console.log('Second touch detected, enabling music button');
-                            MusicButton.enable();
+                            MusicController.enableButton();
                             clearInterval(secondTouchInterval);
                         }
                     }, 500);

@@ -1,7 +1,7 @@
 /**
  * Orbie Zots - Particle Swarm Simulation
  * Copyright (c) 2025
- * Built: 2025-04-09T04:39:13.806Z
+ * Built: 2025-04-12T21:57:25.435Z
  */
 
 // config.js - Environment-specific configuration
@@ -5097,6 +5097,12 @@ const DemoMode = (function() {
         touchDetected = false;
         secondTouchDetected = false; // Reset second touch detection
         isFirstLoop = true; // Reset for next start
+        
+        // Enable the music button after demo mode ends
+        if (typeof MusicController !== 'undefined' && MusicController.enableButton) {
+            console.log('Demo Mode: Enabling music button after demo mode ends');
+            MusicController.enableButton();
+        }
         
         // Allow the event to continue propagating after we've cleaned up
         // (so the menu button still works normally)

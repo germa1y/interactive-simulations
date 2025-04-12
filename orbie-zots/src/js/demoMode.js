@@ -1350,6 +1350,12 @@ const DemoMode = (function() {
         secondTouchDetected = false; // Reset second touch detection
         isFirstLoop = true; // Reset for next start
         
+        // Enable the music button after demo mode ends
+        if (typeof MusicController !== 'undefined' && MusicController.enableButton) {
+            console.log('Demo Mode: Enabling music button after demo mode ends');
+            MusicController.enableButton();
+        }
+        
         // Allow the event to continue propagating after we've cleaned up
         // (so the menu button still works normally)
     }
