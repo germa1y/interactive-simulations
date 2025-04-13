@@ -921,7 +921,7 @@ const DemoMode = (function() {
                     // Stop any currently playing music
                     stopAudio();
                     console.log('Demo Mode: Stopped music for Torrential preset after 1-second delay');
-                }, -10000);
+                }, 1000);
                 
                 showSwipePrompt(); // Show the swipe prompt
             }
