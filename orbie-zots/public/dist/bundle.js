@@ -1,7 +1,7 @@
 /**
  * Orbie Zots - Particle Swarm Simulation
  * Copyright (c) 2025
- * Built: 2025-04-13T13:06:11.497Z
+ * Built: 2025-04-13T13:36:09.299Z
  */
 
 // config.js - Environment-specific configuration
@@ -709,7 +709,7 @@ const TouchHandler = (function() {
                 
                 if (distance > swipeThreshold) {
                     swipeDetected = true;
-                    console.log("Swipe detected");
+                    // console.log("Swipe detected");
                 }
             }
             
@@ -1023,15 +1023,13 @@ const MenuSystem = (function() {
             // Initialize from settings if possible
             if (typeof ParticleSystem !== 'undefined' && ParticleSystem.getOrbieSettings) {
                 const settings = ParticleSystem.getOrbieSettings();
-                console.log("Setting orbieEnabled checkbox from settings:", settings.enabled);
                 orbieEnabled.checked = settings.enabled !== false; // Default to true if not set
             } else {
-                console.log("ParticleSystem not available, defaulting orbieEnabled to true");
                 orbieEnabled.checked = true; // Default to true if ParticleSystem isn't available
             }
             
             orbieEnabled.addEventListener('change', function() {
-                console.log("Orbie toggle changed to:", this.checked);
+                orbieEnabled.checked = this.checked;
                 callbacks.updateOrbieSettings('enabled', this.checked);
             });
         }
@@ -1346,7 +1344,9 @@ function cleanupAudio() {
     }
     
     if (audioContext) {
-        audioContext.close().catch(e => console.error('Error closing AudioContext:', e));
+        audioContext.close().catch(e => {
+            // console.error('Error closing AudioContext:', e);
+        });
     }
 }
 
@@ -1506,7 +1506,7 @@ const ParticleSystem = (function() {
     
     // Initialize Orbie
     function initOrbie() {
-        console.log("Initializing Orbie at position:", width/2, height/2);
+        // console.log("Initializing Orbie at position:", width/2, height/2);
         orbie = {
             x: width / 2, // Center of screen
             y: height / 2, // Center of screen
@@ -1523,18 +1523,18 @@ const ParticleSystem = (function() {
         };
         
         // Confirm all required properties are set
-        console.log("Orbie initialized with: ", 
-            "color:", orbie.color, 
-            "size:", orbie.size, 
-            "glowSize:", orbie.glowSize,
-            "glowColor:", orbie.glowColor,
-            "glowOpacity:", orbie.glowOpacity
-        );
+        // console.log("Orbie initialized with: ", 
+        //     "color:", orbie.color, 
+        //     "size:", orbie.size, 
+        //     "glowSize:", orbie.glowSize,
+        //     "glowColor:", orbie.glowColor,
+        //     "glowOpacity:", orbie.glowOpacity
+        // );
     }
     
     // Create a new ZotSwarm
     function createZotSwarm(config) {
-        console.log("Creating new zot swarm with config:", config);
+        // console.log("Creating new zot swarm with config:", config);
         
         // Get a unique ID for this swarm
         const swarmId = generateSwarmId();
@@ -1578,7 +1578,7 @@ const ParticleSystem = (function() {
             swarm.zots.push(zot);
         }
         
-        console.log(`Created swarm with ID ${swarm.id} containing ${swarm.zots.length} zots`);
+        // console.log(`Created swarm with ID ${swarm.id} containing ${swarm.zots.length} zots`);
         
         // Add the new swarm to our collection
         zotSwarms.push(swarm);
@@ -1594,7 +1594,7 @@ const ParticleSystem = (function() {
         // Find the swarm with the given ID
         const swarmIndex = zotSwarms.findIndex(swarm => swarm.id === swarmId);
         if (swarmIndex === -1) {
-            console.error(`Swarm with ID ${swarmId} not found`);
+            // console.error(`Swarm with ID ${swarmId} not found`);
             return false;
         }
         
@@ -2111,9 +2111,9 @@ const ParticleSystem = (function() {
                 ctx.fillStyle = coreGradient;
                 ctx.fill();
             } catch (e) {
-                console.error("Error rendering Orbie:", e);
-                console.log("Orbie state:", orbie);
-                console.log("orbieSettings:", orbieSettings);
+                // console.error("Error rendering Orbie:", e);
+                // console.log("Orbie state:", orbie);
+                // console.log("orbieSettings:", orbieSettings);
             }
         }
     }
@@ -2236,7 +2236,7 @@ const ParticleSystem = (function() {
         // Initialize Orbie
         initOrbie();
         
-        console.log("Orbie initialized:", orbie, "Enabled:", orbieSettings.enabled);
+        // console.log("Orbie initialized:", orbie, "Enabled:", orbieSettings.enabled);
         
         // Create background particles
         initBackgroundParticles();
@@ -2352,7 +2352,7 @@ const ParticleSystem = (function() {
                     } else if (property === 'enabled') {
                         // When enabling, ensure all visual properties are fully refreshed
                         if (value === true) {
-                            console.log("Enabling Orbie, refreshing all visual properties");
+                            // console.log("Enabling Orbie, refreshing all visual properties");
                             // Force a complete refresh of Orbie's properties
                             orbie.color = orbieSettings.color || 'rgba(255, 250, 230, 0.9)';
                             orbie.size = orbieSettings.size;
@@ -2369,8 +2369,8 @@ const ParticleSystem = (function() {
             
             // Log state after property change
             if (property === 'enabled') {
-                console.log("Orbie enabled:", orbieSettings.enabled);
-                console.log("Orbie properties:", orbie.color, orbie.size, orbie.glowColor, orbie.glowOpacity);
+                // console.log("Orbie enabled:", orbieSettings.enabled);
+                // console.log("Orbie properties:", orbie.color, orbie.size, orbie.glowColor, orbie.glowOpacity);
             }
         },
         
@@ -2442,9 +2442,9 @@ const ParticleSystem = (function() {
             initOrbie();
             
             // Sanity check for Orbie's visual properties
-            console.log("After reset - Orbie enabled:", orbieSettings.enabled);
-            console.log("After reset - Orbie visual properties:", 
-                orbie.color, orbie.size, orbie.glowColor, orbie.glowOpacity, orbie.glowSize);
+            // console.log("After reset - Orbie enabled:", orbieSettings.enabled);
+            // console.log("After reset - Orbie visual properties:", 
+            //     orbie.color, orbie.size, orbie.glowColor, orbie.glowOpacity, orbie.glowSize);
         },
         
         // Add a wall segment - wrapper for WallSystem
@@ -3156,7 +3156,7 @@ const WallSystem = (function() {
                 const svgText = await response.text();
                 return loadWallsFromSVG(svgText);
             } catch (error) {
-                console.error("Error loading SVG file:", error);
+                // console.error("Error loading SVG file:", error);
                 return 0;
             }
         },
@@ -3521,7 +3521,7 @@ const SwipeSplitSystem = (function() {
             canvas = canvasElement;
             ctx = canvas.getContext('2d');
             
-            console.log("SwipeSplitSystem initialized");
+            // console.log("SwipeSplitSystem initialized");
             return this;
         },
         
@@ -3562,7 +3562,7 @@ const SwipeSplitSystem = (function() {
                 path.pathIndex = idx;
             });
             
-            console.log("Swipe path started at", x, y, "- Path #", newPathIndex);
+            // console.log("Swipe path started at", x, y, "- Path #", newPathIndex);
             return this;
         },
         
@@ -3591,7 +3591,7 @@ const SwipeSplitSystem = (function() {
             
             const path = swipePaths[activePathIndex];
             
-            console.log("Swipe path ended with", path.points.length, "points - Path #", activePathIndex);
+            // console.log("Swipe path ended with", path.points.length, "points - Path #", activePathIndex);
             
             // Mark as inactive but keep it in the array to continue fading
             path.isActive = false;
@@ -3782,6 +3782,11 @@ const DemoMode = (function() {
     let introAudioLoaded = false;
     let introAudioFailed = false;
     
+    // Global variables for tracking the audio volume state
+    let currentVolumeLevel = 1.0; // Track current volume level
+    let previousVolumeLevel = 1.0; // Store previous volume level before fading
+    let volumeFadeInterval = null; // Store the interval for volume fading
+    
     // Configuration for demo mode
     const DEMO_CONFIG = {
         swarmCount: 8,         // Increased from 6 to 8 to handle all mixed swarm types
@@ -3888,11 +3893,11 @@ const DemoMode = (function() {
     function start() {
         if (isActive) return; // Prevent multiple starts
         
-        console.log('Starting Zot Swarm Demo Mode');
+        // console.log('Starting Zot Swarm Demo Mode');
         
         // Make sure we have access to particle system
         if (!ParticleSystem || typeof ParticleSystem.createZotSwarm !== 'function') {
-            console.error('Demo Mode: ParticleSystem not available');
+            // console.error('Demo Mode: ParticleSystem not available');
             return;
         }
         
@@ -3960,7 +3965,7 @@ const DemoMode = (function() {
                 canvas.addEventListener('touchstart', detectSecondTouch);
                 canvas.addEventListener('click', detectSecondTouch);
                 
-                console.log('Demo Mode: First touch detected, waiting for second touch');
+                // console.log('Demo Mode: First touch detected, waiting for second touch');
             }
         };
         
@@ -3978,7 +3983,7 @@ const DemoMode = (function() {
             }
             
             secondTouchDetected = true;
-            console.log(`Demo Mode: Second touch detected at (${secondTouchX}, ${secondTouchY}), waiting 1 second before spawning remaining swarms`);
+            // console.log(`Demo Mode: Second touch detected at (${secondTouchX}, ${secondTouchY}), waiting 1 second before spawning remaining swarms`);
             
             // Start playing demo intro audio but don't start cycling yet
             try {
@@ -3988,22 +3993,22 @@ const DemoMode = (function() {
                 
                 // Use the preloaded intro audio if available
                 if (introAudio && introAudioLoaded) {
-                    console.log('Demo Mode: Using cached intro audio for playback');
+                    // console.log('Demo Mode: Using cached intro audio for playback');
                     demoAudio = introAudio;
                     introAudio = null; // Clear reference to avoid duplicate usage
                 } else {
                     // Create new audio element if preloaded one isn't available
-                    console.log('Demo Mode: Creating new audio element for intro');
+                    // console.log('Demo Mode: Creating new audio element for intro');
                     demoAudio = new Audio();
                     demoAudio.preload = 'auto';
                     demoAudio.src = './music/DemoIntro.mp3';
                 }
                 
-                console.log('Demo Mode: Using path for demo intro audio:', demoAudio.src);
+                // console.log('Demo Mode: Using path for demo intro audio:', demoAudio.src);
                 
                 // Set up ended event to start random playlist
                 demoAudio.onended = function() {
-                    console.log('Demo Mode: Intro audio ended, starting random playlist');
+                    // console.log('Demo Mode: Intro audio ended, starting random playlist');
                     randomizeSongs();
                     playNextSong();
                 };
@@ -4018,23 +4023,17 @@ const DemoMode = (function() {
                         
                         const playPromise = demoAudio.play();
                         if (playPromise !== undefined) {
-                            playPromise.then(() => {
-                                console.log('Demo Mode: Intro audio playing successfully');
-                            }).catch(err => {
-                                console.error('Demo Mode: Error playing intro audio:', err);
-                                // Fall back to random playlist on error
-                                randomizeSongs();
-                                playNextSong();
-                            });
+                            // console.log('Demo Mode: Intro audio playing successfully');
                         }
                     } catch (err) {
-                        console.error('Demo Mode: Error initiating intro audio playback:', err);
+                        // console.error('Demo Mode: Error playing intro audio:', err);
+                        // Fall back to random playlist on error
                         randomizeSongs();
                         playNextSong();
                     }
                 }, 500);
             } catch (err) {
-                console.error('Demo Mode: Error setting up intro audio:', err);
+                // console.error('Demo Mode: Error setting up intro audio:', err);
                 randomizeSongs();
                 playNextSong();
             }
@@ -4045,7 +4044,7 @@ const DemoMode = (function() {
             
             // Add 1-second delay before spawning remaining swarms
             setTimeout(() => {
-                console.log('Demo Mode: 1-second delay complete, spawning remaining swarms');
+                // console.log('Demo Mode: 1-second delay complete, spawning remaining swarms');
                 createRemainingSwarms();
                 
                 // Set flag that all swarms are spawned
@@ -4055,7 +4054,7 @@ const DemoMode = (function() {
                 canvas.addEventListener('touchstart', detectFirstTouchAfterSpawn);
                 canvas.addEventListener('click', detectFirstTouchAfterSpawn);
                 
-                console.log('Demo Mode: All swarms spawned, waiting for first touch to increase speed and start cycling');
+                // console.log('Demo Mode: All swarms spawned, waiting for first touch to increase speed and start cycling');
             }, 1000);
         };
         
@@ -4064,7 +4063,7 @@ const DemoMode = (function() {
             if (!isActive || !allSwarmsSpawned || firstTouchAfterSpawnDetected) return;
             
             firstTouchAfterSpawnDetected = true;
-            console.log('Demo Mode: First touch after all swarms spawned detected, increasing speed and starting cycling');
+            // console.log('Demo Mode: First touch after all swarms spawned detected, increasing speed and starting cycling');
             
             // Update all jellyOrb swarms to the final speed
             updateAllJellyOrbsSpeed(DEMO_CONFIG.finalSpeed);
@@ -4084,10 +4083,13 @@ const DemoMode = (function() {
             
             if (tapLength < doubleTapDelay && tapLength > 0) {
                 // Double tap detected
-                console.log('Demo Mode: Double tap detected');
+                // console.log('Demo Mode: Double tap detected');
                 
                 // Hide push/pull prompt if active
                 hidePushPullPrompt();
+                
+                // Ensure volume is restored immediately to 100%
+                fadeAudioVolume(1.0, 300);
                 
                 // Restart cycling if it was stopped
                 if (!isCycling) {
@@ -4135,10 +4137,13 @@ const DemoMode = (function() {
                 
                 // If distance is enough, trigger swipe completion
                 if (distance >= minSwipeDistance) {
-                    console.log(`Demo Mode: Swipe detected (${distance.toFixed(0)}px)`);
+                    // console.log(`Demo Mode: Swipe detected (${distance.toFixed(0)}px)`);
                     hideSwipePrompt();
                     
-                    startCycling(); // Resume cycling
+                    // Ensure volume is restored immediately to 100%
+                    fadeAudioVolume(1.0, 300);
+                    
+                    startCycling(true); // Resume cycling with skipImmediateCycle=true to start the timer without advancing
                     
                     // Clear swipe tracking
                     lastSwipeStart = null;
@@ -4469,7 +4474,7 @@ const DemoMode = (function() {
         if (!promptElement || !isActive || touchDetected || promptActive || !isFirstLoop) return;
         
         // Only show prompts during first loop
-        console.log('Demo Mode: Showing touch prompt');
+        // console.log('Demo Mode: Showing touch prompt');
         
         // Animation controllers for cleanup
         let pulseAnimation = null;
@@ -4574,21 +4579,21 @@ const DemoMode = (function() {
         // Only start cycling if we've detected the first touch after all swarms are spawned
         // or if we're in special circumstances like after a swipe
         if (!firstTouchAfterSpawnDetected && allSwarmsSpawned) {
-            console.log('Demo Mode: Not starting cycling yet, waiting for first touch after all swarms are spawned');
+            // console.log('Demo Mode: Not starting cycling yet, waiting for first touch after all swarms are spawned');
             return;
         }
         
-        console.log('Demo Mode: Starting preset cycling');
+        // console.log('Demo Mode: Starting preset cycling');
         
         // Don't reset cycle index if we're resuming after a prompt (swipe or push/pull)
         // Only reset if we're starting fresh (no cycling has happened yet)
         if (cycleIndex === -1) {
             // First time starting cycling
-            console.log('Demo Mode: First time starting cycle, initialize index to -1');
+            // console.log('Demo Mode: First time starting cycle, initialize index to -1');
             // Keep cycleIndex at -1 so first increment goes to 0
         } else {
             // We're resuming after a prompt (like swipe or push/pull), maintain current preset
-            console.log(`Demo Mode: Resuming cycling from preset index ${cycleIndex}`);
+            // console.log(`Demo Mode: Resuming cycling from preset index ${cycleIndex}`);
             // No need to change cycleIndex, keep current preset
         }
         
@@ -4596,7 +4601,7 @@ const DemoMode = (function() {
         if (!skipImmediateCycle) {
             cyclePreset();
         } else {
-            console.log('Demo Mode: Skipping immediate cycle, will cycle after interval');
+            // console.log('Demo Mode: Skipping immediate cycle, will cycle after interval');
         }
         
         // Set up cycling interval
@@ -4624,7 +4629,7 @@ const DemoMode = (function() {
         // Check if we've completed a full cycle (gone through all presets)
         if (isFirstLoop && nextCycleIndex === 0 && cycleIndex !== -1) {
             // We've gone through all presets once and are looping back to the first preset
-            console.log('Demo Mode: First loop complete, disabling instructions and pauses');
+            // console.log('Demo Mode: First loop complete, disabling instructions and pauses');
             isFirstLoop = false;
         }
         
@@ -4632,7 +4637,7 @@ const DemoMode = (function() {
         cycleIndex = nextCycleIndex;
         const presetCycle = PRESET_CYCLES[cycleIndex];
         
-        console.log(`Demo Mode: Cycling to preset "${presetCycle.name}" (First Loop: ${isFirstLoop})`);
+        // console.log(`Demo Mode: Cycling to preset "${presetCycle.name}" (First Loop: ${isFirstLoop})`);
         
         // Apply new configurations to each swarm
         demoSwarms.forEach((swarmId, index) => {
@@ -4653,7 +4658,7 @@ const DemoMode = (function() {
                 
                 // Enable music button if MusicController is available
                 if (typeof MusicController !== 'undefined' && MusicController.enableButton) {
-                    console.log('Demo Mode: Enabling music button on Torrential preset detection');
+                    // console.log('Demo Mode: Enabling music button on Torrential preset detection');
                     MusicController.enableButton();
                 }
                 
@@ -4686,10 +4691,10 @@ const DemoMode = (function() {
             // Update the swarm
             if (ParticleSystem.updateZotSwarm) {
                 ParticleSystem.updateZotSwarm(swarmId, updateConfig);
-                console.log(`Demo Mode: Updated swarm ${swarmId} to ${config.presetName} - ${updateConfig.colorTheme}`);
+                // console.log(`Demo Mode: Updated swarm ${swarmId} to ${config.presetName} - ${updateConfig.colorTheme}`);
             }
         } catch (error) {
-            console.error(`Demo Mode: Error updating swarm ${swarmId}:`, error);
+            // console.error(`Demo Mode: Error updating swarm ${swarmId}:`, error);
         }
     }
     
@@ -4710,7 +4715,7 @@ const DemoMode = (function() {
     function setupMenuButtonListeners() {
         const menuToggle = document.getElementById('menuToggle');
         if (!menuToggle) {
-            console.error('Demo Mode: Menu toggle button not found');
+            // console.error('Demo Mode: Menu toggle button not found');
             return;
         }
         
@@ -4723,10 +4728,121 @@ const DemoMode = (function() {
     }
     
     /**
+     * Fade audio volume to a target level over a specified duration
+     * @param {number} targetVolume - Target volume level (0.0 to 1.0)
+     * @param {number} duration - Fade duration in milliseconds
+     * @param {function} callback - Optional callback after fade completes
+     */
+    function fadeAudioVolume(targetVolume, duration = 3000, callback = null) {
+        // Clear any existing fade interval
+        if (volumeFadeInterval) {
+            clearInterval(volumeFadeInterval);
+            volumeFadeInterval = null;
+        }
+        
+        // Ensure target volume is within valid range
+        const target = Math.max(0, Math.min(1, targetVolume));
+        
+        // Store previous volume before fading (for restoration)
+        previousVolumeLevel = currentVolumeLevel;
+        
+        // Skip the fade if we're already at (or very close to) the target volume
+        if (Math.abs(currentVolumeLevel - target) < 0.01) {
+            if (callback && typeof callback === 'function') {
+                callback();
+            }
+            return;
+        }
+        
+        // If AudioManager is available, use it
+        if (typeof AudioManager !== 'undefined' && AudioManager.setVolume) {
+            // Set up fade parameters
+            const fadeSteps = 30; // Number of steps for smooth fade
+            const fadeStepTime = duration / fadeSteps; // Time between volume changes
+            const startVolume = currentVolumeLevel;
+            const volumeStep = (startVolume - target) / fadeSteps; // Volume change per step
+            
+            let currentStep = 0;
+            
+            // Create fade interval
+            volumeFadeInterval = setInterval(() => {
+                currentStep++;
+                
+                // Calculate new volume
+                const newVolume = Math.max(0, Math.min(1, startVolume - (volumeStep * currentStep)));
+                
+                // Apply new volume
+                AudioManager.setVolume(newVolume);
+                currentVolumeLevel = newVolume;
+                
+                // Check if we've completed the fade
+                if (currentStep >= fadeSteps || Math.abs(newVolume - target) < 0.01) {
+                    clearInterval(volumeFadeInterval);
+                    volumeFadeInterval = null;
+                    
+                    // Set exact target volume to ensure we reach it
+                    AudioManager.setVolume(target);
+                    currentVolumeLevel = target;
+                    
+                    // Call the callback if provided
+                    if (callback && typeof callback === 'function') {
+                        callback();
+                    }
+                }
+            }, fadeStepTime);
+        } else if (demoAudio && !demoAudio.paused) {
+            // Fallback to using demoAudio directly if available
+            const fadeSteps = 30;
+            const fadeStepTime = duration / fadeSteps;
+            const startVolume = demoAudio.volume;
+            const volumeStep = (startVolume - target) / fadeSteps;
+            
+            let currentStep = 0;
+            
+            volumeFadeInterval = setInterval(() => {
+                currentStep++;
+                
+                // Calculate new volume
+                const newVolume = Math.max(0, Math.min(1, startVolume - (volumeStep * currentStep)));
+                
+                // Apply new volume
+                demoAudio.volume = newVolume;
+                currentVolumeLevel = newVolume;
+                
+                // Check if we've completed the fade
+                if (currentStep >= fadeSteps || Math.abs(newVolume - target) < 0.01) {
+                    clearInterval(volumeFadeInterval);
+                    volumeFadeInterval = null;
+                    
+                    // Set exact target volume to ensure we reach it
+                    demoAudio.volume = target;
+                    currentVolumeLevel = target;
+                    
+                    // Call the callback if provided
+                    if (callback && typeof callback === 'function') {
+                        callback();
+                    }
+                }
+            }, fadeStepTime);
+        } else {
+            // No audio playing, just update the current volume level
+            currentVolumeLevel = target;
+            
+            // Call the callback if provided
+            if (callback && typeof callback === 'function') {
+                callback();
+            }
+        }
+    }
+    
+    /**
      * Show the Push/Pull double tap prompt
      */
     function showPushPullPrompt() {
         if (pushPullPromptActive || !isFirstLoop) return;
+        
+        // Fade music to 25% when showing the prompt
+        fadeAudioVolume(0.25, 3000);
         
         // Pause the idle timer
         if (idleTimer) {
@@ -4800,7 +4916,7 @@ const DemoMode = (function() {
             pulse: pulseAnimation
         };
         
-        console.log('Demo Mode: Showing Push/Pull prompt');
+        // console.log('Demo Mode: Showing Push/Pull prompt');
     }
     
     /**
@@ -4808,6 +4924,9 @@ const DemoMode = (function() {
      */
     function hidePushPullPrompt() {
         if (!pushPullPromptActive || !pushPullPromptElement) return;
+        
+        // Restore audio to 100% when hiding the prompt
+        fadeAudioVolume(1.0, 500);
         
         // Stop all animations
         if (pushPullPromptElement.animations) {
@@ -4825,7 +4944,7 @@ const DemoMode = (function() {
             }
         }, 1000);
         
-        console.log('Demo Mode: Hiding Push/Pull prompt');
+        // console.log('Demo Mode: Hiding Push/Pull prompt');
     }
     
     /**
@@ -4833,6 +4952,9 @@ const DemoMode = (function() {
      */
     function showSwipePrompt() {
         if (swipePromptActive || !isFirstLoop) return;
+        
+        // Fade music to 25% when showing the prompt
+        fadeAudioVolume(0.25, 3000);
         
         // Create container if it doesn't exist
         if (!swipePromptElement) {
@@ -4899,7 +5021,7 @@ const DemoMode = (function() {
             pulse: pulseAnimation
         };
         
-        console.log('Demo Mode: Showing swipe prompt');
+        // console.log('Demo Mode: Showing swipe prompt');
     }
     
     /**
@@ -4907,6 +5029,9 @@ const DemoMode = (function() {
      */
     function hideSwipePrompt() {
         if (!swipePromptActive || !swipePromptElement) return;
+        
+        // Restore audio to 100% when hiding the prompt
+        fadeAudioVolume(1.0, 500);
         
         // Stop all animations
         if (swipePromptElement.animations) {
@@ -4924,7 +5049,7 @@ const DemoMode = (function() {
             }
         }, 1000);
         
-        console.log('Demo Mode: Hiding swipe prompt');
+        // console.log('Demo Mode: Hiding swipe prompt');
     }
     
     /**
@@ -4937,13 +5062,13 @@ const DemoMode = (function() {
             
             // Detect right arrow or ">" key
             if (e.key === 'ArrowRight' || e.key === '>') {
-                console.log('Demo Mode: Next preset key detected');
+                // console.log('Demo Mode: Next preset key detected');
                 goToNextPreset();
                 e.preventDefault();
             }
             // Detect left arrow or "<" key
             else if (e.key === 'ArrowLeft' || e.key === '<') {
-                console.log('Demo Mode: Previous preset key detected');
+                // console.log('Demo Mode: Previous preset key detected');
                 goToPreviousPreset();
                 e.preventDefault();
             }
@@ -5000,7 +5125,7 @@ const DemoMode = (function() {
     function endDemoMode(event) {
         if (!isActive) return;
         
-        console.log('Ending Zot Swarm Demo Mode');
+        // console.log('Ending Zot Swarm Demo Mode');
         
         // Stop cycling
         stopCycling();
@@ -5057,7 +5182,7 @@ const DemoMode = (function() {
                 try {
                     ParticleSystem.removeZotSwarm(swarmId);
                 } catch (error) {
-                    console.error(`Demo Mode: Error removing swarm ${swarmId}:`, error);
+                    // console.error(`Demo Mode: Error removing swarm ${swarmId}:`, error);
                 }
             });
             demoSwarms = [];
@@ -5088,7 +5213,7 @@ const DemoMode = (function() {
         
         // Enable the music button after demo mode ends
         if (typeof MusicController !== 'undefined' && MusicController.enableButton) {
-            console.log('Demo Mode: Enabling music button after demo mode ends');
+            // console.log('Demo Mode: Enabling music button after demo mode ends');
             MusicController.enableButton();
         }
         
@@ -5103,7 +5228,7 @@ const DemoMode = (function() {
         // Get canvas dimensions
         const canvas = document.getElementById('canvas');
         if (!canvas) {
-            console.error('Demo Mode: Canvas not found');
+            // console.error('Demo Mode: Canvas not found');
             return;
         }
         
@@ -5141,10 +5266,10 @@ const DemoMode = (function() {
             const swarmId = ParticleSystem.createZotSwarm(config);
             if (swarmId) {
                 demoSwarms.push(swarmId);
-                console.log(`Demo Mode: Created initial swarm ${swarmId} at center (${centerX.toFixed(0)}, ${centerY.toFixed(0)}) with speed ${config.speed}`);
+                // console.log(`Demo Mode: Created initial swarm ${swarmId} at center (${centerX.toFixed(0)}, ${centerY.toFixed(0)}) with speed ${config.speed}`);
             }
         } catch (error) {
-            console.error('Demo Mode: Error creating initial swarm:', error);
+            // console.error('Demo Mode: Error creating initial swarm:', error);
         }
     }
     
@@ -5155,7 +5280,7 @@ const DemoMode = (function() {
         // Get canvas dimensions
         const canvas = document.getElementById('canvas');
         if (!canvas) {
-            console.error('Demo Mode: Canvas not found');
+            // console.error('Demo Mode: Canvas not found');
             return;
         }
         
@@ -5205,14 +5330,14 @@ const DemoMode = (function() {
                 const swarmId = ParticleSystem.createZotSwarm(config);
                 if (swarmId) {
                     demoSwarms.push(swarmId);
-                    console.log(`Demo Mode: Created additional swarm ${swarmId} at (${x.toFixed(0)}, ${y.toFixed(0)}) with speed ${config.speed}`);
+                    // console.log(`Demo Mode: Created additional swarm ${swarmId} at (${x.toFixed(0)}, ${y.toFixed(0)}) with speed ${config.speed}`);
                 }
             } catch (error) {
-                console.error('Demo Mode: Error creating additional swarm:', error);
+                // console.error('Demo Mode: Error creating additional swarm:', error);
             }
         }
         
-        console.log(`Demo Mode: Created ${swarmCount} additional swarms, total: ${demoSwarms.length}`);
+        // console.log(`Demo Mode: Created ${swarmCount} additional swarms, total: ${demoSwarms.length}`);
     }
     
     /**
@@ -5235,10 +5360,10 @@ const DemoMode = (function() {
     function randomizeSongs() {
         // Get all demo song keys except intro
         const songKeys = Config.getDemoSongKeys();
-        console.log('Demo Mode: Available song keys:', songKeys);
+        // console.log('Demo Mode: Available song keys:', songKeys);
         shuffledSongKeys = shuffleArray(songKeys);
         currentSongIndex = -1; // Will be incremented to 0 on first play
-        console.log('Demo Mode: Randomized song playlist:', shuffledSongKeys);
+        // console.log('Demo Mode: Randomized song playlist:', shuffledSongKeys);
     }
 
     /**
@@ -5247,10 +5372,10 @@ const DemoMode = (function() {
     function playNextSong() {
         // Don't proceed if we don't have any songs
         if (!shuffledSongKeys || shuffledSongKeys.length === 0) {
-            console.error('Demo Mode: No songs in playlist, randomizing songs first');
+            // console.error('Demo Mode: No songs in playlist, randomizing songs first');
             randomizeSongs();
             if (!shuffledSongKeys || shuffledSongKeys.length === 0) {
-                console.error('Demo Mode: Failed to get songs, cannot play music');
+                // console.error('Demo Mode: Failed to get songs, cannot play music');
                 return;
             }
         }
@@ -5258,7 +5383,7 @@ const DemoMode = (function() {
         currentSongIndex = (currentSongIndex + 1) % shuffledSongKeys.length;
         const nextSongKey = shuffledSongKeys[currentSongIndex];
         
-        console.log(`Demo Mode: Preparing to play next song: ${nextSongKey}`);
+        // console.log(`Demo Mode: Preparing to play next song: ${nextSongKey}`);
         
         // Create new audio element
         if (demoAudio) {
@@ -5272,7 +5397,7 @@ const DemoMode = (function() {
         try {
             // Try Config method first
             audioPath = Config.getAudioPath(nextSongKey);
-            console.log(`Demo Mode: Config provided path: ${audioPath}`);
+            // console.log(`Demo Mode: Config provided path: ${audioPath}`);
             
             // If it's not a full path (doesn't start with http or /), convert to direct path
             if (!audioPath.startsWith('http') && !audioPath.startsWith('/')) {
@@ -5293,16 +5418,16 @@ const DemoMode = (function() {
                     audioPath = './music/8-Bit.mp3';
                 }
                 
-                console.log(`Demo Mode: Using direct path: ${audioPath}`);
+                // console.log(`Demo Mode: Using direct path: ${audioPath}`);
             }
         } catch (err) {
-            console.error('Demo Mode: Error getting audio path from Config, using fallback path');
+            // console.error('Demo Mode: Error getting audio path from Config, using fallback path');
             
             // Use a fallback demo song if everything fails
             audioPath = './music/DemoPulse.mp3';
         }
         
-        console.log(`Demo Mode: Creating audio element with path: ${audioPath}`);
+        // console.log(`Demo Mode: Creating audio element with path: ${audioPath}`);
         
         // Preload setting
         demoAudio.preload = 'auto';
@@ -5312,7 +5437,7 @@ const DemoMode = (function() {
         
         // Add load event handler
         demoAudio.onloadeddata = function() {
-            console.log(`Demo Mode: Song ${nextSongKey} loaded successfully`);
+            // console.log(`Demo Mode: Song ${nextSongKey} loaded successfully`);
         };
         
         // Set up ended event for continuous playback
@@ -5320,12 +5445,12 @@ const DemoMode = (function() {
         
         // Add error handling
         demoAudio.onerror = function(err) {
-            console.error(`Demo Mode: Error loading audio ${nextSongKey}:`, err);
-            console.error('Demo Mode: Audio error code:', demoAudio.error ? demoAudio.error.code : 'unknown');
-            console.error('Demo Mode: Audio src was:', demoAudio.src);
+            // console.error(`Demo Mode: Error loading audio ${nextSongKey}:`, err);
+            // console.error('Demo Mode: Audio error code:', demoAudio.error ? demoAudio.error.code : 'unknown');
+            // console.error('Demo Mode: Audio src was:', demoAudio.src);
             
             // Try a direct fallback to a reliable file
-            console.log('Demo Mode: Trying fallback to DemoPulse.mp3');
+            // console.log('Demo Mode: Trying fallback to DemoPulse.mp3');
             demoAudio.src = './music/DemoPulse.mp3';
             
             // Try to play the fallback, but prepare to move on if it fails
@@ -5345,37 +5470,29 @@ const DemoMode = (function() {
         // Play the audio with a short delay to ensure loading starts
         setTimeout(() => {
             try {
-                console.log(`Demo Mode: Attempting to play song: ${nextSongKey}`);
+                // console.log(`Demo Mode: Attempting to play song: ${nextSongKey}`);
                 
                 // Make sure user interaction has been recorded for autoplay policies
                 if (typeof document !== 'undefined' && document.documentElement && 
                     typeof document.documentElement.hasAttribute === 'function' &&
                     !document.documentElement.hasAttribute('data-user-interacted')) {
                     document.documentElement.setAttribute('data-user-interacted', 'true');
-                    console.log('Demo Mode: Setting user interaction flag for autoplay');
+                    // console.log('Demo Mode: Setting user interaction flag for autoplay');
                 }
                 
                 const playPromise = demoAudio.play();
                 
                 // Handle the promise properly
                 if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        console.log(`Demo Mode: Song ${nextSongKey} playing successfully`);
-                    }).catch(err => {
-                        console.error(`Demo Mode: Error playing audio ${nextSongKey}:`, err);
-                        // Try to play next song on error
-                        setTimeout(playNextSong, 1000);
-                    });
-                } else {
-                    console.log('Demo Mode: Audio play did not return a promise');
+                    // console.log(`Demo Mode: Song ${nextSongKey} playing successfully`);
                 }
             } catch (err) {
-                console.error(`Demo Mode: Error initiating audio playback for ${nextSongKey}:`, err);
+                // console.error(`Demo Mode: Error initiating audio playback for ${nextSongKey}:`, err);
                 setTimeout(playNextSong, 1000);
             }
         }, 300);
         
-        console.log(`Demo Mode: Playing song ${currentSongIndex + 1}/${shuffledSongKeys.length}: ${nextSongKey}`);
+        // console.log(`Demo Mode: Playing song ${currentSongIndex + 1}/${shuffledSongKeys.length}: ${nextSongKey}`);
     }
 
     /**
@@ -5383,11 +5500,11 @@ const DemoMode = (function() {
      */
     function preloadIntroAudio() {
         if (introAudio || introAudioLoaded) {
-            console.log('Demo Mode: Intro audio already preloaded');
+            // console.log('Demo Mode: Intro audio already preloaded');
             return;
         }
         
-        console.log('Demo Mode: Preloading intro audio...');
+        // console.log('Demo Mode: Preloading intro audio...');
         
         // Create a dedicated audio element just for the intro
         introAudio = new Audio();
@@ -5400,7 +5517,7 @@ const DemoMode = (function() {
         
         // Add load event handler
         introAudio.onloadeddata = function() {
-            console.log('Demo Mode: Intro audio loaded successfully and cached');
+            // console.log('Demo Mode: Intro audio loaded successfully and cached');
             introAudioLoaded = true;
             
             // Additional measure to ensure audio stays in memory
@@ -5416,11 +5533,11 @@ const DemoMode = (function() {
                             introAudio.pause();
                             introAudio.currentTime = 0; // Reset to beginning
                             introAudio.volume = 1.0; // Reset volume
-                            console.log('Demo Mode: Intro audio primed for immediate playback');
+                            // console.log('Demo Mode: Intro audio primed for immediate playback');
                         }, 10);
                     }).catch(err => {
                         // Common error on browsers that require user interaction - not a problem
-                        console.log('Demo Mode: Audio priming required user interaction (expected):', err.name);
+                        // console.log('Demo Mode: Audio priming required user interaction (expected):', err.name);
                         // Reset volume anyway
                         introAudio.volume = 1.0;
                     });
@@ -5433,22 +5550,22 @@ const DemoMode = (function() {
         
         // Add canplaythrough event for more detailed loading feedback
         introAudio.oncanplaythrough = function() {
-            console.log('Demo Mode: Intro audio can play through without buffering');
+            // console.log('Demo Mode: Intro audio can play through without buffering');
         };
         
         // Add error handling with multiple fallback paths
         introAudio.onerror = function(err) {
-            console.error('Demo Mode: Error loading intro audio:', err);
-            console.error('Demo Mode: Audio error code:', introAudio.error ? introAudio.error.code : 'unknown');
+            // console.error('Demo Mode: Error loading intro audio:', err);
+            // console.error('Demo Mode: Audio error code:', introAudio.error ? introAudio.error.code : 'unknown');
             
             // Try alternative path
             if (introAudio.src.indexOf('./music/') === 0) {
-                console.log('Demo Mode: Trying alternative path for intro audio');
+                // console.log('Demo Mode: Trying alternative path for intro audio');
                 introAudio.src = '/music/DemoIntro.mp3';
                 
                 // Handle second failure
                 introAudio.onerror = function() {
-                    console.error('Demo Mode: Second attempt to load intro audio failed');
+                    // console.error('Demo Mode: Second attempt to load intro audio failed');
                     
                     // Try one more absolute fallback
                     if (typeof window !== 'undefined' && window.location) {
@@ -5456,7 +5573,7 @@ const DemoMode = (function() {
                         
                         // Final failure handler
                         introAudio.onerror = function() {
-                            console.error('Demo Mode: All attempts to load intro audio failed');
+                            // console.error('Demo Mode: All attempts to load intro audio failed');
                             introAudioFailed = true;
                             introAudio = null;
                         };
@@ -5481,18 +5598,18 @@ const DemoMode = (function() {
      */
     function stopAudio(fadeOutDuration = 3000) {
         if (!demoAudio) {
-            console.log('Demo Mode: No audio to stop');
+            // console.log('Demo Mode: No audio to stop');
             return;
         }
         
         // If audio is already paused, just cleanup
         if (demoAudio.paused) {
             demoAudio = null;
-            console.log('Demo Mode: Audio already paused, cleaned up audio element');
+            // console.log('Demo Mode: Audio already paused, cleaned up audio element');
             return;
         }
         
-        console.log(`Demo Mode: Fading out audio over ${fadeOutDuration}ms`);
+        // console.log(`Demo Mode: Fading out audio over ${fadeOutDuration}ms`);
         
         // Store original volume for reference
         const originalVolume = demoAudio.volume;
@@ -5522,7 +5639,7 @@ const DemoMode = (function() {
             
             // Log every few steps to monitor the fade progress
             if (currentStep % 5 === 0) {
-                console.log(`Demo Mode: Fade progress - volume: ${newVolume.toFixed(2)} (step ${currentStep}/${fadeSteps})`);
+                // console.log(`Demo Mode: Fade progress - volume: ${newVolume.toFixed(2)} (step ${currentStep}/${fadeSteps})`);
             }
             
             // Check if we've completed the fade
@@ -5533,7 +5650,7 @@ const DemoMode = (function() {
                 // Reset volume for future use (not really needed since we're discarding the element)
                 audioToFade.volume = originalVolume;
                 
-                console.log('Demo Mode: Fade out complete, audio stopped');
+                // console.log('Demo Mode: Fade out complete, audio stopped');
             }
         }, fadeStepTime);
     }
@@ -5544,13 +5661,13 @@ const DemoMode = (function() {
      */
     function togglePauseAudio() {
         if (!demoAudio) {
-            console.log('Demo Mode: No audio element exists to toggle');
+            // console.log('Demo Mode: No audio element exists to toggle');
             return false;
         }
         
         if (demoAudio.paused) {
             // Resume playback
-            console.log('Demo Mode: Attempting to resume paused audio');
+            // console.log('Demo Mode: Attempting to resume paused audio');
             
             try {
                 // Make sure user interaction has been recorded for autoplay policies
@@ -5558,38 +5675,26 @@ const DemoMode = (function() {
                     typeof document.documentElement.hasAttribute === 'function' &&
                     !document.documentElement.hasAttribute('data-user-interacted')) {
                     document.documentElement.setAttribute('data-user-interacted', 'true');
-                    console.log('Demo Mode: Setting user interaction flag for autoplay');
+                    // console.log('Demo Mode: Setting user interaction flag for autoplay');
                 }
                 
                 const playPromise = demoAudio.play();
                 
                 // Handle the promise properly
                 if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        console.log('Demo Mode: Audio resumed successfully on toggle');
-                    }).catch(err => {
-                        console.error('Demo Mode: Error resuming audio on toggle:', err);
-                        console.error('Demo Mode: Audio error code:', demoAudio.error ? demoAudio.error.code : 'unknown');
-                        
-                        // If we get a "NotAllowedError", it's likely due to autoplay policy
-                        if (err.name === 'NotAllowedError') {
-                            console.error('Demo Mode: Autoplay policy prevented playback - user interaction required');
-                        }
-                    });
-                } else {
-                    console.log('Demo Mode: Audio play did not return a promise, assuming success');
+                    // console.log('Demo Mode: Audio resumed successfully on toggle');
                 }
                 
-                console.log('Demo Mode: Toggle - audio now playing (requested)');
+                // console.log('Demo Mode: Toggle - audio now playing (requested)');
                 return true;
             } catch (err) {
-                console.error('Demo Mode: Error initiating audio resume on toggle:', err);
+                // console.error('Demo Mode: Error initiating audio resume on toggle:', err);
                 return false;
             }
         } else {
             // Pause playback
             demoAudio.pause();
-            console.log('Demo Mode: Toggle - audio now paused');
+            // console.log('Demo Mode: Toggle - audio now paused');
             return false;
         }
     }
@@ -5600,16 +5705,16 @@ const DemoMode = (function() {
      */
     function resumeAudio() {
         if (!demoAudio) {
-            console.log('Demo Mode: No audio element exists to resume');
+            // console.log('Demo Mode: No audio element exists to resume');
             return false;
         }
         
         if (!demoAudio.paused) {
-            console.log('Demo Mode: Audio is already playing, no need to resume');
+            // console.log('Demo Mode: Audio is already playing, no need to resume');
             return false;
         }
         
-        console.log('Demo Mode: Attempting to resume audio playback');
+        // console.log('Demo Mode: Attempting to resume audio playback');
         
         try {
             // Make sure user interaction has been recorded for autoplay policies
@@ -5617,38 +5722,21 @@ const DemoMode = (function() {
                 typeof document.documentElement.hasAttribute === 'function' &&
                 !document.documentElement.hasAttribute('data-user-interacted')) {
                 document.documentElement.setAttribute('data-user-interacted', 'true');
-                console.log('Demo Mode: Setting user interaction flag for autoplay');
+                // console.log('Demo Mode: Setting user interaction flag for autoplay');
             }
             
             const playPromise = demoAudio.play();
             
             // Handle the promise properly
             if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    console.log('Demo Mode: Audio resumed successfully');
-                    return true;
-                }).catch(err => {
-                    console.error('Demo Mode: Error resuming audio:', err);
-                    console.error('Demo Mode: Audio error code:', demoAudio.error ? demoAudio.error.code : 'unknown');
-                    
-                    // If we get a "NotAllowedError", it's likely due to autoplay policy
-                    if (err.name === 'NotAllowedError') {
-                        console.error('Demo Mode: Autoplay policy prevented playback - user interaction required');
-                    }
-                    
-                    return false;
-                });
-                
-                // For immediate return value consistency, we'll return true here
-                // The actual success/failure will be logged asynchronously
-                console.log('Demo Mode: Resume audio requested (pending)');
+                // console.log('Demo Mode: Audio resumed successfully');
                 return true;
             } else {
-                console.log('Demo Mode: Audio play did not return a promise, assuming success');
+                // console.log('Demo Mode: Audio play did not return a promise, assuming success');
                 return true;
             }
         } catch (err) {
-            console.error('Demo Mode: Error initiating audio resume:', err);
+            // console.error('Demo Mode: Error initiating audio resume:', err);
             return false;
         }
     }
@@ -5667,7 +5755,7 @@ const DemoMode = (function() {
         try {
             // Create audio element if it doesn't exist
             if (!slideAudio) {
-                console.log('Demo Mode: Preloading DemoSlides.mp3');
+                // console.log('Demo Mode: Preloading DemoSlides.mp3');
                 
                 slideAudio = new Audio();
                 
@@ -5680,34 +5768,34 @@ const DemoMode = (function() {
                 
                 // Add load event handler
                 slideAudio.onloadeddata = function() {
-                    console.log('Demo Mode: DemoSlides.mp3 loaded successfully');
+                    // console.log('Demo Mode: DemoSlides.mp3 loaded successfully');
                 };
                 
                 // Add error handling with more detailed logging
                 slideAudio.onerror = function(err) {
-                    console.error('Demo Mode: Error loading DemoSlides.mp3:', err);
-                    console.error('Demo Mode: Audio error code:', slideAudio.error ? slideAudio.error.code : 'unknown');
-                    console.error('Demo Mode: Audio src was:', slideAudio.src);
+                    // console.error('Demo Mode: Error loading DemoSlides.mp3:', err);
+                    // console.error('Demo Mode: Audio error code:', slideAudio.error ? slideAudio.error.code : 'unknown');
+                    // console.error('Demo Mode: Audio src was:', slideAudio.src);
                     
                     // Try a fallback with the full path
-                    console.log('Demo Mode: Trying fallback path for DemoSlides.mp3');
+                    // console.log('Demo Mode: Trying fallback path for DemoSlides.mp3');
                     slideAudio.src = '/music/DemoSlides.mp3';
                     
                     // If that still fails, try another fallback
                     slideAudio.onerror = function() {
-                        console.error('Demo Mode: Second attempt to load DemoSlides.mp3 failed');
+                        // console.error('Demo Mode: Second attempt to load DemoSlides.mp3 failed');
                         
                         // Try one more absolute fallback
                         slideAudio.src = window.location.origin + '/music/DemoSlides.mp3';
                         slideAudio.onerror = function() {
-                            console.error('Demo Mode: All attempts to load DemoSlides.mp3 failed');
+                            // console.error('Demo Mode: All attempts to load DemoSlides.mp3 failed');
                             slideAudio = null;
                         };
                     };
                 };
             }
         } catch (err) {
-            console.error('Demo Mode: Error setting up slide audio:', err);
+            // console.error('Demo Mode: Error setting up slide audio:', err);
             slideAudio = null;
         }
     }
@@ -5722,20 +5810,20 @@ const DemoMode = (function() {
             
             // If still doesn't exist, return
             if (!slideAudio) {
-                console.error('Demo Mode: Cannot play slide audio - element not available');
+                // console.error('Demo Mode: Cannot play slide audio - element not available');
                 return;
             }
         }
         
         try {
-            console.log('Demo Mode: Playing DemoSlides.mp3');
+            // console.log('Demo Mode: Playing DemoSlides.mp3');
             
             // Make sure user interaction has been recorded for autoplay policies
             if (typeof document !== 'undefined' && document.documentElement && 
                 typeof document.documentElement.hasAttribute === 'function' &&
                 !document.documentElement.hasAttribute('data-user-interacted')) {
                 document.documentElement.setAttribute('data-user-interacted', 'true');
-                console.log('Demo Mode: Setting user interaction flag for autoplay');
+                // console.log('Demo Mode: Setting user interaction flag for autoplay');
             }
             
             // Reset audio to beginning if it was played before
@@ -5745,26 +5833,10 @@ const DemoMode = (function() {
             
             // Handle the promise properly
             if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    console.log('Demo Mode: DemoSlides.mp3 playing successfully');
-                }).catch(err => {
-                    console.error('Demo Mode: Error playing DemoSlides.mp3:', err);
-                    console.error('Demo Mode: Audio src on error was:', slideAudio.src);
-                    
-                    // Try a final fallback to a more directly accessible path
-                    console.log('Demo Mode: Trying alternative method to play slide audio after error');
-                    
-                    // Create new audio as a last resort
-                    const lastResortAudio = new Audio('./music/DemoSlides.mp3');
-                    lastResortAudio.play().catch(e => {
-                        console.error('Demo Mode: Last resort audio play failed:', e);
-                    });
-                });
-            } else {
-                console.log('Demo Mode: Audio play did not return a promise');
+                // console.log('Demo Mode: DemoSlides.mp3 playing successfully');
             }
         } catch (err) {
-            console.error('Demo Mode: Error playing slide audio:', err);
+            // console.error('Demo Mode: Error playing slide audio:', err);
         }
     }
     
@@ -5773,7 +5845,7 @@ const DemoMode = (function() {
      * @param {number} speed - The new speed to set for all jellyOrb swarms
      */
     function updateAllJellyOrbsSpeed(speed) {
-        console.log(`Demo Mode: Updating all jellyOrb swarms to speed ${speed}`);
+        // console.log(`Demo Mode: Updating all jellyOrb swarms to speed ${speed}`);
         
         // Update each swarm in the demoSwarms array
         demoSwarms.forEach((swarmId, index) => {
@@ -5786,10 +5858,10 @@ const DemoMode = (function() {
                 // Update the swarm
                 if (ParticleSystem.updateZotSwarm) {
                     ParticleSystem.updateZotSwarm(swarmId, updateConfig);
-                    console.log(`Demo Mode: Updated swarm ${swarmId} speed to ${speed}`);
+                    // console.log(`Demo Mode: Updated swarm ${swarmId} speed to ${speed}`);
                 }
             } catch (error) {
-                console.error(`Demo Mode: Error updating swarm ${swarmId} speed:`, error);
+                // console.error(`Demo Mode: Error updating swarm ${swarmId} speed:`, error);
             }
         });
     }
@@ -5804,6 +5876,7 @@ const DemoMode = (function() {
         togglePauseAudio: togglePauseAudio,
         resumeAudio: resumeAudio,
         isAudioPlaying: isAudioPlaying,
+        fadeAudioVolume: fadeAudioVolume, // Add the new fade function
         // Add a public method to force preload the intro audio
         preloadIntroAudio: preloadIntroAudio
     };
@@ -6063,14 +6136,14 @@ const SubmitSwarms = (function() {
                 // Reset file input so the same file can be selected again
                 fileInput.value = '';
             } catch (error) {
-                console.error('[LOAD] Error parsing JSON file:', error);
+                // console.error('[LOAD] Error parsing JSON file:', error);
                 showLoadError('Error parsing file. Please select a valid JSON file.');
                 fileInput.value = '';
             }
         };
         
         reader.onerror = function() {
-            console.error('[LOAD] Error reading file');
+            // console.error('[LOAD] Error reading file');
             showLoadError('Error reading file. Please try again.');
             fileInput.value = '';
         };
@@ -6136,7 +6209,7 @@ const SubmitSwarms = (function() {
     // Load zot swarms from saved data
     function loadZotSwarms(data) {
         try {
-            console.log('[LOAD] Loading swarm data:', data);
+            // console.log('[LOAD] Loading swarm data:', data);
             
             if (!data || !data.swarms || !Array.isArray(data.swarms) || data.swarms.length === 0) {
                 showLoadError('Invalid data format or no swarms found in file.');
@@ -6177,7 +6250,7 @@ const SubmitSwarms = (function() {
             data.swarms.forEach(swarm => {
                 // Ensure we have valid settings
                 if (!swarm.settings) {
-                    console.warn('[LOAD] Skipping swarm with missing settings:', swarm);
+                    // console.warn('[LOAD] Skipping swarm with missing settings:', swarm);
                     return;
                 }
                 
@@ -6205,7 +6278,7 @@ const SubmitSwarms = (function() {
             
             return true;
         } catch (error) {
-            console.error('[LOAD] Error loading swarms:', error);
+            // console.error('[LOAD] Error loading swarms:', error);
             showLoadError(`Error loading swarms: ${error.message}`);
             return false;
         }
@@ -6261,7 +6334,7 @@ const SubmitSwarms = (function() {
         const errorElement = popupContainer.querySelector('#submitError');
         
         submitBtn.addEventListener('click', function() {
-            console.log('[SAVE] Save button clicked');
+            // console.log('[SAVE] Save button clicked');
             
             // Get preset name and description
             const presetName = document.getElementById('presetName').value.trim();
@@ -6269,14 +6342,14 @@ const SubmitSwarms = (function() {
             
             // Validate if there are particles on screen
             if (typeof ParticleSystem !== 'undefined' && ParticleSystem.getZotSwarms) {
-                console.log('[SAVE] ParticleSystem is available');
+                // console.log('[SAVE] ParticleSystem is available');
                 
                 const swarms = ParticleSystem.getZotSwarms();
-                console.log(`[SAVE] Found ${swarms ? swarms.length : 0} swarms`);
+                // console.log(`[SAVE] Found ${swarms ? swarms.length : 0} swarms`);
                 
                 if (!swarms || swarms.length === 0) {
                     // Show error message if no particles
-                    console.error('[SAVE] No swarms found');
+                    // console.error('[SAVE] No swarms found');
                     errorElement.textContent = "No zot swarms found! Please create at least one swarm.";
                     errorElement.style.display = "block";
                     return;
@@ -6299,12 +6372,12 @@ const SubmitSwarms = (function() {
                         submitBtn.textContent = "Error";
                     }
                 } catch (error) {
-                    console.error('[SAVE] Error during save:', error);
+                    // console.error('[SAVE] Error during save:', error);
                     errorElement.textContent = "An error occurred: " + error.message;
                     errorElement.style.display = "block";
                 }
             } else {
-                console.error('[SAVE] ParticleSystem not available');
+                // console.error('[SAVE] ParticleSystem not available');
                 errorElement.textContent = "Error: ParticleSystem not available.";
                 errorElement.style.display = "block";
             }
@@ -6389,9 +6462,9 @@ const SubmitSwarms = (function() {
             const timestamp = new Date().toISOString().replace(/[-:T.Z]/g, '');
             const filename = `preset${timestamp}.json`;
             
-            console.log(`[SAVE] Attempting to save data to ${filename}`);
-            console.log(`[SAVE] Data size: ${Math.round(jsonString.length / 1024)} KB`);
-            console.log(`[SAVE] Number of swarms: ${swarms.length}`);
+            // console.log(`[SAVE] Attempting to save data to ${filename}`);
+            // console.log(`[SAVE] Data size: ${Math.round(jsonString.length / 1024)} KB`);
+            // console.log(`[SAVE] Number of swarms: ${swarms.length}`);
             
             // Attempt to trigger download for the user to save manually
             try {
@@ -6403,18 +6476,18 @@ const SubmitSwarms = (function() {
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-                console.log(`[SAVE] Download attempted for ${filename}`);
+                // console.log(`[SAVE] Download attempted for ${filename}`);
                 return true;
             } catch (downloadError) {
-                console.error(`[SAVE] Download attempt failed:`, downloadError);
+                // console.error(`[SAVE] Download attempt failed:`, downloadError);
                 return false;
             }
         } catch (error) {
-            console.error(`[SAVE] ERROR: Failed to process swarm data`);
-            console.error(`[SAVE] Error details:`, error);
-            console.error(`[SAVE] Error name: ${error.name}`);
-            console.error(`[SAVE] Error message: ${error.message}`);
-            console.error(`[SAVE] Error stack:`, error.stack);
+            // console.error(`[SAVE] ERROR: Failed to process swarm data`);
+            // console.error(`[SAVE] Error details:`, error);
+            // console.error(`[SAVE] Error name: ${error.name}`);
+            // console.error(`[SAVE] Error message: ${error.message}`);
+            // console.error(`[SAVE] Error stack:`, error.stack);
             return false;
         }
     }
@@ -6456,7 +6529,7 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleLabels: function() {
             this.hideLabels = !this.hideLabels;
             this.updateAllLabelVisibility();
-            console.log(`Slider labels are now ${this.hideLabels ? 'hidden' : 'visible'} (except zot count which is always visible)`);
+            // console.log(`Slider labels are now ${this.hideLabels ? 'hidden' : 'visible'} (except zot count which is always visible)`);
             return this.hideLabels;
         },
         
@@ -6509,9 +6582,9 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     // Document the toggle function in console for easy access
-    console.log("To toggle slider value labels, use: SliderControls.toggleLabels()");
+    // console.log("To toggle slider value labels, use: SliderControls.toggleLabels()");
     
-    console.log("DOM loaded - Menu elements:", menuToggle ? "✓" : "✗", controlsPanel ? "✓" : "✗", homeButton ? "✓" : "✗");
+    // console.log("DOM loaded - Menu elements:", menuToggle ? "✓" : "✗", controlsPanel ? "✓" : "✗", homeButton ? "✓" : "✗");
     
     // Initialize the particle system
     ParticleSystem.init(canvas, fpsDisplay);
@@ -6521,35 +6594,35 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize swipe split system
     if (typeof SwipeSplitSystem !== 'undefined') {
-        console.log("Initializing SwipeSplitSystem...");
+        // console.log("Initializing SwipeSplitSystem...");
         SwipeSplitSystem.init(canvas);
     } else {
-        console.error("SwipeSplitSystem module not available");
+        // console.error("SwipeSplitSystem module not available");
     }
     
     // Start demo mode
     if (typeof DemoMode !== 'undefined') {
-        console.log("Starting zot swarm demo mode...");
+        // console.log("Starting zot swarm demo mode...");
         setTimeout(() => {
             DemoMode.start();
         }, 200); // Short delay to ensure all systems are fully initialized
     } else {
-        console.error("Demo Mode module not available");
+        // console.error("Demo Mode module not available");
     }
     
     // Add direct event listeners to menu toggle as a backup
     if (menuToggle && controlsPanel) {
-        console.log("Adding direct event listeners to menu toggle");
+        // console.log("Adding direct event listeners to menu toggle");
         
         menuToggle.addEventListener('click', function(e) {
-            console.log("Menu toggle clicked");
+            // console.log("Menu toggle clicked");
             e.preventDefault();
             controlsPanel.classList.toggle('collapsed');
             updateHomeButtonVisibility();
         });
         
         menuToggle.addEventListener('touchstart', function(e) {
-            console.log("Menu toggle touched");
+            // console.log("Menu toggle touched");
             e.preventDefault();
             controlsPanel.classList.toggle('collapsed');
             updateHomeButtonVisibility();
@@ -6559,7 +6632,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Set up home button event listener
     if (homeButton) {
-        console.log("Setting up home button");
+        // console.log("Setting up home button");
         
         // Set initial state of home button based on menu state
         updateHomeButtonVisibility();
@@ -6567,14 +6640,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add click event listener to navigate to home page
         homeButton.addEventListener('click', function(e) {
             e.preventDefault();
-            console.log("Home button clicked, navigating to home page");
+            // console.log("Home button clicked, navigating to home page");
             window.location.href = 'https://interactive-simulations.com/';
         });
         
         // Add touch event listener for mobile
         homeButton.addEventListener('touchstart', function(e) {
             e.preventDefault();
-            console.log("Home button touched, navigating to home page");
+            // console.log("Home button touched, navigating to home page");
             window.location.href = 'https://interactive-simulations.com/';
             e.stopPropagation();
         }, { passive: false });
@@ -6614,7 +6687,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize menu system with callbacks
     try {
-        console.log("Initializing MenuSystem...");
+        // console.log("Initializing MenuSystem...");
         MenuSystem.init({
             controlsPanel: controlsPanel,
             menuToggle: menuToggle
@@ -6656,16 +6729,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     })
                     .then(svgText => {
                         const wallCount = WallSystem.loadFromSVG(svgText);
-                        console.log(`Loaded ${wallCount} wall segments from SVG`);
+                        // console.log(`Loaded ${wallCount} wall segments from SVG`);
                     })
                     .catch(error => {
-                        console.error('Error loading SVG file:', error);
+                        // console.error('Error loading SVG file:', error);
                     });
             }
         });
-        console.log("MenuSystem initialized");
+        // console.log("MenuSystem initialized");
     } catch (error) {
-        console.error("Error initializing menu system:", error);
+        // console.error("Error initializing menu system:", error);
     }
     
     // Controls panel setup
@@ -7059,7 +7132,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     ColorThemes.setTheme(themeName);
                 }
                 
-                console.log('Color theme button touched:', themeName);
+                // console.log('Color theme button touched:', themeName);
             }, { passive: false });
         });
         
@@ -7590,10 +7663,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         })
                         .then(svgText => {
                             const wallCount = WallSystem.loadFromSVG(svgText);
-                            console.log(`Loaded ${wallCount} wall segments from SVG`);
+                            // console.log(`Loaded ${wallCount} wall segments from SVG`);
                         })
                         .catch(error => {
-                            console.error('Error loading SVG file:', error);
+                            // console.error('Error loading SVG file:', error);
                         });
                 }
             });
@@ -7617,7 +7690,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         reader.onload = function(event) {
                             const svgText = event.target.result;
                             const wallCount = WallSystem.loadFromSVG(svgText);
-                            console.log(`Loaded ${wallCount} wall segments from SVG`);
+                            // console.log(`Loaded ${wallCount} wall segments from SVG`);
                         };
                         
                         reader.readAsText(file);
@@ -7657,18 +7730,18 @@ function initializeSimulation() {
     // ... existing code ...
     
     try {
-        console.log("Starting MenuSystem initialization...");
+        // console.log("Starting MenuSystem initialization...");
         menuSystem = new MenuSystem({
             containerElement: document.getElementById('simulation-container')
         });
-        console.log("MenuSystem initialized successfully.");
+        // console.log("MenuSystem initialized successfully.");
     } catch (error) {
-        console.error("Error initializing MenuSystem:", error);
+        // console.error("Error initializing MenuSystem:", error);
     }
     
     // Initialize particle system with entity type identifiers
     try {
-        console.log("Starting ParticleSystem initialization...");
+        // console.log("Starting ParticleSystem initialization...");
         particleSystem = new ParticleSystem({
             canvasElement: document.getElementById('simulation-canvas'),
             // Other configuration parameters
@@ -7706,9 +7779,9 @@ function initializeSimulation() {
             return originalUpdate(deltaTime);
         };
         
-        console.log("ParticleSystem initialized successfully with entity type identifiers");
+        // console.log("ParticleSystem initialized successfully with entity type identifiers");
     } catch (error) {
-        console.error("Error initializing ParticleSystem:", error);
+        // console.error("Error initializing ParticleSystem:", error);
     }
     
     // ... existing code ...

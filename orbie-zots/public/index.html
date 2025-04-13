@@ -453,8 +453,6 @@
     <script>
         // Initialize on window load
         window.addEventListener('load', function() {
-            console.log('Window loaded - initializing components');
-            
             // Initialize home button
             const homeButton = document.getElementById('homeButton');
             if (homeButton) {
@@ -470,7 +468,6 @@
             
             // Explicitly initialize music controller
             if (typeof MusicController !== 'undefined' && MusicController.init) {
-                console.log('Explicitly initializing Music Controller');
                 MusicController.init();
             }
             
@@ -484,7 +481,6 @@
       document.addEventListener('DOMContentLoaded', function() {
         // Function to position all slider value labels
         function positionAllValueLabels() {
-          console.log('Positioning all value labels');
           // Force layout recalculation to get accurate dimensions
           document.body.getBoundingClientRect();
           

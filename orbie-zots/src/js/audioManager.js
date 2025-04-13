@@ -56,22 +56,22 @@ const AudioManager = (function() {
                 masterGainNode.gain.value = 1.0;
                 masterGainNode.connect(audioContext.destination);
                 
-                console.log('Audio Manager: Initialized Web Audio API context');
+                // console.log('Audio Manager: Initialized Web Audio API context');
                 
                 // Preload essential audio files
                 preloadAudio(config.demoIntroPath, 'demoIntro')
                     .then(() => preloadAudio(config.demoSlidesPath, 'demoSlides'))
                     .then(() => {
-                        console.log('Audio Manager: Essential audio files preloaded');
+                        // console.log('Audio Manager: Essential audio files preloaded');
                         resolve();
                     })
                     .catch(err => {
-                        console.error('Audio Manager: Error preloading audio:', err);
+                        // console.error('Audio Manager: Error preloading audio:', err);
                         // Resolve anyway to not block app initialization
                         resolve();
                     });
             } catch (err) {
-                console.error('Audio Manager: Failed to initialize audio context:', err);
+                // console.error('Audio Manager: Failed to initialize audio context:', err);
                 reject(err);
             }
         });
@@ -102,11 +102,11 @@ const AudioManager = (function() {
                 .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
                 .then(audioBuffer => {
                     audioBuffers[id] = audioBuffer;
-                    console.log(`Audio Manager: Successfully preloaded "${id}"`);
+                    // console.log(`Audio Manager: Successfully preloaded "${id}"`);
                     resolve(audioBuffer);
                 })
                 .catch(err => {
-                    console.error(`Audio Manager: Error preloading "${id}":`, err);
+                    // console.error(`Audio Manager: Error preloading "${id}":`, err);
                     reject(err);
                 });
         });
@@ -119,9 +119,9 @@ const AudioManager = (function() {
     function resumeAudioContext() {
         if (audioContext && audioContext.state === 'suspended') {
             audioContext.resume().then(() => {
-                console.log('Audio Manager: AudioContext resumed successfully');
+                // console.log('Audio Manager: AudioContext resumed successfully');
             }).catch(err => {
-                console.error('Audio Manager: Error resuming AudioContext:', err);
+                // console.error('Audio Manager: Error resuming AudioContext:', err);
             });
         }
     }
@@ -143,7 +143,7 @@ const AudioManager = (function() {
             
             // Check if buffer exists
             if (!audioBuffers[id]) {
-                console.error(`Audio Manager: Buffer "${id}" not found`);
+                // console.error(`Audio Manager: Buffer "${id}" not found`);
                 reject(new Error(`Buffer "${id}" not found`));
                 return;
             }
@@ -200,10 +200,10 @@ const AudioManager = (function() {
                     onPlayCallback(id);
                 }
                 
-                console.log(`Audio Manager: Started playback of "${id}"`);
+                // console.log(`Audio Manager: Started playback of "${id}"`);
                 resolve();
             } catch (err) {
-                console.error(`Audio Manager: Error playing "${id}":`, err);
+                // console.error(`Audio Manager: Error playing "${id}":`, err);
                 reject(err);
             }
         });
@@ -250,7 +250,7 @@ const AudioManager = (function() {
                     resolve();
                 }, fadeTime * 1000);
             } catch (err) {
-                console.error('Audio Manager: Error stopping audio with fade:', err);
+                // console.error('Audio Manager: Error stopping audio with fade:', err);
                 
                 // Force stop as fallback
                 if (currentTrack && currentTrack.source) {
@@ -310,7 +310,7 @@ const AudioManager = (function() {
                 shuffleArray(shuffledPlaylist);
                 
                 currentPlaylistIndex = -1; // Reset index
-                console.log('Audio Manager: Playlist initialized and shuffled');
+                // console.log('Audio Manager: Playlist initialized and shuffled');
             });
     }
     
@@ -360,7 +360,7 @@ const AudioManager = (function() {
             // Clamp value between 0 and 1
             const volume = Math.max(0, Math.min(1, level));
             masterGainNode.gain.setValueAtTime(volume, audioContext.currentTime);
-            console.log(`Audio Manager: Volume set to ${volume}`);
+            // console.log(`Audio Manager: Volume set to ${volume}`);
         }
     }
     
@@ -445,9 +445,9 @@ const AudioManager = (function() {
         // Close audio context
         if (audioContext) {
             audioContext.close().then(() => {
-                console.log('Audio Manager: Audio context closed');
+                // console.log('Audio Manager: Audio context closed');
             }).catch(err => {
-                console.error('Audio Manager: Error closing audio context:', err);
+                // console.error('Audio Manager: Error closing audio context:', err);
             });
         }
         

@@ -122,7 +122,7 @@ const TouchHandler = (function() {
                 
                 if (distance > swipeThreshold) {
                     swipeDetected = true;
-                    console.log("Swipe detected");
+                    // console.log("Swipe detected");
                 }
             }
             

@@ -1,13 +1,13 @@
 // Run this in DevTools console to refresh tooltips
 if (typeof MusicController !== 'undefined' && MusicController.refreshTooltip) { 
   MusicController.refreshTooltip(); 
-  console.log('Music Controller tooltip refreshed.');
+  // console.log('Music Controller tooltip refreshed.');
 }
 
 // Also refresh slider tooltips if available
 if (typeof SliderTooltip !== 'undefined' && SliderTooltip.refreshTooltip) {
   SliderTooltip.refreshTooltip();
-  console.log('Slider and toggle tooltips refreshed.');
+  // console.log('Slider and toggle tooltips refreshed.');
 }
 
 // Add this to the swipe detection code
@@ -27,7 +27,7 @@ function handleSwipe() {
       // Now try to play the audio
       if (typeof DemoAudio !== 'undefined') {
         DemoAudio.playSlides().catch(err => {
-          console.error('Failed to play slides after swipe:', err);
+          // console.error('Failed to play slides after swipe:', err);
           // Try again with a fallback method
           AudioManager.playNextInPlaylist();
         });

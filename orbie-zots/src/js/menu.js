@@ -138,15 +138,13 @@ const MenuSystem = (function() {
             // Initialize from settings if possible
             if (typeof ParticleSystem !== 'undefined' && ParticleSystem.getOrbieSettings) {
                 const settings = ParticleSystem.getOrbieSettings();
-                console.log("Setting orbieEnabled checkbox from settings:", settings.enabled);
                 orbieEnabled.checked = settings.enabled !== false; // Default to true if not set
             } else {
-                console.log("ParticleSystem not available, defaulting orbieEnabled to true");
                 orbieEnabled.checked = true; // Default to true if ParticleSystem isn't available
             }
             
             orbieEnabled.addEventListener('change', function() {
-                console.log("Orbie toggle changed to:", this.checked);
+                orbieEnabled.checked = this.checked;
                 callbacks.updateOrbieSettings('enabled', this.checked);
             });
         }
@@ -461,6 +459,8 @@ function cleanupAudio() {
     }
     
     if (audioContext) {
-        audioContext.close().catch(e => console.error('Error closing AudioContext:', e));
+        audioContext.close().catch(e => {
+            // console.error('Error closing AudioContext:', e);
+        });
     }
 }

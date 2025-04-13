@@ -926,7 +926,7 @@
             // Set up random simulation button - completely new implementation
             document.querySelector('.random-sim-btn').onclick = function() {
                 const randomLink = simulationLinks[Math.floor(Math.random() * simulationLinks.length)];
-                console.log("Navigating to: " + randomLink);
+                // console.log("Navigating to: " + randomLink);
                 window.location = randomLink;
                 return false; // Prevent default
             };

@@ -326,7 +326,7 @@ const SwipeSplitSystem = (function() {
             canvas = canvasElement;
             ctx = canvas.getContext('2d');
             
-            console.log("SwipeSplitSystem initialized");
+            // console.log("SwipeSplitSystem initialized");
             return this;
         },
         
@@ -367,7 +367,7 @@ const SwipeSplitSystem = (function() {
                 path.pathIndex = idx;
             });
             
-            console.log("Swipe path started at", x, y, "- Path #", newPathIndex);
+            // console.log("Swipe path started at", x, y, "- Path #", newPathIndex);
             return this;
         },
         
@@ -396,7 +396,7 @@ const SwipeSplitSystem = (function() {
             
             const path = swipePaths[activePathIndex];
             
-            console.log("Swipe path ended with", path.points.length, "points - Path #", activePathIndex);
+            // console.log("Swipe path ended with", path.points.length, "points - Path #", activePathIndex);
             
             // Mark as inactive but keep it in the array to continue fading
             path.isActive = false;

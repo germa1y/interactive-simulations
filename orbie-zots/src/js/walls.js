@@ -663,7 +663,7 @@ const WallSystem = (function() {
                 const svgText = await response.text();
                 return loadWallsFromSVG(svgText);
             } catch (error) {
-                console.error("Error loading SVG file:", error);
+                // console.error("Error loading SVG file:", error);
                 return 0;
             }
         },

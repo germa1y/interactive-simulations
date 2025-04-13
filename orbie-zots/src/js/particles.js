@@ -154,7 +154,7 @@ const ParticleSystem = (function() {
     
     // Initialize Orbie
     function initOrbie() {
-        console.log("Initializing Orbie at position:", width/2, height/2);
+        // console.log("Initializing Orbie at position:", width/2, height/2);
         orbie = {
             x: width / 2, // Center of screen
             y: height / 2, // Center of screen
@@ -171,18 +171,18 @@ const ParticleSystem = (function() {
         };
         
         // Confirm all required properties are set
-        console.log("Orbie initialized with: ", 
-            "color:", orbie.color, 
-            "size:", orbie.size, 
-            "glowSize:", orbie.glowSize,
-            "glowColor:", orbie.glowColor,
-            "glowOpacity:", orbie.glowOpacity
-        );
+        // console.log("Orbie initialized with: ", 
+        //     "color:", orbie.color, 
+        //     "size:", orbie.size, 
+        //     "glowSize:", orbie.glowSize,
+        //     "glowColor:", orbie.glowColor,
+        //     "glowOpacity:", orbie.glowOpacity
+        // );
     }
     
     // Create a new ZotSwarm
     function createZotSwarm(config) {
-        console.log("Creating new zot swarm with config:", config);
+        // console.log("Creating new zot swarm with config:", config);
         
         // Get a unique ID for this swarm
         const swarmId = generateSwarmId();
@@ -226,7 +226,7 @@ const ParticleSystem = (function() {
             swarm.zots.push(zot);
         }
         
-        console.log(`Created swarm with ID ${swarm.id} containing ${swarm.zots.length} zots`);
+        // console.log(`Created swarm with ID ${swarm.id} containing ${swarm.zots.length} zots`);
         
         // Add the new swarm to our collection
         zotSwarms.push(swarm);
@@ -242,7 +242,7 @@ const ParticleSystem = (function() {
         // Find the swarm with the given ID
         const swarmIndex = zotSwarms.findIndex(swarm => swarm.id === swarmId);
         if (swarmIndex === -1) {
-            console.error(`Swarm with ID ${swarmId} not found`);
+            // console.error(`Swarm with ID ${swarmId} not found`);
             return false;
         }
         
@@ -759,9 +759,9 @@ const ParticleSystem = (function() {
                 ctx.fillStyle = coreGradient;
                 ctx.fill();
             } catch (e) {
-                console.error("Error rendering Orbie:", e);
-                console.log("Orbie state:", orbie);
-                console.log("orbieSettings:", orbieSettings);
+                // console.error("Error rendering Orbie:", e);
+                // console.log("Orbie state:", orbie);
+                // console.log("orbieSettings:", orbieSettings);
             }
         }
     }
@@ -884,7 +884,7 @@ const ParticleSystem = (function() {
         // Initialize Orbie
         initOrbie();
         
-        console.log("Orbie initialized:", orbie, "Enabled:", orbieSettings.enabled);
+        // console.log("Orbie initialized:", orbie, "Enabled:", orbieSettings.enabled);
         
         // Create background particles
         initBackgroundParticles();
@@ -1000,7 +1000,7 @@ const ParticleSystem = (function() {
                     } else if (property === 'enabled') {
                         // When enabling, ensure all visual properties are fully refreshed
                         if (value === true) {
-                            console.log("Enabling Orbie, refreshing all visual properties");
+                            // console.log("Enabling Orbie, refreshing all visual properties");
                             // Force a complete refresh of Orbie's properties
                             orbie.color = orbieSettings.color || 'rgba(255, 250, 230, 0.9)';
                             orbie.size = orbieSettings.size;
@@ -1017,8 +1017,8 @@ const ParticleSystem = (function() {
             
             // Log state after property change
             if (property === 'enabled') {
-                console.log("Orbie enabled:", orbieSettings.enabled);
-                console.log("Orbie properties:", orbie.color, orbie.size, orbie.glowColor, orbie.glowOpacity);
+                // console.log("Orbie enabled:", orbieSettings.enabled);
+                // console.log("Orbie properties:", orbie.color, orbie.size, orbie.glowColor, orbie.glowOpacity);
             }
         },
         
@@ -1090,9 +1090,9 @@ const ParticleSystem = (function() {
             initOrbie();
             
             // Sanity check for Orbie's visual properties
-            console.log("After reset - Orbie enabled:", orbieSettings.enabled);
-            console.log("After reset - Orbie visual properties:", 
-                orbie.color, orbie.size, orbie.glowColor, orbie.glowOpacity, orbie.glowSize);
+            // console.log("After reset - Orbie enabled:", orbieSettings.enabled);
+            // console.log("After reset - Orbie visual properties:", 
+            //     orbie.color, orbie.size, orbie.glowColor, orbie.glowOpacity, orbie.glowSize);
         },
         
         // Add a wall segment - wrapper for WallSystem

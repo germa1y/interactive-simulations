@@ -784,7 +784,7 @@
                             gameHistory.length > settings.maxOscillatorPeriod) {
                             const isStableOscillator = checkForStableOscillators();
                             if (isStableOscillator && settings.isRunning) {
-                                console.log(`Stable oscillator with period ${isStableOscillator} detected`);
+                                // console.log(`Stable oscillator with period ${isStableOscillator} detected`);
                                 toggleGame(); // Pause the game
                             }
                         }
@@ -1258,7 +1258,7 @@
                         }
                     } catch (e) {
                         alert('Error loading saved state.');
-                        console.error(e);
+                        // console.error(e);
                     }
                 } else {
                     alert('No saved state found.');

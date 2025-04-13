@@ -21,16 +21,16 @@ const jsFiles = [
     'main.js'        // Main.js should always be last as it uses all the above
 ];
 
-console.log('Building bundle...');
+// console.log('Building bundle...');
 
 // Create dist directory if it doesn't exist
 try {
     if (!fs.existsSync(distDir)) {
         fs.mkdirSync(distDir, { recursive: true });
-        console.log(`Created directory: ${distDir}`);
+        // console.log(`Created directory: ${distDir}`);
     }
 } catch (err) {
-    console.error(`Error creating directory: ${err.message}`);
+    // console.error(`Error creating directory: ${err.message}`);
     process.exit(1);
 }
 
@@ -48,17 +48,17 @@ combinedCode += ' */\n\n';
 for (const file of jsFiles) {
     const filePath = path.join(srcDir, file);
     try {
-        console.log(`Processing: ${filePath}`);
+        // console.log(`Processing: ${filePath}`);
         if (fs.existsSync(filePath)) {
             const content = fs.readFileSync(filePath, 'utf8');
             combinedCode += content + '\n\n';
-            console.log(`Added ${file} to bundle`);
+            // console.log(`Added ${file} to bundle`);
         } else {
-            console.error(`File not found: ${filePath}`);
+            // console.error(`File not found: ${filePath}`);
             process.exit(1);
         }
     } catch (err) {
-        console.error(`Error reading file ${file}: ${err.message}`);
+        // console.error(`Error reading file ${file}: ${err.message}`);
         process.exit(1);
     }
 }
@@ -67,10 +67,10 @@ for (const file of jsFiles) {
 const bundlePath = path.join(distDir, 'bundle.js');
 try {
     fs.writeFileSync(bundlePath, combinedCode);
-    console.log(`Successfully created bundle at: ${bundlePath}`);
+    // console.log(`Successfully created bundle at: ${bundlePath}`);
 } catch (err) {
-    console.error(`Error writing bundle: ${err.message}`);
+    // console.error(`Error writing bundle: ${err.message}`);
     process.exit(1);
 }
 
-console.log('Build completed successfully!');
+// console.log('Build completed successfully!');

@@ -1677,7 +1677,7 @@
             if (autoPerformanceAdjustEnabled && averageRenderTime > 16 && flockingStep < 3) {
                 // If rendering is taking too long, increase the flocking step
                 const newFlockingStep = flockingStep + 1;
-                console.log(`Performance adjustment: Increasing flocking step to ${newFlockingStep}`);
+                // console.log(`Performance adjustment: Increasing flocking step to ${newFlockingStep}`);
             }
             
             // Dynamically update colors for sparkling effect in monochrome theme
@@ -2080,15 +2080,13 @@
                     settings.particleCount = Math.floor(settings.particleCount * 0.8);
                     document.getElementById('particles').value = settings.particleCount;
                     document.getElementById('particlesValue').textContent = settings.particleCount;
-                    console.log(`Performance adjustment: Reducing particles to ${settings.particleCount}`);
-                    initParticles();
-                    renderTimeHistory = []; // Reset history after adjustment
+                    // console.log(`Performance adjustment: Reducing particles to ${settings.particleCount}`);
                 } else if (averageRenderTime > 18 && settings.trailLength > 5) {
                     // If rendering is somewhat slow, reduce trail length
                     settings.trailLength = Math.floor(settings.trailLength * 0.7);
                     document.getElementById('trailLength').value = settings.trailLength;
                     document.getElementById('trailLengthValue').textContent = settings.trailLength;
-                    console.log(`Performance adjustment: Reducing trail length to ${settings.trailLength}`);
+                    // console.log(`Performance adjustment: Reducing trail length to ${settings.trailLength}`);
                     renderTimeHistory = []; // Reset history after adjustment
                 }
             }
@@ -2122,7 +2120,7 @@
                 // Adjust minFrameTime based on FPS for very low-end devices
                 if (autoPerformanceAdjustEnabled && fps < 20 && minFrameTime < 1000/20) {
                     minFrameTime = 1000/20; // Cap at 20fps for very low-end devices
-                    console.log('Performance adjustment: Reducing target FPS to 20');
+                    // console.log('Performance adjustment: Reducing target FPS to 20');
                 }
             }
             
@@ -2697,7 +2695,7 @@
             // Detect low-end devices based on initial render times
             setTimeout(() => {
                 if (averageRenderTime > 25) {
-                    console.log("Low-end device detected, enabling performance optimizations");
+                    // console.log("Low-end device detected, enabling performance optimizations");
                     settings.particleCount = Math.min(settings.particleCount, 150);
                     settings.trailLength = Math.min(settings.trailLength, 5);
                     

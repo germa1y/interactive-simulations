@@ -247,14 +247,14 @@ const SubmitSwarms = (function() {
                 // Reset file input so the same file can be selected again
                 fileInput.value = '';
             } catch (error) {
-                console.error('[LOAD] Error parsing JSON file:', error);
+                // console.error('[LOAD] Error parsing JSON file:', error);
                 showLoadError('Error parsing file. Please select a valid JSON file.');
                 fileInput.value = '';
             }
         };
         
         reader.onerror = function() {
-            console.error('[LOAD] Error reading file');
+            // console.error('[LOAD] Error reading file');
             showLoadError('Error reading file. Please try again.');
             fileInput.value = '';
         };
@@ -320,7 +320,7 @@ const SubmitSwarms = (function() {
     // Load zot swarms from saved data
     function loadZotSwarms(data) {
         try {
-            console.log('[LOAD] Loading swarm data:', data);
+            // console.log('[LOAD] Loading swarm data:', data);
             
             if (!data || !data.swarms || !Array.isArray(data.swarms) || data.swarms.length === 0) {
                 showLoadError('Invalid data format or no swarms found in file.');
@@ -361,7 +361,7 @@ const SubmitSwarms = (function() {
             data.swarms.forEach(swarm => {
                 // Ensure we have valid settings
                 if (!swarm.settings) {
-                    console.warn('[LOAD] Skipping swarm with missing settings:', swarm);
+                    // console.warn('[LOAD] Skipping swarm with missing settings:', swarm);
                     return;
                 }
                 
@@ -389,7 +389,7 @@ const SubmitSwarms = (function() {
             
             return true;
         } catch (error) {
-            console.error('[LOAD] Error loading swarms:', error);
+            // console.error('[LOAD] Error loading swarms:', error);
             showLoadError(`Error loading swarms: ${error.message}`);
             return false;
         }
@@ -445,7 +445,7 @@ const SubmitSwarms = (function() {
         const errorElement = popupContainer.querySelector('#submitError');
         
         submitBtn.addEventListener('click', function() {
-            console.log('[SAVE] Save button clicked');
+            // console.log('[SAVE] Save button clicked');
             
             // Get preset name and description
             const presetName = document.getElementById('presetName').value.trim();
@@ -453,14 +453,14 @@ const SubmitSwarms = (function() {
             
             // Validate if there are particles on screen
             if (typeof ParticleSystem !== 'undefined' && ParticleSystem.getZotSwarms) {
-                console.log('[SAVE] ParticleSystem is available');
+                // console.log('[SAVE] ParticleSystem is available');
                 
                 const swarms = ParticleSystem.getZotSwarms();
-                console.log(`[SAVE] Found ${swarms ? swarms.length : 0} swarms`);
+                // console.log(`[SAVE] Found ${swarms ? swarms.length : 0} swarms`);
                 
                 if (!swarms || swarms.length === 0) {
                     // Show error message if no particles
-                    console.error('[SAVE] No swarms found');
+                    // console.error('[SAVE] No swarms found');
                     errorElement.textContent = "No zot swarms found! Please create at least one swarm.";
                     errorElement.style.display = "block";
                     return;
@@ -483,12 +483,12 @@ const SubmitSwarms = (function() {
                         submitBtn.textContent = "Error";
                     }
                 } catch (error) {
-                    console.error('[SAVE] Error during save:', error);
+                    // console.error('[SAVE] Error during save:', error);
                     errorElement.textContent = "An error occurred: " + error.message;
                     errorElement.style.display = "block";
                 }
             } else {
-                console.error('[SAVE] ParticleSystem not available');
+                // console.error('[SAVE] ParticleSystem not available');
                 errorElement.textContent = "Error: ParticleSystem not available.";
                 errorElement.style.display = "block";
             }
@@ -573,9 +573,9 @@ const SubmitSwarms = (function() {
             const timestamp = new Date().toISOString().replace(/[-:T.Z]/g, '');
             const filename = `preset${timestamp}.json`;
             
-            console.log(`[SAVE] Attempting to save data to ${filename}`);
-            console.log(`[SAVE] Data size: ${Math.round(jsonString.length / 1024)} KB`);
-            console.log(`[SAVE] Number of swarms: ${swarms.length}`);
+            // console.log(`[SAVE] Attempting to save data to ${filename}`);
+            // console.log(`[SAVE] Data size: ${Math.round(jsonString.length / 1024)} KB`);
+            // console.log(`[SAVE] Number of swarms: ${swarms.length}`);
             
             // Attempt to trigger download for the user to save manually
             try {
@@ -587,18 +587,18 @@ const SubmitSwarms = (function() {
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-                console.log(`[SAVE] Download attempted for ${filename}`);
+                // console.log(`[SAVE] Download attempted for ${filename}`);
                 return true;
             } catch (downloadError) {
-                console.error(`[SAVE] Download attempt failed:`, downloadError);
+                // console.error(`[SAVE] Download attempt failed:`, downloadError);
                 return false;
             }
         } catch (error) {
-            console.error(`[SAVE] ERROR: Failed to process swarm data`);
-            console.error(`[SAVE] Error details:`, error);
-            console.error(`[SAVE] Error name: ${error.name}`);
-            console.error(`[SAVE] Error message: ${error.message}`);
-            console.error(`[SAVE] Error stack:`, error.stack);
+            // console.error(`[SAVE] ERROR: Failed to process swarm data`);
+            // console.error(`[SAVE] Error details:`, error);
+            // console.error(`[SAVE] Error name: ${error.name}`);
+            // console.error(`[SAVE] Error message: ${error.message}`);
+            // console.error(`[SAVE] Error stack:`, error.stack);
             return false;
         }
     }

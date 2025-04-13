@@ -65,7 +65,7 @@ const SliderTooltip = (function() {
     function init() {
         if (isInitialized) return;
         
-        console.log('Slider Tooltip: Initializing...');
+        // console.log('Slider Tooltip: Initializing...');
         setupTooltips();
         setupToggleTooltips();
         isInitialized = true;
@@ -75,7 +75,7 @@ const SliderTooltip = (function() {
      * Set up tooltips for all toggle checkbox elements
      */
     function setupToggleTooltips() {
-        console.log('Setting up tooltips for toggle components');
+        // console.log('Setting up tooltips for toggle components');
         
         // Find all toggle containers
         const toggleContainers = document.querySelectorAll('.toggle-container');
@@ -481,7 +481,7 @@ const SliderTooltip = (function() {
         // Re-initialize tooltips
         isInitialized = false;
         init();
-        console.log('Slider Tooltip: Refreshed all tooltips');
+        // console.log('Slider Tooltip: Refreshed all tooltips');
     }
     
     // Return public API

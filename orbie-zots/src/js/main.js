@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleLabels: function() {
             this.hideLabels = !this.hideLabels;
             this.updateAllLabelVisibility();
-            console.log(`Slider labels are now ${this.hideLabels ? 'hidden' : 'visible'} (except zot count which is always visible)`);
+            // console.log(`Slider labels are now ${this.hideLabels ? 'hidden' : 'visible'} (except zot count which is always visible)`);
             return this.hideLabels;
         },
         
@@ -67,9 +67,9 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     // Document the toggle function in console for easy access
-    console.log("To toggle slider value labels, use: SliderControls.toggleLabels()");
+    // console.log("To toggle slider value labels, use: SliderControls.toggleLabels()");
     
-    console.log("DOM loaded - Menu elements:", menuToggle ? "✓" : "✗", controlsPanel ? "✓" : "✗", homeButton ? "✓" : "✗");
+    // console.log("DOM loaded - Menu elements:", menuToggle ? "✓" : "✗", controlsPanel ? "✓" : "✗", homeButton ? "✓" : "✗");
     
     // Initialize the particle system
     ParticleSystem.init(canvas, fpsDisplay);
@@ -79,35 +79,35 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize swipe split system
     if (typeof SwipeSplitSystem !== 'undefined') {
-        console.log("Initializing SwipeSplitSystem...");
+        // console.log("Initializing SwipeSplitSystem...");
         SwipeSplitSystem.init(canvas);
     } else {
-        console.error("SwipeSplitSystem module not available");
+        // console.error("SwipeSplitSystem module not available");
     }
     
     // Start demo mode
     if (typeof DemoMode !== 'undefined') {
-        console.log("Starting zot swarm demo mode...");
+        // console.log("Starting zot swarm demo mode...");
         setTimeout(() => {
             DemoMode.start();
         }, 200); // Short delay to ensure all systems are fully initialized
     } else {
-        console.error("Demo Mode module not available");
+        // console.error("Demo Mode module not available");
     }
     
     // Add direct event listeners to menu toggle as a backup
     if (menuToggle && controlsPanel) {
-        console.log("Adding direct event listeners to menu toggle");
+        // console.log("Adding direct event listeners to menu toggle");
         
         menuToggle.addEventListener('click', function(e) {
-            console.log("Menu toggle clicked");
+            // console.log("Menu toggle clicked");
             e.preventDefault();
             controlsPanel.classList.toggle('collapsed');
             updateHomeButtonVisibility();
         });
         
         menuToggle.addEventListener('touchstart', function(e) {
-            console.log("Menu toggle touched");
+            // console.log("Menu toggle touched");
             e.preventDefault();
             controlsPanel.classList.toggle('collapsed');
             updateHomeButtonVisibility();
@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Set up home button event listener
     if (homeButton) {
-        console.log("Setting up home button");
+        // console.log("Setting up home button");
         
         // Set initial state of home button based on menu state
         updateHomeButtonVisibility();
@@ -125,14 +125,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add click event listener to navigate to home page
         homeButton.addEventListener('click', function(e) {
             e.preventDefault();
-            console.log("Home button clicked, navigating to home page");
+            // console.log("Home button clicked, navigating to home page");
             window.location.href = 'https://interactive-simulations.com/';
         });
         
         // Add touch event listener for mobile
         homeButton.addEventListener('touchstart', function(e) {
             e.preventDefault();
-            console.log("Home button touched, navigating to home page");
+            // console.log("Home button touched, navigating to home page");
             window.location.href = 'https://interactive-simulations.com/';
             e.stopPropagation();
         }, { passive: false });
@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize menu system with callbacks
     try {
-        console.log("Initializing MenuSystem...");
+        // console.log("Initializing MenuSystem...");
         MenuSystem.init({
             controlsPanel: controlsPanel,
             menuToggle: menuToggle
@@ -214,16 +214,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     })
                     .then(svgText => {
                         const wallCount = WallSystem.loadFromSVG(svgText);
-                        console.log(`Loaded ${wallCount} wall segments from SVG`);
+                        // console.log(`Loaded ${wallCount} wall segments from SVG`);
                     })
                     .catch(error => {
-                        console.error('Error loading SVG file:', error);
+                        // console.error('Error loading SVG file:', error);
                     });
             }
         });
-        console.log("MenuSystem initialized");
+        // console.log("MenuSystem initialized");
     } catch (error) {
-        console.error("Error initializing menu system:", error);
+        // console.error("Error initializing menu system:", error);
     }
     
     // Controls panel setup
@@ -617,7 +617,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     ColorThemes.setTheme(themeName);
                 }
                 
-                console.log('Color theme button touched:', themeName);
+                // console.log('Color theme button touched:', themeName);
             }, { passive: false });
         });
         
@@ -1148,10 +1148,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         })
                         .then(svgText => {
                             const wallCount = WallSystem.loadFromSVG(svgText);
-                            console.log(`Loaded ${wallCount} wall segments from SVG`);
+                            // console.log(`Loaded ${wallCount} wall segments from SVG`);
                         })
                         .catch(error => {
-                            console.error('Error loading SVG file:', error);
+                            // console.error('Error loading SVG file:', error);
                         });
                 }
             });
@@ -1175,7 +1175,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         reader.onload = function(event) {
                             const svgText = event.target.result;
                             const wallCount = WallSystem.loadFromSVG(svgText);
-                            console.log(`Loaded ${wallCount} wall segments from SVG`);
+                            // console.log(`Loaded ${wallCount} wall segments from SVG`);
                         };
                         
                         reader.readAsText(file);
@@ -1215,18 +1215,18 @@ function initializeSimulation() {
     // ... existing code ...
     
     try {
-        console.log("Starting MenuSystem initialization...");
+        // console.log("Starting MenuSystem initialization...");
         menuSystem = new MenuSystem({
             containerElement: document.getElementById('simulation-container')
         });
-        console.log("MenuSystem initialized successfully.");
+        // console.log("MenuSystem initialized successfully.");
     } catch (error) {
-        console.error("Error initializing MenuSystem:", error);
+        // console.error("Error initializing MenuSystem:", error);
     }
     
     // Initialize particle system with entity type identifiers
     try {
-        console.log("Starting ParticleSystem initialization...");
+        // console.log("Starting ParticleSystem initialization...");
         particleSystem = new ParticleSystem({
             canvasElement: document.getElementById('simulation-canvas'),
             // Other configuration parameters
@@ -1264,9 +1264,9 @@ function initializeSimulation() {
             return originalUpdate(deltaTime);
         };
         
-        console.log("ParticleSystem initialized successfully with entity type identifiers");
+        // console.log("ParticleSystem initialized successfully with entity type identifiers");
     } catch (error) {
-        console.error("Error initializing ParticleSystem:", error);
+        // console.error("Error initializing ParticleSystem:", error);
     }
     
     // ... existing code ...
