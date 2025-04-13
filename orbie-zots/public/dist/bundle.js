@@ -1,7 +1,7 @@
 /**
  * Orbie Zots - Particle Swarm Simulation
  * Copyright (c) 2025
- * Built: 2025-04-12T21:57:25.435Z
+ * Built: 2025-04-13T13:06:11.497Z
  */
 
 // config.js - Environment-specific configuration
@@ -4138,9 +4138,6 @@ const DemoMode = (function() {
                     console.log(`Demo Mode: Swipe detected (${distance.toFixed(0)}px)`);
                     hideSwipePrompt();
                     
-                    // Use music system to play DemoSlides.mp3 instead of separate playback
-                    playDemoSlides();
-                    
                     startCycling(); // Resume cycling
                     
                     // Clear swipe tracking
@@ -4654,22 +4651,13 @@ const DemoMode = (function() {
             else if (presetCycle.name === "Torrential") {
                 stopCycling(); // Pause cycling
                 
-                // Preload the slide audio for later use immediately
-                preloadSlideAudio();
-                
                 // Enable music button if MusicController is available
                 if (typeof MusicController !== 'undefined' && MusicController.enableButton) {
                     console.log('Demo Mode: Enabling music button on Torrential preset detection');
                     MusicController.enableButton();
                 }
                 
-                // Add a 1-second delay before stopping the music
-                console.log('Demo Mode: Waiting 1 second before stopping music for Torrential preset');
-                setTimeout(() => {
-                    // Stop any currently playing music
-                    stopAudio();
-                    console.log('Demo Mode: Stopped music for Torrential preset after 1-second delay');
-                }, -10000);
+                // Keep music playing - no audio changes needed
                 
                 showSwipePrompt(); // Show the swipe prompt
             }
@@ -5491,7 +5479,7 @@ const DemoMode = (function() {
      * Stop any playing demo audio with fade out effect
      * @param {number} fadeOutDuration - Fade out duration in ms (default 1500ms)
      */
-    function stopAudio(fadeOutDuration = 1500) {
+    function stopAudio(fadeOutDuration = 3000) {
         if (!demoAudio) {
             console.log('Demo Mode: No audio to stop');
             return;
@@ -5777,63 +5765,6 @@ const DemoMode = (function() {
             }
         } catch (err) {
             console.error('Demo Mode: Error playing slide audio:', err);
-        }
-    }
-    
-    // New function to play DemoSlides.mp3 through the music system
-    function playDemoSlides() {
-        // Stop current audio with fade if it's playing
-        if (demoAudio && !demoAudio.paused) {
-            stopAudio();
-        }
-
-        console.log('Demo Mode: Playing DemoSlides.mp3 using music system');
-        
-        // Create new audio element
-        demoAudio = new Audio();
-        demoAudio.preload = 'auto';
-        
-        // Use directly preloaded slideAudio if available for faster playback
-        if (slideAudio && slideAudio.readyState >= 2) {
-            console.log('Demo Mode: Using preloaded DemoSlides.mp3 for immediate playback');
-            demoAudio = slideAudio;
-            slideAudio = null; // Clear the reference so it's not used again
-        } else {
-            console.log('Demo Mode: Creating new audio element for DemoSlides.mp3');
-            // Use the direct path to DemoSlides.mp3
-            demoAudio.src = './music/DemoSlides.mp3';
-        }
-        
-        // Set up ended event to resume regular playlist
-        demoAudio.onended = function() {
-            console.log('Demo Mode: DemoSlides.mp3 ended, resuming regular playlist');
-            // Resume regular playlist
-            randomizeSongs();
-            playNextSong();
-        };
-        
-        // Play the audio
-        try {
-            // Make sure user interaction has been recorded for autoplay policies
-            if (typeof document !== 'undefined' && document.documentElement) {
-                document.documentElement.setAttribute('data-user-interacted', 'true');
-            }
-            
-            const playPromise = demoAudio.play();
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    console.log('Demo Mode: DemoSlides.mp3 playing successfully via music system');
-                }).catch(err => {
-                    console.error('Demo Mode: Error playing DemoSlides.mp3:', err);
-                    // Fall back to regular playlist on error
-                    randomizeSongs();
-                    playNextSong();
-                });
-            }
-        } catch (err) {
-            console.error('Demo Mode: Error initiating DemoSlides.mp3 playback:', err);
-            randomizeSongs();
-            playNextSong();
         }
     }
     
