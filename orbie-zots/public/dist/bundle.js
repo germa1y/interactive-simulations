@@ -1,7 +1,7 @@
 /**
  * Orbie Zots - Particle Swarm Simulation
  * Copyright (c) 2025
- * Built: 2025-04-13T13:36:09.299Z
+ * Built: 2025-04-15T02:39:39.924Z
  */
 
 // config.js - Environment-specific configuration
@@ -6209,7 +6209,7 @@ const SubmitSwarms = (function() {
     // Load zot swarms from saved data
     function loadZotSwarms(data) {
         try {
-            // console.log('[LOAD] Loading swarm data:', data);
+            console.log('[LOAD] Starting to load swarm data:', data);
             
             if (!data || !data.swarms || !Array.isArray(data.swarms) || data.swarms.length === 0) {
                 showLoadError('Invalid data format or no swarms found in file.');
@@ -6224,6 +6224,7 @@ const SubmitSwarms = (function() {
             
             // Clear existing swarms first
             ParticleSystem.removeAllZotSwarms();
+            console.log('[LOAD] Cleared existing swarms');
             
             // Apply global settings if available
             if (data.globalSettings) {
@@ -6250,7 +6251,7 @@ const SubmitSwarms = (function() {
             data.swarms.forEach(swarm => {
                 // Ensure we have valid settings
                 if (!swarm.settings) {
-                    // console.warn('[LOAD] Skipping swarm with missing settings:', swarm);
+                    console.warn('[LOAD] Skipping swarm with missing settings:', swarm);
                     return;
                 }
                 
@@ -6268,20 +6269,118 @@ const SubmitSwarms = (function() {
                 }
             });
             
-            // Update UI to show swarms if needed
-            if (typeof updateSwarmList === 'function') {
-                updateSwarmList();
-            }
+            console.log('[LOAD] Created swarms:', loadedSwarms);
+            
+            // Update UI to show swarms directly
+            updateSwarmListUI();
             
             // Show success message
             showLoadSuccess(`Successfully loaded ${loadedSwarms.length} swarm${loadedSwarms.length !== 1 ? 's' : ''}.`);
             
             return true;
         } catch (error) {
-            // console.error('[LOAD] Error loading swarms:', error);
+            console.error('[LOAD] Error loading swarms:', error);
             showLoadError(`Error loading swarms: ${error.message}`);
             return false;
         }
+    }
+    
+    // Function to update the swarm list UI directly
+    function updateSwarmListUI() {
+        console.log('[UPDATE] Starting updateSwarmListUI');
+        const swarmDropdown = document.getElementById('swarmList');
+        const removeButton = document.getElementById('removeSwarmBtn');
+        const clearSwarmsButton = document.getElementById('clearSwarmsButton');
+        
+        if (!swarmDropdown || !removeButton) {
+            console.warn('[UPDATE] Required elements not found:', { 
+                swarmDropdown: !!swarmDropdown, 
+                removeButton: !!removeButton 
+            });
+            return;
+        }
+        
+        // Get the current swarms
+        const swarms = ParticleSystem.getZotSwarms();
+        console.log('[UPDATE] Current swarms:', swarms);
+        
+        // Clear the dropdown
+        swarmDropdown.innerHTML = '';
+        
+        // Disable the remove button if no swarms
+        if (swarms.length === 0) {
+            console.log('[UPDATE] No swarms found, showing default option');
+            const noSwarmsOption = document.createElement('option');
+            noSwarmsOption.value = '';
+            noSwarmsOption.textContent = 'No swarms created yet';
+            swarmDropdown.appendChild(noSwarmsOption);
+            
+            removeButton.disabled = true;
+            
+            // Disable the clear swarms button
+            if (clearSwarmsButton) {
+                clearSwarmsButton.classList.add('disabled');
+            }
+            
+            return;
+        } else {
+            removeButton.disabled = false;
+            
+            // Enable the clear swarms button
+            if (clearSwarmsButton) {
+                clearSwarmsButton.classList.remove('disabled');
+            }
+        }
+        
+        // Add each swarm to the dropdown
+        swarms.forEach(swarm => {
+            console.log('[UPDATE] Adding swarm to dropdown:', swarm);
+            const option = document.createElement('option');
+            option.value = swarm.id;
+            const colorThemeName = Presets.colorThemes[swarm.settings.colorTheme]?.name || 'Custom';
+            
+            // Check if this is a randomized swarm or settings don't match any preset
+            let presetDisplayName;
+            if (swarm.settings.isRandomized) {
+                presetDisplayName = 'Random';
+            } else {
+                // Check if settings match any preset
+                const matchedPreset = findMatchingPreset(swarm.settings);
+                if (matchedPreset) {
+                    presetDisplayName = Presets.swarmPresets[matchedPreset]?.name || 'Custom';
+                } else {
+                    presetDisplayName = 'Random';
+                }
+            }
+            
+            option.textContent = `${presetDisplayName} ${colorThemeName} (${swarm.zotCount})`;
+            swarmDropdown.appendChild(option);
+        });
+        
+        // Select the most recently created swarm (last in the array)
+        if (swarms.length > 0) {
+            const mostRecentSwarm = swarms[swarms.length - 1];
+            swarmDropdown.value = mostRecentSwarm.id;
+            console.log('[UPDATE] Selected most recent swarm:', mostRecentSwarm.id);
+        }
+    }
+    
+    // Helper function to check if swarm settings match a preset
+    function findMatchingPreset(settings) {
+        // Check each preset
+        for (const [presetId, preset] of Object.entries(Presets.swarmPresets)) {
+            if (
+                Math.abs(preset.speed - settings.speed) < 0.01 &&
+                Math.abs(preset.separation - settings.separation) < 0.01 &&
+                Math.abs(preset.alignment - settings.alignment) < 0.01 &&
+                Math.abs(preset.cohesion - settings.cohesion) < 0.01 &&
+                Math.abs(preset.perception - settings.perception) < 0.01 &&
+                preset.colorTheme === settings.colorTheme
+            ) {
+                return presetId;
+            }
+        }
+        return null;
     }
     
     // Show the submit popup
@@ -7488,23 +7587,43 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update the list of active swarms
     function updateSwarmList(selectMostRecent = true) {
+        console.log('[UPDATE] Starting updateSwarmList');
         const swarmDropdown = document.getElementById('swarmList');
         const removeButton = document.getElementById('removeSwarmBtn');
         const clearSwarmsButton = document.getElementById('clearSwarmsButton');
         
-        if (!swarmDropdown || !removeButton) return;
+        if (!swarmDropdown || !removeButton) {
+            console.warn('[UPDATE] Required elements not found:', { 
+                swarmDropdown: !!swarmDropdown, 
+                removeButton: !!removeButton 
+            });
+            return;
+        }
         
         // Setup event handlers only once
         setupSwarmManagementUI();
         
+        // Add event listener for swarm selection
+        if (!swarmDropdown.hasEventListener) {
+            swarmDropdown.addEventListener('change', function() {
+                const selectedSwarmId = this.value;
+                if (selectedSwarmId) {
+                    updateUIForSelectedSwarm(selectedSwarmId);
+                }
+            });
+            swarmDropdown.hasEventListener = true;
+        }
+        
         // Get the current swarms
         const swarms = ParticleSystem.getZotSwarms();
+        console.log('[UPDATE] Current swarms:', swarms);
         
         // Clear the dropdown
         swarmDropdown.innerHTML = '';
         
         // Disable the remove button if no swarms
         if (swarms.length === 0) {
+            console.log('[UPDATE] No swarms found, showing default option');
             const noSwarmsOption = document.createElement('option');
             noSwarmsOption.value = '';
             noSwarmsOption.textContent = 'No swarms created yet';
@@ -7529,6 +7648,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Add each swarm to the dropdown
         swarms.forEach(swarm => {
+            console.log('[UPDATE] Adding swarm to dropdown:', swarm);
             const option = document.createElement('option');
             option.value = swarm.id;
             const colorThemeName = Presets.colorThemes[swarm.settings.colorTheme]?.name || 'Custom';
@@ -7555,6 +7675,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (selectMostRecent && swarms.length > 0) {
             const mostRecentSwarm = swarms[swarms.length - 1];
             swarmDropdown.value = mostRecentSwarm.id;
+            console.log('[UPDATE] Selected most recent swarm:', mostRecentSwarm.id);
+            
+            // Update UI to match the selected swarm's settings
+            updateUIForSelectedSwarm(mostRecentSwarm.id);
         }
     }
     
@@ -7574,6 +7698,88 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         return null;
+    }
+    
+    // Update UI sliders and color theme for selected swarm
+    function updateUIForSelectedSwarm(swarmId) {
+        console.log('[UPDATE UI] Updating UI for selected swarm:', swarmId);
+        const swarms = ParticleSystem.getZotSwarms();
+        const selectedSwarm = swarms.find(swarm => swarm.id === swarmId);
+        
+        if (!selectedSwarm) {
+            console.warn('[UPDATE UI] Selected swarm not found:', swarmId);
+            return;
+        }
+        
+        const settings = selectedSwarm.settings;
+        console.log('[UPDATE UI] Swarm settings:', settings);
+        
+        // Update all the sliders
+        const swarmSpeedSlider = document.getElementById('newSwarmSpeed');
+        if (swarmSpeedSlider) {
+            swarmSpeedSlider.value = settings.speed;
+            updateSliderValue(swarmSpeedSlider, document.getElementById('newSwarmSpeedValue'), 1);
+        }
+        
+        const separationSlider = document.getElementById('newSwarmSeparation');
+        if (separationSlider) {
+            separationSlider.value = settings.separation;
+            updateSliderValue(separationSlider, document.getElementById('newSwarmSeparationValue'), 2);
+        }
+        
+        const alignmentSlider = document.getElementById('newSwarmAlignment');
+        if (alignmentSlider) {
+            alignmentSlider.value = settings.alignment;
+            updateSliderValue(alignmentSlider, document.getElementById('newSwarmAlignmentValue'), 2);
+        }
+        
+        const cohesionSlider = document.getElementById('newSwarmCohesion');
+        if (cohesionSlider) {
+            cohesionSlider.value = settings.cohesion;
+            updateSliderValue(cohesionSlider, document.getElementById('newSwarmCohesionValue'), 2);
+        }
+        
+        const perceptionSlider = document.getElementById('newSwarmPerception');
+        if (perceptionSlider) {
+            perceptionSlider.value = settings.perception;
+            updateSliderValue(perceptionSlider, document.getElementById('newSwarmPerceptionValue'), 0);
+        }
+        
+        const minSizeSlider = document.getElementById('newSwarmMinSize');
+        if (minSizeSlider && settings.minSize) {
+            minSizeSlider.value = settings.minSize;
+            updateSliderValue(minSizeSlider, document.getElementById('newSwarmMinSizeValue'), 1);
+        }
+        
+        const maxSizeSlider = document.getElementById('newSwarmMaxSize');
+        if (maxSizeSlider && settings.maxSize) {
+            maxSizeSlider.value = settings.maxSize;
+            updateSliderValue(maxSizeSlider, document.getElementById('newSwarmMaxSizeValue'), 1);
+        }
+        
+        // Update color theme
+        if (settings.colorTheme) {
+            const colorThemeButtons = document.querySelectorAll('#colorPresets .color-preset');
+            colorThemeButtons.forEach(btn => {
+                if (btn.dataset.theme === settings.colorTheme) {
+                    // Remove active class from all buttons
+                    colorThemeButtons.forEach(b => b.classList.remove('active'));
+                    // Add active class to the matching button
+                    btn.classList.add('active');
+                }
+            });
+        }
+        
+        // Update preset dropdown if applicable
+        const presetSelect = document.getElementById('swarmPreset');
+        if (presetSelect) {
+            const matchedPreset = findMatchingPreset(settings);
+            if (matchedPreset) {
+                presetSelect.value = matchedPreset;
+            } else {
+                presetSelect.value = 'random';
+            }
+        }
     }
     
     // Update all UI values to match current settings

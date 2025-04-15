@@ -320,78 +320,133 @@ const SubmitSwarms = (function() {
     // Load zot swarms from saved data
     function loadZotSwarms(data) {
         try {
-            // console.log('[LOAD] Loading swarm data:', data);
-            
-            if (!data || !data.swarms || !Array.isArray(data.swarms) || data.swarms.length === 0) {
-                showLoadError('Invalid data format or no swarms found in file.');
-                return false;
-            }
-            
-            // Check if ParticleSystem is available
-            if (typeof ParticleSystem === 'undefined' || !ParticleSystem.removeAllZotSwarms || !ParticleSystem.createZotSwarm) {
-                showLoadError('ParticleSystem not available for loading swarms.');
-                return false;
-            }
-            
-            // Clear existing swarms first
-            ParticleSystem.removeAllZotSwarms();
-            
-            // Apply global settings if available
-            if (data.globalSettings) {
-                if (data.globalSettings.forces && typeof ParticleSystem.updateForceSettings === 'function') {
-                    Object.entries(data.globalSettings.forces).forEach(([key, value]) => {
-                        ParticleSystem.updateForceSettings(key, value);
+            // Try to parse JSON data
+            try {
+                const parsedData = JSON.parse(data.trim());
+                // console.log('[LOAD] Starting to load swarm data:', data);
+                
+                if (parsedData.swarms && Array.isArray(parsedData.swarms)) {
+                    // Clear existing swarms first
+                    const existingSwarms = ParticleSystem.getZotSwarms();
+                    existingSwarms.forEach(swarm => {
+                        ParticleSystem.removeZotSwarm(swarm.id);
                     });
+                    // console.log('[LOAD] Cleared existing swarms');
+                    
+                    // Keep track of loaded swarms
+                    const loadedSwarms = [];
+                    
+                    // Create each swarm
+                    parsedData.swarms.forEach(swarmData => {
+                        // Prepare the config with all necessary properties
+                        const config = {
+                            // Required properties
+                            zotCount: swarmData.zotCount || 20,
+                            centerX: swarmData.centerX || canvas.width / 2,
+                            centerY: swarmData.centerY || canvas.height / 2,
+                            
+                            // Behavior settings
+                            speed: swarmData.settings.speed || 2,
+                            separation: swarmData.settings.separation || 1,
+                            alignment: swarmData.settings.alignment || 0.1,
+                            cohesion: swarmData.settings.cohesion || 0.1,
+                            perception: swarmData.settings.perception || 50,
+                            
+                            // Visual settings
+                            minSize: swarmData.settings.minSize || 3,
+                            maxSize: swarmData.settings.maxSize || 8,
+                            colorTheme: swarmData.settings.colorTheme || 'rainbow',
+                            
+                            // Additional flags
+                            isRandomized: swarmData.settings.isRandomized || false,
+                            presetName: swarmData.settings.presetName || null
+                        };
+                        
+                        // Create the swarm and capture the ID
+                        const swarmId = ParticleSystem.createZotSwarm(config);
+                        if (swarmId) {
+                            loadedSwarms.push(swarmId);
+                        }
+                    });
+                    
+                    // console.log('[LOAD] Created swarms:', loadedSwarms);
+                    
+                    // Update UI
+                    updateSwarmListUI(true);
+                    return true;
                 }
-                
-                if (data.globalSettings.swipe && typeof SwipeSplitSystem !== 'undefined') {
-                    // Apply swipe settings if SwipeSplitSystem has an update method
-                    if (typeof SwipeSplitSystem.updateSetting === 'function') {
-                        Object.entries(data.globalSettings.swipe).forEach(([key, value]) => {
-                            if (key !== 'pathCount') { // Skip non-setting properties
-                                SwipeSplitSystem.updateSetting(key, value);
-                            }
-                        });
-                    }
-                }
+                return false;
+            } catch (e) {
+                return false;
             }
-            
-            // Recreate each swarm
-            const loadedSwarms = [];
-            data.swarms.forEach(swarm => {
-                // Ensure we have valid settings
-                if (!swarm.settings) {
-                    // console.warn('[LOAD] Skipping swarm with missing settings:', swarm);
-                    return;
-                }
-                
-                // Calculate center position if not present
-                const config = {
-                    ...swarm.settings,
-                    centerX: window.innerWidth / 2,  // Default center position
-                    centerY: window.innerHeight / 2
-                };
-                
-                // Create the swarm with the saved configuration
-                const swarmId = ParticleSystem.createZotSwarm(config);
-                if (swarmId) {
-                    loadedSwarms.push(swarmId);
-                }
-            });
-            
-            // Update UI to show swarms if needed
-            if (typeof updateSwarmList === 'function') {
-                updateSwarmList();
-            }
-            
-            // Show success message
-            showLoadSuccess(`Successfully loaded ${loadedSwarms.length} swarm${loadedSwarms.length !== 1 ? 's' : ''}.`);
-            
-            return true;
         } catch (error) {
-            // console.error('[LOAD] Error loading swarms:', error);
+            console.error('[LOAD] Error loading swarms:', error);
             showLoadError(`Error loading swarms: ${error.message}`);
             return false;
+        }
+    }
+    
+    // Update the swarm list UI (dropdown)
+    function updateSwarmListUI(selectMostRecent = true) {
+        // console.log('[UPDATE] Starting updateSwarmListUI');
+        const swarmDropdown = document.getElementById('swarmList');
+        const removeButton = document.getElementById('removeSwarmBtn');
+        
+        if (!swarmDropdown || !removeButton) {
+            return;
+        }
+        
+        // Get the current swarms
+        const swarms = ParticleSystem.getZotSwarms();
+        // console.log('[UPDATE] Current swarms:', swarms);
+        
+        // Clear the dropdown
+        swarmDropdown.innerHTML = '';
+        
+        // Disable the remove button if no swarms
+        if (swarms.length === 0) {
+            // console.log('[UPDATE] No swarms found, showing default option');
+            const noSwarmsOption = document.createElement('option');
+            noSwarmsOption.value = '';
+            noSwarmsOption.textContent = 'No swarms created yet';
+            swarmDropdown.appendChild(noSwarmsOption);
+            
+            removeButton.disabled = true;
+            return;
+        } else {
+            removeButton.disabled = false;
+        }
+        
+        // Add each swarm to the dropdown
+        swarms.forEach(swarm => {
+            // console.log('[UPDATE] Adding swarm to dropdown:', swarm);
+            const option = document.createElement('option');
+            option.value = swarm.id;
+            
+            // Get color theme name
+            const colorThemeName = swarm.settings.colorTheme 
+                ? (Presets.colorThemes[swarm.settings.colorTheme]?.name || swarm.settings.colorTheme)
+                : 'Custom';
+            
+            // Determine preset display name
+            let presetDisplayName;
+            if (swarm.settings.isRandomized) {
+                presetDisplayName = 'Random';
+            } else if (swarm.settings.presetName && Presets.swarmPresets[swarm.settings.presetName]) {
+                presetDisplayName = Presets.swarmPresets[swarm.settings.presetName].name;
+            } else {
+                presetDisplayName = 'Custom';
+            }
+            
+            option.textContent = `${presetDisplayName} ${colorThemeName} (${swarm.zotCount})`;
+            swarmDropdown.appendChild(option);
+        });
+        
+        // Select the most recently created swarm
+        if (selectMostRecent && swarms.length > 0) {
+            const mostRecentSwarm = swarms[swarms.length - 1];
+            swarmDropdown.value = mostRecentSwarm.id;
+            // console.log('[UPDATE] Selected most recent swarm:', mostRecentSwarm.id);
         }
     }
     

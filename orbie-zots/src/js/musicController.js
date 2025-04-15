@@ -24,7 +24,7 @@ const MusicController = (function() {
      * Initialize the music controller and UI elements
      */
     function init() {
-        console.log('Music Controller: Initializing...');
+        // console.log('Music Controller: Initializing...');
         
         // Find music button or create it if missing
         musicButton = document.getElementById('musicButton');
@@ -32,7 +32,7 @@ const MusicController = (function() {
         if (!musicButton) {
             // Create the button if it doesn't exist
             musicButton = createMusicButton();
-            console.log('Music Controller: Created missing music button');
+            // console.log('Music Controller: Created missing music button');
         }
         
         if (musicButton) {
@@ -53,9 +53,9 @@ const MusicController = (function() {
             // Start checking audio status
             startAudioStatusCheck();
             
-            console.log('Music Controller: Initialized successfully');
+            // console.log('Music Controller: Initialized successfully');
         } else {
-            console.error('Music Controller: Failed to initialize music button');
+            // console.error('Music Controller: Failed to initialize music button');
         }
     }
     
@@ -105,13 +105,13 @@ const MusicController = (function() {
         if (typeof DemoMode !== 'undefined') {
             const checkInterval = setInterval(function() {
                 if (DemoMode.isActive && DemoMode.isSecondTouchDetected && DemoMode.isSecondTouchDetected()) {
-                    console.log('Music Controller: Second touch detected, enabling music button');
+                    // console.log('Music Controller: Second touch detected, enabling music button');
                     enableButton();
                     clearInterval(checkInterval);
                 }
             }, 500);
         } else {
-            console.log('Music Controller: DemoMode not available, enabling button directly');
+            // console.log('Music Controller: DemoMode not available, enabling button directly');
             enableButton();
         }
     }
@@ -130,7 +130,7 @@ const MusicController = (function() {
             // Update button appearance
             updateButtonState();
             
-            console.log('Music Controller: Button enabled, audio playing: ' + isPlaying);
+            // console.log('Music Controller: Button enabled, audio playing: ' + isPlaying);
         }
     }
     
@@ -314,7 +314,7 @@ const MusicController = (function() {
     function handleClick(event) {
         // Only handle clicks when button is enabled
         if (!isEnabled) {
-            console.log('Music Controller: Button disabled, ignoring click');
+            // console.log('Music Controller: Button disabled, ignoring click');
             return;
         }
         
@@ -332,7 +332,7 @@ const MusicController = (function() {
         
         if (tapLength < doubleTapDelay && tapLength > 0) {
             // Double tap detected - randomize songs
-            console.log('Music Controller: Double tap detected - randomizing playlist');
+            // console.log('Music Controller: Double tap detected - randomizing playlist');
             clearTimeout(tapTimer);
             
             // Only randomize if we're already playing music or have DemoMode audio paused
@@ -365,11 +365,11 @@ const MusicController = (function() {
      * Handle a regular single tap after confirming it's not part of a double-tap
      */
     function handleSingleTap() {
-        console.log('Music Controller: Single tap processed');
+        // console.log('Music Controller: Single tap processed');
         
         // Special handling for first touch after being enabled
         if (isFirstTouch) {
-            console.log('Music Controller: First touch after enabling - stopping any playing audio');
+            // console.log('Music Controller: First touch after enabling - stopping any playing audio');
             handleFirstTouch();
             return;
         }
@@ -403,7 +403,7 @@ const MusicController = (function() {
         // Update button appearance to paused state
         updateButtonState();
         
-        console.log('Music Controller: First touch handled - all audio stopped, ready for normal playback');
+        // console.log('Music Controller: First touch handled - all audio stopped, ready for normal playback');
     }
     
     /**
@@ -416,7 +416,7 @@ const MusicController = (function() {
         if (audioElement && !audioElement.paused) {
             audioElement.pause();
             wasAudioStopped = true;
-            console.log('Music Controller: Stopped our audio element');
+            // console.log('Music Controller: Stopped our audio element');
         }
         
         // Stop DemoMode's audio if available
@@ -427,7 +427,7 @@ const MusicController = (function() {
                     DemoMode.stopAudio();
                     wasAudioStopped = true;
                     isDemoIntroAudioPlaying = false;
-                    console.log('Music Controller: Stopped DemoMode audio');
+                    // console.log('Music Controller: Stopped DemoMode audio');
                 }
             } 
             // For subsequent touches, just pause it
@@ -435,7 +435,7 @@ const MusicController = (function() {
                 if (DemoMode.isAudioPlaying && DemoMode.isAudioPlaying()) {
                     DemoMode.togglePauseAudio();
                     wasAudioStopped = true;
-                    console.log('Music Controller: Paused DemoMode audio');
+                    // console.log('Music Controller: Paused DemoMode audio');
                 }
             }
         }
@@ -447,10 +447,10 @@ const MusicController = (function() {
                 if (!audio.paused) {
                     audio.pause();
                     wasAudioStopped = true;
-                    console.log('Music Controller: Paused an active audio element');
+                    // console.log('Music Controller: Paused an active audio element');
                 }
             } catch (err) {
-                console.error('Music Controller: Error pausing audio element:', err);
+                // console.error('Music Controller: Error pausing audio element:', err);
             }
         });
         
@@ -467,7 +467,7 @@ const MusicController = (function() {
      * Apply visual feedback effects when button is tapped
      */
     function applyTapVisualEffect() {
-        console.log('Music Controller: Applying visual effect');
+        // console.log('Music Controller: Applying visual effect');
         
         // Store original background color
         const originalColor = musicButton.style.backgroundColor;
@@ -492,7 +492,7 @@ const MusicController = (function() {
      * Play music - pick up where it left off or start a new song
      */
     function playMusic() {
-        console.log('Music Controller: Playing music');
+        // console.log('Music Controller: Playing music');
         
         if (isPlaying || !isEnabled) return;
         
@@ -519,7 +519,7 @@ const MusicController = (function() {
         } else {
             // Resume current song
             audioElement.play().catch(err => {
-                console.error('Music Controller: Error resuming audio:', err);
+                // console.error('Music Controller: Error resuming audio:', err);
                 
                 // Try to play next song if current one fails
                 playNextSong();
@@ -534,7 +534,7 @@ const MusicController = (function() {
      * Pause the currently playing music
      */
     function pauseMusic() {
-        console.log('Music Controller: Pausing music');
+        // console.log('Music Controller: Pausing music');
         
         // Check if the button is enabled
         if (!isEnabled) return;
@@ -547,14 +547,14 @@ const MusicController = (function() {
             DemoMode.togglePauseAudio();
             isPlaying = false;
             updateButtonState();
-            console.log('Music Controller: Toggled DemoMode audio pause state');
+            // console.log('Music Controller: Toggled DemoMode audio pause state');
         } else {
             // Otherwise stop any of our own audio that's playing
             if (audioElement && !audioElement.paused) {
                 audioElement.pause();
                 isPlaying = false;
                 updateButtonState();
-                console.log('Music Controller: Paused our audio element');
+                // console.log('Music Controller: Paused our audio element');
             }
         }
     }
@@ -598,7 +598,7 @@ const MusicController = (function() {
             const allSongKeys = ['demoIntro', ...Config.getDemoSongKeys()];
             
             if (!allSongKeys || allSongKeys.length === 0) {
-                console.error('Music Controller: No songs available');
+                // console.error('Music Controller: No songs available');
                 return;
             }
             
@@ -607,16 +607,16 @@ const MusicController = (function() {
                 // Create a shuffled playlist
                 shuffledSongKeys = shuffleArray(allSongKeys);
                 currentSongIndex = -1; // Will be incremented to 0 on first play
-                console.log('Music Controller: Created new shuffled playlist:', shuffledSongKeys);
+                // console.log('Music Controller: Created new shuffled playlist:', shuffledSongKeys);
             } else {
                 // If we've played all songs, reset to the beginning of the current playlist
                 if (currentSongIndex >= shuffledSongKeys.length - 1) {
                     currentSongIndex = -1; // Will be incremented to 0 on next play
-                    console.log('Music Controller: Reached end of playlist, resetting to beginning');
+                    // console.log('Music Controller: Reached end of playlist, resetting to beginning');
                 }
             }
         } catch (err) {
-            console.error('Music Controller: Error managing song playlist:', err);
+            // console.error('Music Controller: Error managing song playlist:', err);
         }
     }
     
@@ -651,7 +651,7 @@ const MusicController = (function() {
         
         // Validate we have songs to play
         if (!shuffledSongKeys || shuffledSongKeys.length === 0) {
-            console.error('Music Controller: No songs in playlist');
+            // console.error('Music Controller: No songs in playlist');
             return;
         }
         
@@ -674,14 +674,14 @@ const MusicController = (function() {
             
             // Add error handling
             audioElement.onerror = function(err) {
-                console.error(`Music Controller: Error loading audio ${nextSongKey}:`, err);
+                // console.error(`Music Controller: Error loading audio ${nextSongKey}:`, err);
                 // Try to play next song on error
                 setTimeout(playNextSong, 1000);
             };
             
             // Play the audio
             audioElement.play().catch(err => {
-                console.error(`Music Controller: Error playing audio ${nextSongKey}:`, err);
+                // console.error(`Music Controller: Error playing audio ${nextSongKey}:`, err);
                 // Try to play next song on error
                 setTimeout(playNextSong, 1000);
             });
@@ -689,9 +689,9 @@ const MusicController = (function() {
             isPlaying = true;
             updateButtonState();
             
-            console.log(`Music Controller: Playing song ${currentSongIndex + 1}/${shuffledSongKeys.length}: ${nextSongKey}`);
+            // console.log(`Music Controller: Playing song ${currentSongIndex + 1}/${shuffledSongKeys.length}: ${nextSongKey}`);
         } catch (err) {
-            console.error('Music Controller: Error setting up audio:', err);
+            // console.error('Music Controller: Error setting up audio:', err);
         }
     }
     
@@ -709,19 +709,20 @@ const MusicController = (function() {
             
             if (playPromise !== undefined) {
                 playPromise.then(() => {
-                    console.log('Music Controller: Browser supports autoplay without user interaction');
+                    // console.log('Music Controller: Browser supports autoplay without user interaction');
+                    testAudio.pause();
                 }).catch(err => {
                     if (err.name === 'NotAllowedError') {
-                        console.log('Music Controller: Browser requires user interaction for autoplay');
+                        // console.log('Music Controller: Browser requires user interaction for autoplay');
                         // Set a data attribute so all components know user interaction is needed
                         document.documentElement.setAttribute('data-needs-user-interaction', 'true');
                     } else {
-                        console.error('Music Controller: Error in autoplay test:', err);
+                        // console.error('Music Controller: Error in autoplay test:', err);
                     }
                 });
             }
         } catch (e) {
-            console.error('Music Controller: Exception during autoplay test:', e);
+            // console.error('Music Controller: Exception during autoplay test:', e);
         }
     }
 
