@@ -1,7 +1,7 @@
 /**
  * Orbie Zots - Particle Swarm Simulation
  * Copyright (c) 2025
- * Built: 2025-04-16T00:19:25.139Z
+ * Built: 2025-04-16T02:05:34.506Z
  */
 
 // config.js - Environment-specific configuration
@@ -303,7 +303,8 @@ const Presets = {
             cohesion: 2,
             perception: 50,
             trailLength: 0,
-            colorTheme: 'blue'  // Default color theme for this preset
+            colorTheme: 'blue',  // Default color theme for this preset
+            opacity: 1.0
         },
         murmuration: {
             name: "Bird Flock",
@@ -314,7 +315,8 @@ const Presets = {
             cohesion: 2.5,
             perception: 75,
             trailLength: 0,
-            colorTheme: 'rainbow'  // Default color theme for this preset
+            colorTheme: 'rainbow',  // Default color theme for this preset
+            opacity: 0.8
         },
         lavaLamp: {
             name: "Lava Lamp",
@@ -325,7 +327,8 @@ const Presets = {
             cohesion: 5,
             perception: 20,
             trailLength: 0,
-            colorTheme: 'fire'  // Default color theme for this preset
+            colorTheme: 'fire',  // Default color theme for this preset
+            opacity: 0.9
         },
         cookingOil: {
             name: "Cooking Oil",
@@ -336,7 +339,8 @@ const Presets = {
             cohesion: 3,
             perception: 50,
             trailLength: 0,
-            colorTheme: 'gold'  // Default color theme for this preset
+            colorTheme: 'gold',  // Default color theme for this preset
+            opacity: 0.7
         },
         jellyOrbs: {
             name: "Jelly Orbs",
@@ -347,7 +351,8 @@ const Presets = {
             cohesion: 5,
             perception: 100,
             trailLength: 0,
-            colorTheme: 'green'  // Default color theme for this preset
+            colorTheme: 'green',  // Default color theme for this preset
+            opacity: 0.6
         },
         bubble: {
             name: "Bubble",
@@ -358,7 +363,8 @@ const Presets = {
             cohesion: 5,
             perception: 200,
             trailLength: 0,
-            colorTheme: 'sparkle'  // Default color theme for this preset
+            colorTheme: 'sparkle',  // Default color theme for this preset
+            opacity: 0.5
         },
         ringer: {
             name: "Ringer",
@@ -369,7 +375,8 @@ const Presets = {
             cohesion: 10,
             perception: 100,
             trailLength: 0,
-            colorTheme: 'neon'  // Default color theme for this preset
+            colorTheme: 'neon',  // Default color theme for this preset
+            opacity: 0.85
         },
         fizzyPop: {
             name: "Fizzy Pop",
@@ -380,7 +387,8 @@ const Presets = {
             cohesion: 3.5,
             perception: 50,
             trailLength: 0,
-            colorTheme: 'rainbow'  // Default color theme for this preset
+            colorTheme: 'rainbow',  // Default color theme for this preset
+            opacity: 0.75
         }
     },
     
@@ -567,7 +575,8 @@ const Presets = {
             cohesion: 3.5,
             perception: 50,
             trailLength: 0,
-            colorTheme: 'blue'
+            colorTheme: 'blue',
+            opacity: 1.0
         },
         
         // Touch and wall forces
@@ -597,7 +606,7 @@ const TouchHandler = (function() {
     let swipeModeActive = false;  // Track if we're in swipe mode
     let swipeStartX = 0;          // Starting X position of swipe
     let swipeStartY = 0;          // Starting Y position of swipe
-    let swipeThreshold = 10;      // Minimum distance to trigger swipe detection
+    let swipeThreshold = 25;      // Minimum distance to trigger swipe detection
     let swipeDetected = false;    // Flag to indicate if swipe is detected
     
     // Callbacks for integration with particle system
@@ -1569,6 +1578,7 @@ const ParticleSystem = (function() {
                 vy: (Math.random() * 2 - 1) * (config.speed || 2),
                 size: config.minSize + Math.random() * (config.maxSize - config.minSize),
                 color: getColor(),
+                opacity: config.opacity !== undefined ? config.opacity : 1.0,
                 history: [],
                 inOrbieSwarm: false,
                 swarmId: swarm.id,
@@ -1637,6 +1647,7 @@ const ParticleSystem = (function() {
                     vx: (Math.random() * 2 - 1) * swarm.settings.speed,
                     vy: (Math.random() * 2 - 1) * swarm.settings.speed,
                     color: getColor(),
+                    opacity: swarm.settings.opacity !== undefined ? swarm.settings.opacity : 1.0,
                     size: swarm.settings.minSize + Math.random() * (swarm.settings.maxSize - swarm.settings.minSize),
                     history: [],
                     inOrbieSwarm: false,
@@ -1661,6 +1672,11 @@ const ParticleSystem = (function() {
             // Update color if colorTheme changed
             if (config.colorTheme) {
                 zot.color = getColor();
+            }
+            
+            // Update opacity if changed
+            if (config.opacity !== undefined) {
+                zot.opacity = config.opacity;
             }
             
             // Update size if size range changed
@@ -2123,10 +2139,34 @@ const ParticleSystem = (function() {
         for (let i = 0; i < particles.length; i++) {
             const particle = particles[i];
             
-            // Set color based on whether particle is in Orbie's swarm
-            const particleColor = particle.inOrbieSwarm 
-                ? particle.color.replace('hsl', 'hsla').replace(')', ', 0.9)') // Slight transparency for swarm
-                : particle.color;
+            // Set color based on whether particle is in Orbie's swarm and apply opacity
+            let particleColor;
+            
+            if (particle.inOrbieSwarm) {
+                // For particles in Orbie's swarm, apply slight transparency
+                particleColor = particle.color.replace('hsl', 'hsla').replace(')', ', 0.9)');
+            } else {
+                // Apply the particle's custom opacity
+                const opacity = particle.opacity !== undefined ? particle.opacity : 1.0;
+                
+                // Check if the color is already in hsla format
+                if (particle.color.includes('hsla')) {
+                    // Replace the existing alpha value
+                    particleColor = particle.color.replace(/,[^,]*\)$/, `, ${opacity})`);
+                } else if (particle.color.includes('hsl')) {
+                    // Convert hsl to hsla
+                    particleColor = particle.color.replace('hsl', 'hsla').replace(')', `, ${opacity})`);
+                } else if (particle.color.includes('rgba')) {
+                    // Replace the existing alpha value in rgba
+                    particleColor = particle.color.replace(/,[^,]*\)$/, `, ${opacity})`);
+                } else if (particle.color.includes('rgb')) {
+                    // Convert rgb to rgba
+                    particleColor = particle.color.replace('rgb', 'rgba').replace(')', `, ${opacity})`);
+                } else {
+                    // For any other color format, just use it as is
+                    particleColor = particle.color;
+                }
+            }
             
             // Draw trail if enabled
             if (particle.history.length > 1) {
@@ -3365,7 +3405,7 @@ const SwipeSplitSystem = (function() {
                 const inactiveTime = Date.now() - pathRef.lastPointTime;
                 
                 // If we haven't added points for a while, switch to final decay
-                if (inactiveTime > 250 && currentPathIndex === activePathIndex) {
+                if (inactiveTime > 100 && currentPathIndex === activePathIndex) {
                     clearInterval(pathRef.decayTimer);
                     
                     // Mark this path as no longer active
@@ -7145,7 +7185,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 separation: Math.random() * 4, // Random between 0-4
                 alignment: Math.random() * 3,  // Random between 0-3
                 cohesion: Math.random() * 5,   // Random between 0-5
-                perception: Math.floor(Math.random() * 180) + 20 // Random between 20-200
+                perception: Math.floor(Math.random() * 180) + 20, // Random between 20-200
+                opacity: 0.2 + Math.random() * 0.8 // Random between 0.2-1.0
             };
             
             // Apply to UI
@@ -7154,6 +7195,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('newSwarmAlignment').value = randomConfig.alignment;
             document.getElementById('newSwarmCohesion').value = randomConfig.cohesion;
             document.getElementById('newSwarmPerception').value = randomConfig.perception;
+            document.getElementById('newSwarmOpacity').value = randomConfig.opacity;
             
             // Trigger input events to update the displayed values
             updateSliderValueDisplay('newSwarmSpeed');
@@ -7161,6 +7203,7 @@ document.addEventListener('DOMContentLoaded', function() {
             updateSliderValueDisplay('newSwarmAlignment');
             updateSliderValueDisplay('newSwarmCohesion');
             updateSliderValueDisplay('newSwarmPerception');
+            updateSliderValueDisplay('newSwarmOpacity');
             
             // Randomize color theme
             const colorThemes = Object.keys(Presets.colorThemes);
@@ -7591,6 +7634,7 @@ document.addEventListener('DOMContentLoaded', function() {
         config.alignment = parseFloat(document.getElementById('newSwarmAlignment')?.value || 0.1);
         config.cohesion = parseFloat(document.getElementById('newSwarmCohesion')?.value || 0.1);
         config.perception = parseFloat(document.getElementById('newSwarmPerception')?.value || 50);
+        config.opacity = parseFloat(document.getElementById('newSwarmOpacity')?.value || 1.0);
         
         return config;
     }
@@ -7756,6 +7800,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 Math.abs(preset.alignment - settings.alignment) < 0.01 &&
                 Math.abs(preset.cohesion - settings.cohesion) < 0.01 &&
                 Math.abs(preset.perception - settings.perception) < 0.01 &&
+                (preset.opacity === undefined || Math.abs(preset.opacity - settings.opacity) < 0.01) &&
                 preset.colorTheme === settings.colorTheme
             ) {
                 return presetId;
@@ -7807,6 +7852,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (perceptionSlider) {
             perceptionSlider.value = settings.perception;
             updateSliderValue(perceptionSlider, document.getElementById('newSwarmPerceptionValue'), 0);
+        }
+        
+        const opacitySlider = document.getElementById('newSwarmOpacity');
+        if (opacitySlider && settings.opacity !== undefined) {
+            opacitySlider.value = settings.opacity;
+            updateSliderValue(opacitySlider, document.getElementById('newSwarmOpacityValue'), 2);
         }
         
         const minSizeSlider = document.getElementById('newSwarmMinSize');

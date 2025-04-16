@@ -37,6 +37,7 @@ const SliderTooltip = (function() {
         'newSwarmAlignment': 'Controls how strongly Zots align with neighbors. Higher values cause Zots to follow the same direction as nearby Zots, creating flowing, stream-like motion.',
         'newSwarmCohesion': 'Controls how strongly Zots are attracted to their group. Higher values create tightly clustered swarms that stick together. Lower values allow for more scattered, independent movement.',
         'newSwarmPerception': 'Controls how far Zots can perceive their neighbors. Higher values allow for larger scale coordinated behaviors. Lower values create more local, smaller group behaviors.',
+        'newSwarmOpacity': 'Controls the transparency of individual Zots in the swarm. Higher values make Zots more opaque (solid), while lower values make them more transparent (see-through).',
         
         // Forces parameters
         'touchForce': 'Controls how strongly your touch affects particles. Higher values create more dramatic push/pull effects when interacting. Lower values allow for more gentle, subtle influences.',

@@ -10,7 +10,7 @@ const TouchHandler = (function() {
     let swipeModeActive = false;  // Track if we're in swipe mode
     let swipeStartX = 0;          // Starting X position of swipe
     let swipeStartY = 0;          // Starting Y position of swipe
-    let swipeThreshold = 10;      // Minimum distance to trigger swipe detection
+    let swipeThreshold = 25;      // Minimum distance to trigger swipe detection
     let swipeDetected = false;    // Flag to indicate if swipe is detected
     
     // Callbacks for integration with particle system

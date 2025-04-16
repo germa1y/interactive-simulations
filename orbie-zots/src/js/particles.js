@@ -217,6 +217,7 @@ const ParticleSystem = (function() {
                 vy: (Math.random() * 2 - 1) * (config.speed || 2),
                 size: config.minSize + Math.random() * (config.maxSize - config.minSize),
                 color: getColor(),
+                opacity: config.opacity !== undefined ? config.opacity : 1.0,
                 history: [],
                 inOrbieSwarm: false,
                 swarmId: swarm.id,
@@ -285,6 +286,7 @@ const ParticleSystem = (function() {
                     vx: (Math.random() * 2 - 1) * swarm.settings.speed,
                     vy: (Math.random() * 2 - 1) * swarm.settings.speed,
                     color: getColor(),
+                    opacity: swarm.settings.opacity !== undefined ? swarm.settings.opacity : 1.0,
                     size: swarm.settings.minSize + Math.random() * (swarm.settings.maxSize - swarm.settings.minSize),
                     history: [],
                     inOrbieSwarm: false,
@@ -309,6 +311,11 @@ const ParticleSystem = (function() {
             // Update color if colorTheme changed
             if (config.colorTheme) {
                 zot.color = getColor();
+            }
+            
+            // Update opacity if changed
+            if (config.opacity !== undefined) {
+                zot.opacity = config.opacity;
             }
             
             // Update size if size range changed
@@ -771,10 +778,34 @@ const ParticleSystem = (function() {
         for (let i = 0; i < particles.length; i++) {
             const particle = particles[i];
             
-            // Set color based on whether particle is in Orbie's swarm
-            const particleColor = particle.inOrbieSwarm 
-                ? particle.color.replace('hsl', 'hsla').replace(')', ', 0.9)') // Slight transparency for swarm
-                : particle.color;
+            // Set color based on whether particle is in Orbie's swarm and apply opacity
+            let particleColor;
+            
+            if (particle.inOrbieSwarm) {
+                // For particles in Orbie's swarm, apply slight transparency
+                particleColor = particle.color.replace('hsl', 'hsla').replace(')', ', 0.9)');
+            } else {
+                // Apply the particle's custom opacity
+                const opacity = particle.opacity !== undefined ? particle.opacity : 1.0;
+                
+                // Check if the color is already in hsla format
+                if (particle.color.includes('hsla')) {
+                    // Replace the existing alpha value
+                    particleColor = particle.color.replace(/,[^,]*\)$/, `, ${opacity})`);
+                } else if (particle.color.includes('hsl')) {
+                    // Convert hsl to hsla
+                    particleColor = particle.color.replace('hsl', 'hsla').replace(')', `, ${opacity})`);
+                } else if (particle.color.includes('rgba')) {
+                    // Replace the existing alpha value in rgba
+                    particleColor = particle.color.replace(/,[^,]*\)$/, `, ${opacity})`);
+                } else if (particle.color.includes('rgb')) {
+                    // Convert rgb to rgba
+                    particleColor = particle.color.replace('rgb', 'rgba').replace(')', `, ${opacity})`);
+                } else {
+                    // For any other color format, just use it as is
+                    particleColor = particle.color;
+                }
+            }
             
             // Draw trail if enabled
             if (particle.history.length > 1) {

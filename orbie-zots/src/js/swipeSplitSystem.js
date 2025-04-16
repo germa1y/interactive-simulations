@@ -170,7 +170,7 @@ const SwipeSplitSystem = (function() {
                 const inactiveTime = Date.now() - pathRef.lastPointTime;
                 
                 // If we haven't added points for a while, switch to final decay
-                if (inactiveTime > 250 && currentPathIndex === activePathIndex) {
+                if (inactiveTime > 100 && currentPathIndex === activePathIndex) {
                     clearInterval(pathRef.decayTimer);
                     
                     // Mark this path as no longer active

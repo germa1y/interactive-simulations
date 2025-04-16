@@ -531,7 +531,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 separation: Math.random() * 4, // Random between 0-4
                 alignment: Math.random() * 3,  // Random between 0-3
                 cohesion: Math.random() * 5,   // Random between 0-5
-                perception: Math.floor(Math.random() * 180) + 20 // Random between 20-200
+                perception: Math.floor(Math.random() * 180) + 20, // Random between 20-200
+                opacity: 0.2 + Math.random() * 0.8 // Random between 0.2-1.0
             };
             
             // Apply to UI
@@ -540,6 +541,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('newSwarmAlignment').value = randomConfig.alignment;
             document.getElementById('newSwarmCohesion').value = randomConfig.cohesion;
             document.getElementById('newSwarmPerception').value = randomConfig.perception;
+            document.getElementById('newSwarmOpacity').value = randomConfig.opacity;
             
             // Trigger input events to update the displayed values
             updateSliderValueDisplay('newSwarmSpeed');
@@ -547,6 +549,7 @@ document.addEventListener('DOMContentLoaded', function() {
             updateSliderValueDisplay('newSwarmAlignment');
             updateSliderValueDisplay('newSwarmCohesion');
             updateSliderValueDisplay('newSwarmPerception');
+            updateSliderValueDisplay('newSwarmOpacity');
             
             // Randomize color theme
             const colorThemes = Object.keys(Presets.colorThemes);
@@ -977,6 +980,7 @@ document.addEventListener('DOMContentLoaded', function() {
         config.alignment = parseFloat(document.getElementById('newSwarmAlignment')?.value || 0.1);
         config.cohesion = parseFloat(document.getElementById('newSwarmCohesion')?.value || 0.1);
         config.perception = parseFloat(document.getElementById('newSwarmPerception')?.value || 50);
+        config.opacity = parseFloat(document.getElementById('newSwarmOpacity')?.value || 1.0);
         
         return config;
     }
@@ -1142,6 +1146,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 Math.abs(preset.alignment - settings.alignment) < 0.01 &&
                 Math.abs(preset.cohesion - settings.cohesion) < 0.01 &&
                 Math.abs(preset.perception - settings.perception) < 0.01 &&
+                (preset.opacity === undefined || Math.abs(preset.opacity - settings.opacity) < 0.01) &&
                 preset.colorTheme === settings.colorTheme
             ) {
                 return presetId;
@@ -1193,6 +1198,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (perceptionSlider) {
             perceptionSlider.value = settings.perception;
             updateSliderValue(perceptionSlider, document.getElementById('newSwarmPerceptionValue'), 0);
+        }
+        
+        const opacitySlider = document.getElementById('newSwarmOpacity');
+        if (opacitySlider && settings.opacity !== undefined) {
+            opacitySlider.value = settings.opacity;
+            updateSliderValue(opacitySlider, document.getElementById('newSwarmOpacityValue'), 2);
         }
         
         const minSizeSlider = document.getElementById('newSwarmMinSize');

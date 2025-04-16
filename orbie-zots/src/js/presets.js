@@ -11,7 +11,8 @@ const Presets = {
             cohesion: 2,
             perception: 50,
             trailLength: 0,
-            colorTheme: 'blue'  // Default color theme for this preset
+            colorTheme: 'blue',  // Default color theme for this preset
+            opacity: 1.0
         },
         murmuration: {
             name: "Bird Flock",
@@ -22,7 +23,8 @@ const Presets = {
             cohesion: 2.5,
             perception: 75,
             trailLength: 0,
-            colorTheme: 'rainbow'  // Default color theme for this preset
+            colorTheme: 'rainbow',  // Default color theme for this preset
+            opacity: 0.8
         },
         lavaLamp: {
             name: "Lava Lamp",
@@ -33,7 +35,8 @@ const Presets = {
             cohesion: 5,
             perception: 20,
             trailLength: 0,
-            colorTheme: 'fire'  // Default color theme for this preset
+            colorTheme: 'fire',  // Default color theme for this preset
+            opacity: 0.9
         },
         cookingOil: {
             name: "Cooking Oil",
@@ -44,7 +47,8 @@ const Presets = {
             cohesion: 3,
             perception: 50,
             trailLength: 0,
-            colorTheme: 'gold'  // Default color theme for this preset
+            colorTheme: 'gold',  // Default color theme for this preset
+            opacity: 0.7
         },
         jellyOrbs: {
             name: "Jelly Orbs",
@@ -55,7 +59,8 @@ const Presets = {
             cohesion: 5,
             perception: 100,
             trailLength: 0,
-            colorTheme: 'green'  // Default color theme for this preset
+            colorTheme: 'green',  // Default color theme for this preset
+            opacity: 0.6
         },
         bubble: {
             name: "Bubble",
@@ -66,7 +71,8 @@ const Presets = {
             cohesion: 5,
             perception: 200,
             trailLength: 0,
-            colorTheme: 'sparkle'  // Default color theme for this preset
+            colorTheme: 'sparkle',  // Default color theme for this preset
+            opacity: 0.5
         },
         ringer: {
             name: "Ringer",
@@ -77,7 +83,8 @@ const Presets = {
             cohesion: 10,
             perception: 100,
             trailLength: 0,
-            colorTheme: 'neon'  // Default color theme for this preset
+            colorTheme: 'neon',  // Default color theme for this preset
+            opacity: 0.85
         },
         fizzyPop: {
             name: "Fizzy Pop",
@@ -88,7 +95,8 @@ const Presets = {
             cohesion: 3.5,
             perception: 50,
             trailLength: 0,
-            colorTheme: 'rainbow'  // Default color theme for this preset
+            colorTheme: 'rainbow',  // Default color theme for this preset
+            opacity: 0.75
         }
     },
     
@@ -275,7 +283,8 @@ const Presets = {
             cohesion: 3.5,
             perception: 50,
             trailLength: 0,
-            colorTheme: 'blue'
+            colorTheme: 'blue',
+            opacity: 1.0
         },
         
         // Touch and wall forces
