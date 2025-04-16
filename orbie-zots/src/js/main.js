@@ -466,6 +466,55 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             });
+            
+            // Add click handler to handle selecting the same preset
+            presetSelect.addEventListener('click', function() {
+                // When clicking on the dropdown, store the currently selected value
+                presetSelect._lastSelectedValue = this.value;
+            });
+            
+            // Add mouseup handler to detect when selection is complete
+            presetSelect.addEventListener('mouseup', function() {
+                // If the value hasn't changed (selected same item), still update UI
+                if (this.value === presetSelect._lastSelectedValue && this.value) {
+                    isRandomized = false;
+                    const preset = Presets.swarmPresets[this.value];
+                    
+                    if (preset) {
+                        // Apply preset values again to ensure UI is updated
+                        const currentZotCount = document.getElementById('newSwarmZotCount').value;
+                        
+                        document.getElementById('newSwarmSpeed').value = preset.speed;
+                        document.getElementById('newSwarmSeparation').value = preset.separation;
+                        document.getElementById('newSwarmAlignment').value = preset.alignment;
+                        document.getElementById('newSwarmCohesion').value = preset.cohesion;
+                        document.getElementById('newSwarmPerception').value = preset.perception;
+                        
+                        updateSliderValueDisplay('newSwarmSpeed');
+                        updateSliderValueDisplay('newSwarmSeparation');
+                        updateSliderValueDisplay('newSwarmAlignment');
+                        updateSliderValueDisplay('newSwarmCohesion');
+                        updateSliderValueDisplay('newSwarmPerception');
+                        
+                        document.getElementById('newSwarmZotCountValue').textContent = currentZotCount;
+                        
+                        // Update color theme if set in the preset
+                        if (preset.colorTheme) {
+                            const colorPresets = document.querySelectorAll('.color-preset');
+                            colorPresets.forEach(themeBtn => {
+                                if (themeBtn.dataset.theme === preset.colorTheme) {
+                                    themeBtn.setAttribute('data-from-preset', 'true');
+                                    colorPresets.forEach(p => p.classList.remove('active'));
+                                    themeBtn.classList.add('active');
+                                    if (ColorThemes && typeof ColorThemes.setTheme === 'function') {
+                                        ColorThemes.setTheme(preset.colorTheme);
+                                    }
+                                }
+                            });
+                        }
+                    }
+                }
+            });
         }
         
         // Function to randomize zot swarm settings
@@ -997,6 +1046,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     updateUIForSelectedSwarm(selectedSwarmId);
                 }
             });
+            
+            // Add click handler to handle selecting the same item
+            swarmDropdown.addEventListener('click', function() {
+                // When clicking on the dropdown, store the currently selected value
+                swarmDropdown._lastSelectedValue = this.value;
+            });
+            
+            // Add mouseup handler to detect when selection is complete
+            swarmDropdown.addEventListener('mouseup', function() {
+                // If the value hasn't changed (selected same item), still update UI
+                if (this.value === swarmDropdown._lastSelectedValue && this.value) {
+                    updateUIForSelectedSwarm(this.value);
+                }
+            });
+            
             swarmDropdown.hasEventListener = true;
         }
         

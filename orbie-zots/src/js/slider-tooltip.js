@@ -476,10 +476,14 @@ const SliderTooltip = (function() {
      * Refresh tooltips (for public access)
      */
     function refreshTooltip() {
-        // Re-initialize tooltips
-        isInitialized = false;
-        init();
         // console.log('Slider Tooltip: Refreshed all tooltips');
+        
+        // Remove any existing tooltips
+        hideTooltip();
+        
+        // Re-setup all tooltips
+        setupTooltips();
+        setupToggleTooltips();
     }
     
     // Return public API

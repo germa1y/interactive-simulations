@@ -20,7 +20,7 @@ const ZotCentricControls = (function() {
         // Listen for window resize to update the center position
         window.addEventListener('resize', handleResize);
         
-        // console.log('ZotCentricControls initialized');
+        console.log('ZotCentricControls initialized');
         
         return {
             activate,
@@ -157,7 +157,7 @@ const ZotCentricControls = (function() {
         
         isActive = true;
         createCrosshair();
-        // console.log('ZotCentricControls activated');
+        console.log('ZotCentricControls activated');
     }
     
     // Deactivate the control system (called when the map is cleared/removed)
@@ -166,7 +166,7 @@ const ZotCentricControls = (function() {
         
         isActive = false;
         removeCrosshair();
-        // console.log('ZotCentricControls deactivated');
+        console.log('ZotCentricControls deactivated');
     }
     
     // Public API

@@ -710,7 +710,6 @@ const MusicController = (function() {
             if (playPromise !== undefined) {
                 playPromise.then(() => {
                     // console.log('Music Controller: Browser supports autoplay without user interaction');
-                    testAudio.pause();
                 }).catch(err => {
                     if (err.name === 'NotAllowedError') {
                         // console.log('Music Controller: Browser requires user interaction for autoplay');
